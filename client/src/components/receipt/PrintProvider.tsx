@@ -26,6 +26,7 @@ export function PrintProvider({ children }: { children: ReactNode }) {
   const print = useCallback<PrintFn>(async (data) => {
     const qrUrl = data.qrPayload ? await QRCode.toDataURL(data.qrPayload, { margin: 1, width: 320 }) : null;
     await new Promise<void>((resolve) => {
+      done.current?.(); // lệnh in trước còn treo thì trả về trước, không để await treo mãi
       done.current = resolve;
       setJob({ data, qrUrl });
     });
@@ -33,19 +34,36 @@ export function PrintProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!job) return;
+    let cancelled = false;
     let inner = 0;
-    // Chờ 2 khung hình để DOM hóa đơn (và ảnh QR) vẽ xong rồi mới in
+    let timer = 0;
+    // Chỉ dọn hóa đơn khi in xong (afterprint); có trình duyệt trả về từ print() trước khi chụp trang
+    const finish = () => {
+      window.removeEventListener('afterprint', finish);
+      clearTimeout(timer);
+      setJob(null);
+      done.current?.();
+      done.current = null;
+    };
+    const printNow = async () => {
+      // Chờ ảnh QR giải mã xong, nếu không phiếu có thể in thiếu QR
+      const imgs = Array.from(document.querySelectorAll<HTMLImageElement>('#print-root img'));
+      await Promise.all(imgs.map((img) => img.decode().catch(() => undefined)));
+      if (cancelled) return;
+      window.addEventListener('afterprint', finish);
+      timer = window.setTimeout(finish, 60_000); // dự phòng nếu afterprint không bao giờ đến
+      window.print();
+    };
+    // Chờ 2 khung hình để DOM hóa đơn vẽ xong rồi mới in
     const outer = requestAnimationFrame(() => {
-      inner = requestAnimationFrame(() => {
-        window.print();
-        setJob(null);
-        done.current?.();
-        done.current = null;
-      });
+      inner = requestAnimationFrame(() => void printNow());
     });
     return () => {
+      cancelled = true;
       cancelAnimationFrame(outer);
       cancelAnimationFrame(inner);
+      window.removeEventListener('afterprint', finish);
+      clearTimeout(timer);
     };
   }, [job]);
 

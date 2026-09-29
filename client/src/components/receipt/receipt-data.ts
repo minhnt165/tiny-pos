@@ -18,6 +18,8 @@ export interface ReceiptData {
   payable: number;
   paid: number;
   paymentMethod: PaymentMethod;
+  /** Đơn đã hủy: phiếu in lại phải ghi rõ để không lẫn với hóa đơn hợp lệ. */
+  cancelled: boolean;
   /** Chuỗi VietQR in kèm phiếu tạm tính. */
   qrPayload: string | null;
 }
@@ -32,6 +34,7 @@ export function receiptFromOrder(o: OrderDetail): ReceiptData {
     payable: o.payable,
     paid: o.paid,
     paymentMethod: o.paymentMethod,
+    cancelled: o.status === 'cancelled',
     qrPayload: null,
   };
 }
@@ -45,6 +48,7 @@ export function draftReceipt(cart: Cart, qrPayload: string | null): ReceiptData 
     ...t,
     paid: 0,
     paymentMethod: 'transfer',
+    cancelled: false,
     qrPayload,
   };
 }
@@ -64,6 +68,7 @@ export function sampleReceipt(): ReceiptData {
     payable: 50000,
     paid: 100000,
     paymentMethod: 'cash',
+    cancelled: false,
     qrPayload: null,
   };
 }

@@ -39,7 +39,7 @@ export function Receipt({ data, settings, qrUrl }: { data: ReceiptData; settings
       {settings.storeAddress && <div style={center}>{settings.storeAddress}</div>}
       {settings.storePhone && <div style={center}>ĐT: {settings.storePhone}</div>}
       <div style={rule} />
-      <div style={{ ...center, fontWeight: 700 }}>{paidOrder ? 'HÓA ĐƠN BÁN HÀNG' : 'TẠM TÍNH – chưa thanh toán'}</div>
+      <div style={{ ...center, fontWeight: 700 }}>{!paidOrder ? 'TẠM TÍNH – chưa thanh toán' : data.cancelled ? 'HÓA ĐƠN ĐÃ HỦY' : 'HÓA ĐƠN BÁN HÀNG'}</div>
       {paidOrder && <div style={center}>{data.code}</div>}
       <div style={center}>{timeLabel(data.createdAt)}</div>
       <div style={rule} />
