@@ -20,6 +20,8 @@ function initials(name: string): string {
   return name
     .trim()
     .split(/\s+/)
+    // Bỏ các "từ" chỉ là ký hiệu như "&", "-" để "Sữa & trứng" ra "ST" chứ không phải "S&"
+    .filter((w) => /^[\p{L}\p{N}]/u.test(w))
     .slice(0, 2)
     .map((w) => w.charAt(0).toUpperCase())
     .join('');

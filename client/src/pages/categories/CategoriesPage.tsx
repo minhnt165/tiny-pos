@@ -1,52 +1,39 @@
 import { useState } from 'react';
-import { ArrowDown, ArrowUp, FolderOpen, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, FolderOpen, FolderX, Info, Layers, MoreHorizontal, Package, PackageOpen, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import type { Category } from '@tiny-pos/shared';
 import { useCategories, useDeleteCategory, useSaveCategory } from '@/api/categories';
+import { useProducts } from '@/api/products';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { EmptyState } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
-import { gradientFor } from '@/components/ProductAvatar';
+import { ProductAvatar } from '@/components/ProductAvatar';
+import { StatCard } from '@/components/StatCard';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { FieldError } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
+import { Card } from '@/components/ui/card';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
+import { Skeleton } from '@/components/ui/skeleton';
+import { CategoryFormDialog } from './CategoryFormDialog';
 
 export function CategoriesPage() {
   const { data: categories = [], isLoading } = useCategories();
+  const { data: products = [] } = useProducts({});
   const save = useSaveCategory();
   const remove = useDeleteCategory();
   const confirm = useConfirm();
-  const [newName, setNewName] = useState('');
-  const [error, setError] = useState<string | undefined>();
-  const [editing, setEditing] = useState<{ id: number; name: string } | null>(null);
+  const navigate = useNavigate();
+  const [q, setQ] = useState('');
+  const [dialog, setDialog] = useState<{ category: Category | null } | null>(null);
 
   const onError = (e: Error) => toast.error(e.message);
-
-  /** Tên hợp lệ: không trống, ≤100 ký tự, không trùng (không phân biệt hoa thường). */
-  const validate = (name: string, exceptId?: number): string | undefined => {
-    const n = name.trim();
-    if (!n) return 'Nhập tên danh mục';
-    if (n.length > 100) return 'Tối đa 100 ký tự';
-    if (categories.some((c) => c.id !== exceptId && c.name.toLowerCase() === n.toLowerCase())) return `Đã có danh mục "${n}"`;
-    return undefined;
-  };
-
-  const add = () => {
-    const err = validate(newName);
-    if (err) return setError(err);
-    save.mutate({ name: newName.trim(), sortOrder: categories.length }, { onSuccess: () => setNewName(''), onError });
-  };
-
-  const rename = () => {
-    if (!editing) return;
-    const c = categories.find((x) => x.id === editing.id);
-    if (!c || c.name === editing.name.trim()) return setEditing(null);
-    const err = validate(editing.name, c.id);
-    if (err) return toast.error(err);
-    save.mutate({ id: c.id, name: editing.name.trim(), sortOrder: c.sortOrder }, { onSuccess: () => setEditing(null), onError });
-  };
+  const uncategorized = products.filter((p) => p.categoryId === null).length;
+  const empty = categories.filter((c) => c.productCount === 0);
+  const maxCount = Math.max(1, ...categories.map((c) => c.productCount));
+  const categorized = Math.max(1, categories.reduce((sum, c) => sum + c.productCount, 0));
+  const term = q.trim().toLowerCase();
+  const shown = term ? categories.filter((c) => c.name.toLowerCase().includes(term)) : categories;
 
   /** Đổi chỗ với hàng kề rồi gán lại sortOrder = vị trí cho các hàng bị lệch. */
   const move = (index: number, dir: -1 | 1) => {
@@ -71,87 +58,165 @@ export function CategoriesPage() {
     if (ok) remove.mutate(c.id, { onSuccess: () => toast.success(`Đã xóa "${c.name}"`), onError });
   };
 
-  return (
-    <div className="mx-auto max-w-4xl">
-      <PageHeader icon={FolderOpen} title="Danh mục" description="Gom hàng theo nhóm để lọc nhanh và bấm chọn khi bán." />
+  const openCreate = () => setDialog({ category: null });
+  const openRename = (c: Category) => setDialog({ category: c });
 
-      <Card size="sm" className="mb-5">
-        <CardContent>
-          <div className="flex gap-2">
-            <Input
-              className="h-11 text-base"
-              placeholder="Tên danh mục mới, ví dụ: Đồ uống"
-              value={newName}
-              aria-invalid={!!error}
-              onChange={(e) => {
-                setNewName(e.target.value);
-                setError(undefined);
-              }}
-              onKeyDown={(e) => e.key === 'Enter' && add()}
-            />
-            <Button className="h-11 shrink-0 px-5 text-base" onClick={add} disabled={save.isPending}>
-              <Plus data-icon="inline-start" />
-              Thêm
-            </Button>
+  return (
+    <div className="mx-auto max-w-5xl">
+      <PageHeader
+        icon={FolderOpen}
+        title="Danh mục"
+        description="Gom hàng theo nhóm để lọc nhanh và bấm chọn khi bán."
+        actions={
+          <Button className="h-11 px-5 text-base" onClick={openCreate}>
+            <Plus data-icon="inline-start" />
+            Thêm danh mục
+          </Button>
+        }
+      />
+
+      <div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <StatCard icon={Layers} label="Danh mục" value={String(categories.length)} hint="Nhóm hàng để lọc nhanh" />
+        <StatCard
+          icon={Package}
+          label="Hàng đã phân loại"
+          value={String(products.length - uncategorized)}
+          hint={`/ ${products.length} mặt hàng đang bán`}
+          tone="info"
+        />
+        <StatCard
+          icon={PackageOpen}
+          label="Chưa có danh mục"
+          value={String(uncategorized)}
+          hint={uncategorized ? 'Nên xếp vào nhóm để dễ tìm' : 'Mọi hàng đã có nhóm'}
+          tone={uncategorized ? 'warn' : 'default'}
+        />
+        <StatCard
+          icon={FolderX}
+          label="Danh mục trống"
+          value={String(empty.length)}
+          hint={empty.length ? empty.slice(0, 2).map((c) => c.name).join(', ') : 'Danh mục nào cũng có'}
+          tone={empty.length ? 'danger' : 'default'}
+        />
+      </div>
+
+      <Card className="gap-0 py-0">
+        <div className="flex flex-col gap-3 border-b px-4 py-4 md:flex-row md:items-center md:justify-between">
+          <InputGroup className="h-11 bg-card md:max-w-sm">
+            <InputGroupAddon>
+              <Search />
+            </InputGroupAddon>
+            <InputGroupInput className="h-11 text-base" placeholder="Tìm danh mục…" value={q} onChange={(e) => setQ(e.target.value)} />
+          </InputGroup>
+          <p className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Info className="size-4 shrink-0" />
+            Thứ tự ở đây là thứ tự nút danh mục ở màn bán hàng.
+          </p>
+        </div>
+
+        {isLoading ? (
+          <div className="space-y-3 p-4">
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} className="h-14 w-full rounded-xl" />
+            ))}
           </div>
-          {error && <FieldError className="mt-2">{error}</FieldError>}
-        </CardContent>
+        ) : shown.length === 0 ? (
+          <EmptyState
+            icon={term ? Search : FolderOpen}
+            title={term ? 'Không tìm thấy danh mục nào' : 'Chưa có danh mục nào'}
+            description={term ? 'Thử từ khóa khác.' : 'Tạo nhóm hàng đầu tiên, ví dụ Đồ uống, Bánh kẹo, Gia vị.'}
+            action={
+              !term && (
+                <Button onClick={openCreate}>
+                  <Plus data-icon="inline-start" />
+                  Thêm danh mục
+                </Button>
+              )
+            }
+          />
+        ) : (
+          <ul className="divide-y">
+            {shown.map((c) => {
+              const i = categories.indexOf(c);
+              return (
+                <li key={c.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40">
+                  <span className="w-6 shrink-0 text-center text-sm font-medium text-muted-foreground tabular-nums">{i + 1}</span>
+                  <ProductAvatar name={c.name} />
+                  <button type="button" className="min-w-0 flex-1 text-left" title="Bấm để đổi tên" onClick={() => openRename(c)}>
+                    <div className="truncate text-base font-medium">{c.name}</div>
+                    <div className="text-sm text-muted-foreground">{c.productCount ? `${c.productCount} sản phẩm` : 'Chưa có sản phẩm'}</div>
+                  </button>
+                  <div className="hidden w-40 shrink-0 items-center gap-3 md:flex lg:w-56" title="Tỷ trọng trong số hàng đã phân loại">
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                      <div className="h-full rounded-full bg-primary" style={{ width: `${(c.productCount / maxCount) * 100}%` }} />
+                    </div>
+                    <span className="w-9 text-right text-sm font-medium text-muted-foreground tabular-nums">
+                      {Math.round((c.productCount / categorized) * 100)}%
+                    </span>
+                  </div>
+                  {!term && (
+                    <div className="hidden shrink-0 sm:flex">
+                      <Button variant="ghost" size="icon-lg" aria-label="Lên" title="Lên" onClick={() => move(i, -1)} disabled={i === 0}>
+                        <ArrowUp />
+                      </Button>
+                      <Button variant="ghost" size="icon-lg" aria-label="Xuống" title="Xuống" onClick={() => move(i, 1)} disabled={i === categories.length - 1}>
+                        <ArrowDown />
+                      </Button>
+                    </div>
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon-lg" aria-label="Thao tác" title="Thao tác">
+                        <MoreHorizontal />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="min-w-44">
+                      <DropdownMenuItem onSelect={() => navigate(`/products?categoryId=${c.id}`)}>
+                        <Package />
+                        Xem sản phẩm
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => openRename(c)}>
+                        <Pencil />
+                        Đổi tên
+                      </DropdownMenuItem>
+                      {/* Điện thoại không đủ chỗ cho nút lên/xuống nên đưa vào menu */}
+                      {!term && (
+                        <>
+                          <DropdownMenuItem className="sm:hidden" disabled={i === 0} onSelect={() => move(i, -1)}>
+                            <ArrowUp />
+                            Chuyển lên
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="sm:hidden" disabled={i === categories.length - 1} onSelect={() => move(i, 1)}>
+                            <ArrowDown />
+                            Chuyển xuống
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem variant="destructive" onSelect={() => del(c)}>
+                        <Trash2 />
+                        Xóa danh mục
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        {!isLoading && categories.length > 0 && (
+          <div className="flex items-center justify-between gap-3 border-t px-4 py-3 text-sm text-muted-foreground">
+            <span>
+              {term ? `${shown.length} / ` : ''}
+              {categories.length} danh mục
+            </span>
+            {uncategorized > 0 && <span>{uncategorized} mặt hàng chưa có danh mục</span>}
+          </div>
+        )}
       </Card>
 
-      {isLoading && <p className="text-muted-foreground">Đang tải…</p>}
-      {!isLoading && categories.length === 0 && (
-        <Card>
-          <EmptyState icon={FolderOpen} title="Chưa có danh mục nào" description="Thêm danh mục đầu tiên ở ô bên trên, ví dụ Đồ uống, Bánh kẹo, Gia vị." />
-        </Card>
-      )}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {categories.map((c, i) => (
-          <Card key={c.id} size="sm" className="gap-0 py-0">
-            <div className={cn('h-1.5 bg-gradient-to-r', gradientFor(c.name))} />
-            <CardContent className="flex items-start gap-3 py-3">
-              <div className={cn('grid size-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br font-heading text-lg font-semibold text-white', gradientFor(c.name))}>
-                {i + 1}
-              </div>
-              <div className="min-w-0 flex-1">
-                {editing?.id === c.id ? (
-                  <Input
-                    autoFocus
-                    className="h-9 text-base"
-                    value={editing.name}
-                    onChange={(e) => setEditing({ id: c.id, name: e.target.value })}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') rename();
-                      if (e.key === 'Escape') setEditing(null);
-                    }}
-                    onBlur={rename}
-                  />
-                ) : (
-                  <button
-                    type="button"
-                    className="block w-full truncate text-left text-base font-semibold hover:text-primary"
-                    title="Bấm để đổi tên"
-                    onClick={() => setEditing({ id: c.id, name: c.name })}
-                  >
-                    {c.name}
-                  </button>
-                )}
-                <p className="text-sm text-muted-foreground">{c.productCount} sản phẩm</p>
-              </div>
-              <div className="flex shrink-0">
-                <Button variant="ghost" size="icon-sm" aria-label="Lên" title="Lên" onClick={() => move(i, -1)} disabled={i === 0}>
-                  <ArrowUp />
-                </Button>
-                <Button variant="ghost" size="icon-sm" aria-label="Xuống" title="Xuống" onClick={() => move(i, 1)} disabled={i === categories.length - 1}>
-                  <ArrowDown />
-                </Button>
-                <Button variant="ghost" size="icon-sm" aria-label="Xóa" title="Xóa" className="text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => del(c)}>
-                  <Trash2 />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <CategoryFormDialog open={dialog !== null} category={dialog?.category ?? null} categories={categories} onClose={() => setDialog(null)} />
     </div>
   );
 }

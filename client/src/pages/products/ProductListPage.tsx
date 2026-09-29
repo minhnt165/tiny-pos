@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { FileSpreadsheet, Package, Plus, Search } from 'lucide-react';
+import { useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 import type { Product } from '@tiny-pos/shared';
 import { useCategories } from '@/api/categories';
@@ -7,6 +8,7 @@ import { useProduct, useProducts, useSetProductActive } from '@/api/products';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { EmptyState } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
+import { Pager } from '@/components/Pager';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,10 +19,15 @@ import { ProductStats } from './ProductStats';
 import { ProductTable } from './ProductTable';
 import { ProductToolbar } from './ProductToolbar';
 
+const PAGE_SIZE = 20;
+
 export function ProductListPage() {
+  // Màn Danh mục mở sang đây kèm ?categoryId= để lọc sẵn
+  const [searchParams, setSearchParams] = useSearchParams();
   const [q, setQ] = useState('');
-  const [categoryId, setCategoryId] = useState('');
+  const [categoryId, setCategoryId] = useState(() => searchParams.get('categoryId') ?? '');
   const [includeInactive, setIncludeInactive] = useState(false);
+  const [page, setPage] = useState(1);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [creating, setCreating] = useState(false);
   const [csvOpen, setCsvOpen] = useState(false);
@@ -57,6 +64,15 @@ export function ProductListPage() {
     setCreating(false);
   };
   const filtered = q !== '' || categoryId !== '';
+  // Đổi bộ lọc thì quay về trang 1; danh sách ngắn lại thì kẹp về trang cuối còn có
+  const resetPage =
+    <T,>(set: (v: T) => void) =>
+    (v: T) => {
+      set(v);
+      setPage(1);
+    };
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(products.length / PAGE_SIZE)));
+  const pageItems = products.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
     <div>
@@ -83,11 +99,14 @@ export function ProductListPage() {
       <Card className="gap-0 py-0">
         <ProductToolbar
           q={q}
-          setQ={setQ}
+          setQ={resetPage(setQ)}
           categoryId={categoryId}
-          setCategoryId={setCategoryId}
+          setCategoryId={resetPage((v: string) => {
+            setCategoryId(v);
+            if (searchParams.has('categoryId')) setSearchParams({}, { replace: true });
+          })}
           includeInactive={includeInactive}
-          setIncludeInactive={setIncludeInactive}
+          setIncludeInactive={resetPage(setIncludeInactive)}
           categories={categories}
         />
         {isLoading ? (
@@ -113,14 +132,12 @@ export function ProductListPage() {
         ) : (
           <>
             <div className="hidden md:block">
-              <ProductTable products={products} onEdit={edit} onToggle={toggle} />
+              <ProductTable products={pageItems} onEdit={edit} onToggle={toggle} />
             </div>
             <div className="md:hidden">
-              <ProductCardList products={products} onEdit={edit} onToggle={toggle} />
+              <ProductCardList products={pageItems} onEdit={edit} onToggle={toggle} />
             </div>
-            <div className="border-t px-4 py-3 text-sm text-muted-foreground">
-              Hiển thị {products.length} / {all.length} mặt hàng
-            </div>
+            <Pager page={currentPage} pageSize={PAGE_SIZE} total={products.length} onPageChange={setPage} noun="mặt hàng" />
           </>
         )}
       </Card>
