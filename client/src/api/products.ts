@@ -96,3 +96,7 @@ export function useImportCsv() {
     onSuccess: invalidate,
   });
 }
+
+/** Gợi ý ở màn Bán hàng: chỉ hàng đang bán, chỉ gọi khi có chữ để tìm. */
+export const useProductSuggestions = (q: string) =>
+  useQuery({ queryKey: ['products', { q }], queryFn: () => api<Product[]>(`/products${qs({ q })}`), enabled: q.length > 0 });

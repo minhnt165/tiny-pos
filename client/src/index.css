@@ -158,3 +158,24 @@
     @apply rounded-full bg-border;
   }
 }
+
+/* In hóa đơn nhiệt 80mm: chỉ hiện #print-root, ẩn app và mọi dialog/toast (portal nằm ngoài #root) */
+@page {
+  size: 80mm auto;
+  margin: 0;
+}
+#print-root {
+  display: none;
+}
+@media print {
+  body > *:not(#print-root) {
+    display: none !important;
+  }
+  #print-root {
+    display: block;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+}
