@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { parseVnNumber, type ProductInput, type ProductWithUnits } from '@tiny-pos/shared';
+import { parseVnNumber, productInputSchema, type ProductInput, type ProductWithUnits } from '@tiny-pos/shared';
 
 /** State form giữ dạng chuỗi để người dùng gõ tự do; chỉ đổi sang số khi gửi. */
 export interface FormState {
@@ -13,6 +13,8 @@ export interface FormState {
   categoryId: string;
   minStock: string;
 }
+
+export type FormErrors = Partial<Record<keyof FormState, string>>;
 
 const empty = (barcode = ''): FormState => ({
   barcode,
@@ -54,6 +56,41 @@ export function toInput(f: FormState): ProductInput {
   };
 }
 
+/** Lỗi của một ô số: chữ, âm, hoặc tiền lẻ (đồng phải là số nguyên). */
+export function numberError(s: string, integer: boolean): string | undefined {
+  if (s.trim() === '') return undefined;
+  const n = parseVnNumber(s);
+  if (Number.isNaN(n)) return 'Phải là số';
+  if (n < 0) return 'Không được âm';
+  if (integer && !Number.isInteger(n)) return 'Phải là số nguyên (đồng)';
+  return undefined;
+}
+
+const NUMBER_FIELDS: [keyof FormState, boolean][] = [
+  ['sellPrice', true],
+  ['costPrice', true],
+  ['stock', false],
+  ['minStock', false],
+];
+
+/** Kiểm tra phía client với thông báo thân thiện; cuối cùng chạy lại zod schema dùng chung để chắc chắn. */
+export function validateForm(f: FormState): FormErrors {
+  const errors: FormErrors = {};
+  if (!f.name.trim()) errors.name = 'Nhập tên sản phẩm';
+  else if (f.name.trim().length > 200) errors.name = 'Tối đa 200 ký tự';
+  if (f.barcode.trim().length > 50) errors.barcode = 'Tối đa 50 ký tự';
+  if (f.unit.trim().length > 20) errors.unit = 'Tối đa 20 ký tự';
+  for (const [key, integer] of NUMBER_FIELDS) {
+    const e = numberError(f[key] as string, integer);
+    if (e) errors[key] = e;
+  }
+  if (Object.keys(errors).length === 0) {
+    const r = productInputSchema.safeParse(toInput(f));
+    if (!r.success) for (const issue of r.error.issues) errors[String(issue.path[0]) as keyof FormState] ??= issue.message;
+  }
+  return errors;
+}
+
 /**
  * Reset state khi mở dialog với sản phẩm khác / barcode khác.
  * Chỉ phụ thuộc vào product.id (không phải object) để refetch sau khi thêm/xóa đơn vị
@@ -61,11 +98,19 @@ export function toInput(f: FormState): ProductInput {
  */
 export function useProductForm(open: boolean, product: ProductWithUnits | null | undefined, initialBarcode?: string) {
   const [form, setForm] = useState<FormState>(empty());
+  const [errors, setErrors] = useState<FormErrors>({});
   const productId = product?.id ?? null;
   useEffect(() => {
-    if (open) setForm(product ? fromProduct(product) : empty(initialBarcode));
+    if (open) {
+      setForm(product ? fromProduct(product) : empty(initialBarcode));
+      setErrors({});
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, productId, initialBarcode]);
-  const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((f) => ({ ...f, [k]: v }));
-  return { form, set };
+  /** Sửa ô nào thì xóa lỗi ô đó ngay, để người dùng thấy đã sửa đúng. */
+  const set = <K extends keyof FormState>(k: K, v: FormState[K]) => {
+    setForm((f) => ({ ...f, [k]: v }));
+    setErrors((e) => (e[k] ? { ...e, [k]: undefined } : e));
+  };
+  return { form, set, errors, setErrors };
 }

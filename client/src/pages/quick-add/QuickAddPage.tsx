@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { formatMoney, type BarcodeLookup, type ProductWithUnits } from '@tiny-pos/shared';
 import { ApiError } from '@/api/client';
 import { lookupBarcode, useProduct } from '@/api/products';
-import { PageHeader } from '@/components/PageHeader';
+import { ProductAvatar } from '@/components/ProductAvatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -16,6 +16,7 @@ type Result = { kind: 'found'; data: BarcodeLookup } | { kind: 'new'; code: stri
 interface HistoryItem {
   code: string;
   name: string;
+  at: string;
 }
 
 function Stat({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: boolean }) {
@@ -28,6 +29,8 @@ function Stat({ label, value, sub, accent }: { label: string; value: string; sub
   );
 }
 
+const timeNow = () => new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
 export function QuickAddPage() {
   const [result, setResult] = useState<Result>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -36,13 +39,13 @@ export function QuickAddPage() {
   const { data: editing } = useProduct(editingId);
   const dialogOpen = newBarcode !== null || (editingId !== null && !!editing);
 
-  const pushHistory = (item: HistoryItem) => setHistory((h) => [item, ...h].slice(0, 10));
+  const pushHistory = (code: string, name: string) => setHistory((h) => [{ code, name, at: timeNow() }, ...h].slice(0, 10));
 
   const onScan = async (code: string) => {
     try {
       const data = await lookupBarcode(code);
       setResult({ kind: 'found', data });
-      pushHistory({ code, name: data.product.name });
+      pushHistory(code, data.product.name);
     } catch (e) {
       if (e instanceof ApiError && e.status === 404) {
         setResult({ kind: 'new', code });
@@ -59,7 +62,7 @@ export function QuickAddPage() {
   };
   const onSaved = (p: ProductWithUnits) => {
     setResult({ kind: 'found', data: { product: p, unit: null } });
-    pushHistory({ code: p.barcode ?? '', name: p.name });
+    pushHistory(p.barcode ?? '', p.name);
     closeDialog();
   };
 
@@ -67,31 +70,35 @@ export function QuickAddPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <PageHeader icon={ScanBarcode} title="Nhập nhanh" description="Quét mã: có rồi thì hiện thông tin, chưa có thì mở form thêm mới." />
-
-      <div
-        className={cn(
-          'mb-5 rounded-2xl border-2 bg-card p-2 shadow-sm transition-all',
-          dialogOpen ? 'border-border' : 'border-primary ring-4 ring-primary/15',
-        )}
-      >
-        <div className="flex items-center gap-3 px-2">
-          <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
-            <ScanBarcode className="size-7" />
-          </span>
-          <input
-            ref={scan.ref}
-            onKeyDown={scan.onKeyDown}
-            placeholder="Quét mã vạch tại đây…"
-            className="min-h-14 w-full bg-transparent text-2xl font-medium outline-none placeholder:text-muted-foreground/70"
-            autoComplete="off"
-          />
+      <section className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-emerald-900 p-6 text-white shadow-xl shadow-emerald-900/20 md:p-8">
+        <div className="pointer-events-none absolute -top-16 -right-16 size-64 rounded-full bg-white/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-20 -left-10 size-56 rounded-full bg-emerald-300/20 blur-3xl" />
+        <div className="relative">
+          <div className="mb-2 flex items-center gap-2 text-sm text-emerald-100">
+            <span className={cn('size-2 rounded-full', dialogOpen ? 'bg-amber-300' : 'animate-pulse bg-emerald-300')} />
+            {dialogOpen ? 'Đang nhập thông tin sản phẩm' : 'Sẵn sàng quét'}
+          </div>
+          <h1 className="font-heading text-3xl font-semibold tracking-tight">Nhập nhanh</h1>
+          <p className="mt-1 text-emerald-100/90">Quét mã: có rồi thì hiện thông tin, chưa có thì mở form thêm mới.</p>
+          <div className="mt-5 flex items-center gap-3 rounded-2xl bg-white p-2 text-foreground shadow-lg">
+            <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+              <ScanBarcode className="size-7" />
+            </span>
+            <input
+              ref={scan.ref}
+              onKeyDown={scan.onKeyDown}
+              placeholder="Quét mã vạch tại đây…"
+              className="min-h-12 w-full bg-transparent text-2xl font-medium outline-none placeholder:text-muted-foreground/60"
+              autoComplete="off"
+            />
+          </div>
         </div>
-      </div>
+      </section>
 
       {found && (
-        <Card className="mb-5 animate-in py-0 fade-in-0 zoom-in-95">
+        <Card className="mb-5 animate-in gap-0 py-0 fade-in-0 slide-in-from-bottom-2">
           <div className="flex items-start gap-4 p-5">
+            <ProductAvatar name={found.product.name} className="size-14 rounded-2xl text-lg" />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="font-heading text-xl font-semibold">{found.product.name}</h2>
@@ -116,37 +123,31 @@ export function QuickAddPage() {
           <div className="grid grid-cols-2 divide-x border-t bg-muted/40 md:grid-cols-3">
             <Stat label="Giá bán" value={formatMoney(found.product.sellPrice)} sub={`/ ${found.product.unit}`} accent />
             <Stat label="Tồn kho" value={String(found.product.stock)} sub={found.product.unit} />
-            {found.unit && (
-              <Stat label={`1 ${found.unit.name}`} value={formatMoney(found.unit.sellPrice)} sub={`= ${found.unit.factor} ${found.product.unit}`} />
-            )}
+            {found.unit && <Stat label={`1 ${found.unit.name}`} value={formatMoney(found.unit.sellPrice)} sub={`= ${found.unit.factor} ${found.product.unit}`} />}
           </div>
         </Card>
       )}
 
       {history.length > 0 && (
-        <Card className="py-0">
+        <Card className="gap-0 py-0">
           <div className="flex items-center gap-2 border-b px-4 py-3 text-sm font-medium text-muted-foreground">
             <History className="size-4" />
             Vừa quét
           </div>
           <ul className="divide-y">
             {history.map((h, i) => (
-              <li key={i} className="flex items-center justify-between gap-3 px-4 py-2.5 text-base">
-                <span className="truncate font-medium">{h.name}</span>
-                <code className="shrink-0 rounded-md bg-muted px-2 py-0.5 font-mono text-sm text-muted-foreground">{h.code}</code>
+              <li key={i} className="flex items-center gap-3 px-4 py-2.5">
+                <ProductAvatar name={h.name} className="size-8 rounded-lg text-xs" />
+                <span className="min-w-0 flex-1 truncate font-medium">{h.name}</span>
+                <code className="hidden rounded-md bg-muted px-2 py-0.5 font-mono text-sm text-muted-foreground sm:inline">{h.code}</code>
+                <span className="text-xs text-muted-foreground tabular-nums">{h.at}</span>
               </li>
             ))}
           </ul>
         </Card>
       )}
 
-      <ProductFormDialog
-        open={dialogOpen}
-        product={editing ?? null}
-        initialBarcode={newBarcode ?? undefined}
-        onClose={closeDialog}
-        onSaved={onSaved}
-      />
+      <ProductFormDialog open={dialogOpen} product={editing ?? null} initialBarcode={newBarcode ?? undefined} onClose={closeDialog} onSaved={onSaved} />
     </div>
   );
 }

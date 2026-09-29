@@ -1,0 +1,51 @@
+import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+export interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface Props {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: SelectOption[];
+  /** Nhãn cho lựa chọn rỗng (value = ''); bỏ qua nếu không cho phép rỗng. */
+  emptyLabel?: string;
+  placeholder?: string;
+  hint?: string;
+  error?: string;
+}
+
+/** Radix không cho SelectItem value rỗng, nên dùng giá trị thay thế. */
+const NONE = '__none__';
+
+/** Ô chọn cùng cỡ/viền với TextField; danh sách xổ xuống ngay dưới ô, rộng bằng ô. */
+export function SelectField({ id, label, value, onChange, options, emptyLabel, placeholder, hint, error }: Props) {
+  const invalid = !!error;
+  return (
+    <Field data-invalid={invalid}>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <Select value={value || (emptyLabel ? NONE : '')} onValueChange={(v) => onChange(v === NONE ? '' : v)}>
+        <SelectTrigger id={id} aria-invalid={invalid} className="h-11 w-full bg-card text-base data-[size=default]:h-11">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent position="popper" sideOffset={4} className="w-(--radix-select-trigger-width)">
+          {emptyLabel && (
+            <SelectItem value={NONE} className="py-2 text-base">
+              {emptyLabel}
+            </SelectItem>
+          )}
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value} className="py-2 text-base">
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {error ? <FieldError>{error}</FieldError> : hint && <FieldDescription>{hint}</FieldDescription>}
+    </Field>
+  );
+}

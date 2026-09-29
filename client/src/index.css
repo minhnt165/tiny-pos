@@ -131,6 +131,24 @@
   }
 }
 
+@layer components {
+  /* Nút chính có gradient + bóng màu, thẻ có bóng mềm: cảm giác 'nổi' hơn mặc định của shadcn */
+  [data-slot='button'][data-variant='default'] {
+    background-image: linear-gradient(to bottom, #10b981, #059669);
+    box-shadow:
+      0 1px 2px rgb(5 150 105 / 0.3),
+      0 6px 14px -6px rgb(5 150 105 / 0.55);
+  }
+  [data-slot='button'][data-variant='default']:hover {
+    background-image: linear-gradient(to bottom, #0ea371, #047857);
+  }
+  [data-slot='card'] {
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 0.03),
+      0 12px 32px -16px rgb(6 78 59 / 0.2);
+  }
+}
+
 @media (min-width: 768px) {
   ::-webkit-scrollbar {
     width: 10px;

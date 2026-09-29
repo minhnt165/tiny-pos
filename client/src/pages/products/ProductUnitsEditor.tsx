@@ -5,38 +5,58 @@ import { formatMoney, parseVnNumber, type ProductWithUnits } from '@tiny-pos/sha
 import { useDeleteUnit, useSaveUnit } from '@/api/products';
 import { SectionTitle } from '@/components/TextField';
 import { Button } from '@/components/ui/button';
+import { FieldError } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from '@/components/ui/input-group';
+import { numberError } from './useProductForm';
 
 const blank = { name: '', barcode: '', factor: '', sellPrice: '' };
+
+/** Kiểm tra dòng đơn vị trước khi gửi; trả về thông báo lỗi đầu tiên. */
+function validateDraft(d: typeof blank): string | undefined {
+  if (!d.name.trim()) return 'Nhập tên đơn vị (thùng, lốc…)';
+  if (d.name.trim().length > 20) return 'Tên đơn vị tối đa 20 ký tự';
+  if (!d.factor.trim()) return 'Nhập hệ số quy đổi, ví dụ 1 thùng = 24';
+  const f = parseVnNumber(d.factor);
+  if (Number.isNaN(f) || f <= 0) return 'Hệ số quy đổi phải là số lớn hơn 0';
+  const p = numberError(d.sellPrice, true);
+  if (p) return `Giá bán: ${p.toLowerCase()}`;
+  return undefined;
+}
 
 /** Danh sách thùng/lốc của 1 sản phẩm; chỉ có thêm và xóa (ít dòng, không cần sửa inline). */
 export function ProductUnitsEditor({ product }: { product: ProductWithUnits }) {
   const save = useSaveUnit();
   const remove = useDeleteUnit();
   const [draft, setDraft] = useState(blank);
+  const [error, setError] = useState<string | undefined>();
   const onError = (e: Error) => toast.error(e.message);
 
-  const canAdd = !!draft.name && !!draft.factor && !save.isPending;
-
-  /** Enter (kể cả Enter do máy quét gửi) chỉ thêm đơn vị, không submit form sản phẩm bên ngoài. */
-  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== 'Enter') return;
-    e.preventDefault();
-    if (canAdd) add();
+  const update = (patch: Partial<typeof blank>) => {
+    setDraft((d) => ({ ...d, ...patch }));
+    setError(undefined);
   };
 
   const add = () => {
+    const err = validateDraft(draft);
+    if (err) return setError(err);
     save.mutate(
       {
         productId: product.id,
-        name: draft.name,
-        barcode: draft.barcode || null,
+        name: draft.name.trim(),
+        barcode: draft.barcode.trim() || null,
         factor: parseVnNumber(draft.factor),
         sellPrice: parseVnNumber(draft.sellPrice || '0'),
       },
       { onSuccess: () => setDraft(blank), onError },
     );
+  };
+
+  /** Enter (kể cả Enter do máy quét gửi) chỉ thêm đơn vị, không submit form sản phẩm bên ngoài. */
+  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    add();
   };
 
   return (
@@ -83,51 +103,26 @@ export function ProductUnitsEditor({ product }: { product: ProductWithUnits }) {
           </ul>
         )}
         <div className="grid grid-cols-2 gap-2 md:grid-cols-[1.1fr_1.4fr_1fr_1.2fr_auto]">
-          <Input
-            className="h-11 bg-card text-base"
-            placeholder="Tên (thùng)"
-            value={draft.name}
-            onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-            onKeyDown={onKeyDown}
-          />
-          <Input
-            className="h-11 bg-card text-base"
-            placeholder="Mã vạch thùng"
-            value={draft.barcode}
-            onChange={(e) => setDraft({ ...draft, barcode: e.target.value })}
-            onKeyDown={onKeyDown}
-          />
+          <Input className="h-11 bg-card text-base" placeholder="Tên (thùng)" value={draft.name} onChange={(e) => update({ name: e.target.value })} onKeyDown={onKeyDown} />
+          <Input className="h-11 bg-card text-base" placeholder="Mã vạch thùng" value={draft.barcode} onChange={(e) => update({ barcode: e.target.value })} onKeyDown={onKeyDown} />
           <InputGroup className="h-11 bg-card">
-            <InputGroupInput
-              className="h-11 text-base"
-              placeholder="= ?"
-              inputMode="decimal"
-              value={draft.factor}
-              onChange={(e) => setDraft({ ...draft, factor: e.target.value })}
-              onKeyDown={onKeyDown}
-            />
+            <InputGroupInput className="h-11 text-base" placeholder="= ?" inputMode="decimal" value={draft.factor} onChange={(e) => update({ factor: e.target.value })} onKeyDown={onKeyDown} />
             <InputGroupAddon align="inline-end">
               <InputGroupText>{product.unit}</InputGroupText>
             </InputGroupAddon>
           </InputGroup>
           <InputGroup className="h-11 bg-card">
-            <InputGroupInput
-              className="h-11 text-base"
-              placeholder="Giá bán"
-              inputMode="numeric"
-              value={draft.sellPrice}
-              onChange={(e) => setDraft({ ...draft, sellPrice: e.target.value })}
-              onKeyDown={onKeyDown}
-            />
+            <InputGroupInput className="h-11 text-base" placeholder="Giá bán" inputMode="numeric" value={draft.sellPrice} onChange={(e) => update({ sellPrice: e.target.value })} onKeyDown={onKeyDown} />
             <InputGroupAddon align="inline-end">
               <InputGroupText>đ</InputGroupText>
             </InputGroupAddon>
           </InputGroup>
-          <Button type="button" variant="outline" className="col-span-2 h-11 text-base md:col-span-1" onClick={add} disabled={!canAdd}>
+          <Button type="button" variant="outline" className="col-span-2 h-11 text-base md:col-span-1" onClick={add} disabled={save.isPending}>
             <Plus data-icon="inline-start" />
             Thêm
           </Button>
         </div>
+        {error && <FieldError className="mt-2">{error}</FieldError>}
       </div>
     </section>
   );
