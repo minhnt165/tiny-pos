@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import QRCode from 'qrcode';
 import { Banknote, Check, Landmark, Printer } from 'lucide-react';
 import { Link } from 'react-router';
@@ -28,11 +28,15 @@ export function CheckoutDialog({ open, cart, payable, onClose, onDone }: Props) 
   const [method, setMethod] = useState<Method>('cash');
   const [given, setGiven] = useState('');
   const [qrUrl, setQrUrl] = useState<string | null>(null);
+  const [qrError, setQrError] = useState(false);
+  const givenRef = useRef<HTMLInputElement>(null);
   const { data: settings } = useSettings();
   const create = useCreateOrder();
   const print = usePrint();
   const qrPayload = settings ? vietQrFromSettings(settings, payable) : null;
   const bank = BANKS.find((b) => b.bin === settings?.bankBin);
+  // Nhắc theo trường còn thiếu trong Cài đặt (không dựa vào qrUrl để tránh chớp trong lúc QR đang sinh)
+  const missing = !settings ? null : !settings.bankBin ? 'Chưa chọn ngân hàng' : !settings.bankAccount ? 'Chưa nhập số tài khoản' : null;
 
   useEffect(() => {
     if (!open) return;
@@ -40,12 +44,15 @@ export function CheckoutDialog({ open, cart, payable, onClose, onDone }: Props) 
     setGiven(groupThousands(String(payable)));
   }, [open, payable]);
   useEffect(() => {
+    setQrError(false);
     if (!qrPayload) {
       setQrUrl(null);
       return;
     }
     let alive = true;
-    void QRCode.toDataURL(qrPayload, { margin: 1, width: 320 }).then((u) => alive && setQrUrl(u));
+    QRCode.toDataURL(qrPayload, { margin: 1, width: 320 })
+      .then((u) => alive && setQrUrl(u))
+      .catch(() => alive && setQrError(true));
     return () => {
       alive = false;
     };
@@ -54,6 +61,11 @@ export function CheckoutDialog({ open, cart, payable, onClose, onDone }: Props) 
   const paid = method === 'cash' ? parseVnNumber(given || '0') : payable;
   const change = paid - payable;
   const short = method === 'cash' && (!Number.isFinite(paid) || change < 0);
+
+  const pickCash = (v: number) => {
+    setGiven(groupThousands(String(v)));
+    givenRef.current?.focus(); // trả focus về ô nhập để Enter xác nhận đơn, không kích hoạt lại nút gợi ý
+  };
 
   const submit = (e?: FormEvent) => {
     e?.preventDefault();
@@ -93,6 +105,7 @@ export function CheckoutDialog({ open, cart, payable, onClose, onDone }: Props) 
               </label>
               <Input
                 id="co-given"
+                ref={givenRef}
                 autoFocus
                 inputMode="numeric"
                 value={given}
@@ -102,7 +115,7 @@ export function CheckoutDialog({ open, cart, payable, onClose, onDone }: Props) 
               />
               <div className="grid grid-cols-4 gap-2">
                 {suggestCash(payable).map((v) => (
-                  <Button key={v} type="button" variant="outline" className="h-11 tabular-nums" onClick={() => setGiven(groupThousands(String(v)))}>
+                  <Button key={v} type="button" variant="outline" className="h-11 tabular-nums" onClick={() => pickCash(v)}>
                     {v === payable ? 'Đủ tiền' : formatMoney(v)}
                   </Button>
                 ))}
@@ -116,15 +129,17 @@ export function CheckoutDialog({ open, cart, payable, onClose, onDone }: Props) 
             <div className="space-y-3 text-center">
               {qrUrl ? (
                 <img src={qrUrl} alt="Mã VietQR" className="mx-auto size-64 rounded-xl border bg-white p-2" />
-              ) : (
+              ) : missing || qrError ? (
                 <p className="rounded-xl bg-muted px-4 py-6 text-muted-foreground">
-                  Chưa cài tài khoản ngân hàng.{' '}
+                  {missing ?? 'Không tạo được mã QR'}.{' '}
                   <Link to="/settings" className="font-medium text-primary underline">
                     Mở Cài đặt
                   </Link>
                 </p>
+              ) : (
+                <div className="mx-auto size-64 animate-pulse rounded-xl bg-muted" />
               )}
-              {settings?.bankAccount && (
+              {!missing && settings?.bankAccount && (
                 <div className="text-sm">
                   <div className="font-medium">{bank?.shortName ?? settings.bankBin}</div>
                   <div className="font-mono text-base">{settings.bankAccount}</div>

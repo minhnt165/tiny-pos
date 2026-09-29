@@ -50,6 +50,8 @@ export function ProductSearch({ inputRef, onScan, onPick }: Props) {
     } else if (e.key === 'Escape') {
       reset();
     } else if (e.key === 'Enter') {
+      // Đang gõ dở bằng bộ gõ (Telex/IME): Enter chỉ chốt chữ, chưa phải lệnh thêm hàng
+      if (e.nativeEvent.isComposing) return;
       e.preventDefault();
       const picked = items[active];
       const code = q.trim();

@@ -76,13 +76,14 @@ export default function App() {
         </main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
+      {/* Cao cố định 68px (+ safe-area) vì thanh Thanh toán ở màn Bán hàng bám ngay trên nó */}
+      <nav className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(68px+env(safe-area-inset-bottom))] border-t bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
         {NAV.filter((n) => !n.disabled).map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
             className={({ isActive }) =>
-              cn('flex flex-1 flex-col items-center gap-0.5 py-2 text-xs font-medium', isActive ? 'text-primary' : 'text-muted-foreground')
+              cn('flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] leading-4 font-medium whitespace-nowrap', isActive ? 'text-primary' : 'text-muted-foreground')
             }
           >
             {({ isActive }) => (

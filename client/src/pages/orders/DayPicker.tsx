@@ -10,11 +10,11 @@ export function DayPicker({ value, onChange }: { value: string; onChange: (d: st
   const isToday = value === today();
   return (
     <div className="flex items-center gap-2">
-      <Button variant="outline" size="icon-lg" aria-label="Ngày trước" onClick={() => onChange(shiftDate(value, -1))}>
+      <Button variant="outline" size="icon-lg" className="size-11" aria-label="Ngày trước" onClick={() => onChange(shiftDate(value, -1))}>
         <ChevronLeft />
       </Button>
       <Input type="date" value={value} max={today()} onChange={(e) => e.target.value && onChange(e.target.value)} className="h-11 w-44 text-base" />
-      <Button variant="outline" size="icon-lg" aria-label="Ngày sau" disabled={isToday} onClick={() => onChange(shiftDate(value, 1))}>
+      <Button variant="outline" size="icon-lg" className="size-11" aria-label="Ngày sau" disabled={isToday} onClick={() => onChange(shiftDate(value, 1))}>
         <ChevronRight />
       </Button>
       {!isToday && (

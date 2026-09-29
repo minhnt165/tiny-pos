@@ -119,7 +119,7 @@ export function SellPage() {
   }, [paused, cart.lines.length, totals.payable, scan.focus]);
 
   return (
-    <div className="grid gap-5 pb-20 lg:grid-cols-[1fr_22rem] lg:pb-0">
+    <div className="grid gap-5 pb-20 lg:grid-cols-[1fr_22rem] md:pb-0">
       <div className="min-w-0 space-y-4">
         <ProductSearch inputRef={scan.ref} onScan={(c) => void onScan(c)} onPick={(p) => addProduct(p, null)} />
         <HeldCarts held={heldCarts.held} onOpen={openHeld} onDrop={(id) => void dropHeld(id)} />

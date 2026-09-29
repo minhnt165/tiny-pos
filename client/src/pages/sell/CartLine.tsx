@@ -33,13 +33,16 @@ export function CartLine({ line, shortStock, onQty, onPrice, onRemove, onEditWei
   const [price, setPrice] = useDraft(groupThousands(String(line.price)));
 
   // Blur chỉ ghi giá trị; Enter ghi rồi trả focus về ô quét (blur không kéo focus để còn bấm sang ô khác)
+  // Ô trống (hoặc chỉ có khoảng trắng) = chưa nhập gì: trả lại giá trị cũ, không ghi 0 (qty 0 xóa dòng, giá 0 bán miễn phí)
   const commitQty = () => {
+    if (!qty.trim()) return setQty(formatQty(line.qty));
     const n = parseVnNumber(qty);
     if (Number.isFinite(n) && n >= 0) onQty(n);
     else setQty(formatQty(line.qty));
   };
   const commitPrice = () => {
-    const n = parseVnNumber(price || '0');
+    if (!price.trim()) return setPrice(groupThousands(String(line.price)));
+    const n = parseVnNumber(price);
     if (Number.isFinite(n) && n >= 0) onPrice(Math.round(n));
     else setPrice(groupThousands(String(line.price)));
   };
@@ -66,12 +69,12 @@ export function CartLine({ line, shortStock, onQty, onPrice, onRemove, onEditWei
       </TableCell>
       <TableCell className="px-2 py-2">
         {line.isWeighed ? (
-          <Button variant="outline" className="h-10 min-w-28 tabular-nums" onClick={onEditWeight}>
+          <Button variant="outline" className="h-11 min-w-28 tabular-nums" onClick={onEditWeight}>
             {formatQty(line.qty)} {line.unitName}
           </Button>
         ) : (
           <div className="flex items-center gap-1">
-            <Button variant="outline" size="icon-lg" aria-label="Bớt 1" onClick={() => onQty(line.qty - 1)}>
+            <Button variant="outline" size="icon-lg" className="size-11" aria-label="Bớt 1" onClick={() => onQty(line.qty - 1)}>
               <Minus />
             </Button>
             <Input
@@ -81,10 +84,10 @@ export function CartLine({ line, shortStock, onQty, onPrice, onRemove, onEditWei
               onKeyDown={onEnter(commitQty)}
               onFocus={selectAll}
               inputMode="decimal"
-              className="h-10 w-16 text-center text-base tabular-nums"
+              className="h-11 w-16 text-center text-base tabular-nums"
               aria-label="Số lượng"
             />
-            <Button variant="outline" size="icon-lg" aria-label="Thêm 1" onClick={() => onQty(line.qty + 1)}>
+            <Button variant="outline" size="icon-lg" className="size-11" aria-label="Thêm 1" onClick={() => onQty(line.qty + 1)}>
               <Plus />
             </Button>
           </div>
@@ -98,13 +101,13 @@ export function CartLine({ line, shortStock, onQty, onPrice, onRemove, onEditWei
           onKeyDown={onEnter(commitPrice)}
           onFocus={selectAll}
           inputMode="numeric"
-          className="h-10 w-28 text-right text-base tabular-nums"
+          className="h-11 w-28 text-right text-base tabular-nums"
           aria-label="Đơn giá"
         />
       </TableCell>
       <TableCell className="px-4 py-2 text-right text-base font-semibold tabular-nums">{formatMoney(lineAmount(line))}</TableCell>
       <TableCell className="py-2 pr-2">
-        <Button variant="ghost" size="icon-lg" aria-label="Xóa dòng" onClick={onRemove}>
+        <Button variant="ghost" size="icon-lg" className="size-11" aria-label="Xóa dòng" onClick={onRemove}>
           <Trash2 />
         </Button>
       </TableCell>

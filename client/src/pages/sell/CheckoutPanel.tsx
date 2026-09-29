@@ -88,8 +88,8 @@ export function CheckoutPanel({ totals, empty, canHold, onDiscount, onCheckout, 
         </CardContent>
       </Card>
 
-      {/* Điện thoại: tổng tiền + nút Thanh toán dính trên thanh menu dưới */}
-      <div className="fixed inset-x-0 bottom-16 z-30 flex items-center gap-3 border-t bg-card/95 px-4 py-2 backdrop-blur lg:hidden">
+      {/* Điện thoại: tổng tiền + nút Thanh toán dính ngay trên thanh menu dưới (cao 68px + safe-area, xem App.tsx) */}
+      <div className="fixed inset-x-0 bottom-[calc(68px+env(safe-area-inset-bottom))] z-30 flex items-center gap-3 border-t bg-card/95 px-4 py-2 backdrop-blur md:hidden">
         <div className="min-w-0 flex-1">
           <div className="text-xs text-muted-foreground">Phải trả</div>
           <div className="font-heading text-2xl font-semibold text-primary tabular-nums">{formatMoney(Math.max(0, totals.payable))}</div>
