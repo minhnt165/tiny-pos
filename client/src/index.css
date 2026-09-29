@@ -1,0 +1,16 @@
+@import 'tailwindcss';
+
+/* Chữ to cho người lớn tuổi: 18px cơ bản */
+html {
+  font-size: 18px;
+}
+
+body {
+  @apply bg-gray-50 text-gray-900;
+}
+
+input,
+select,
+textarea {
+  @apply text-base;
+}
