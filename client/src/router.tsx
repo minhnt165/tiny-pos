@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router';
 import { PlaceholderPage } from './pages/PlaceholderPage';
+import { CategoriesPage } from './pages/categories/CategoriesPage';
 
 export const NAV = [
   { to: '/sell', label: 'Bán hàng', icon: '🛒', disabled: true },
@@ -14,7 +15,7 @@ export function AppRoutes() {
     <Routes>
       <Route path="/" element={<Navigate to="/products" replace />} />
       <Route path="/products" element={<PlaceholderPage title="Sản phẩm" />} />
-      <Route path="/categories" element={<PlaceholderPage title="Danh mục" />} />
+      <Route path="/categories" element={<CategoriesPage />} />
       <Route path="/quick-add" element={<PlaceholderPage title="Nhập nhanh" />} />
       <Route path="*" element={<PlaceholderPage title="Không tìm thấy trang" />} />
     </Routes>
