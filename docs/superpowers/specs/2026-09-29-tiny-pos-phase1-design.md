@@ -148,15 +148,6 @@ export const customers = sqliteTable('customers', {
   note: text('note'),
 });
 
-export const debtTransactions = sqliteTable('debt_transactions', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  customerId: integer('customer_id').notNull().references(() => customers.id),
-  orderId: integer('order_id').references(() => orders.id),
-  amount: integer('amount').notNull(),   // + nợ thêm, - trả nợ
-  note: text('note'),
-  createdAt: now(),
-}, (t) => [index('debt_tx_customer_idx').on(t.customerId, t.createdAt)]);
-
 export const orders = sqliteTable('orders', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   code: text('code').notNull().unique(),   // HD-20260929-0001
@@ -168,6 +159,15 @@ export const orders = sqliteTable('orders', {
   status: text('status', { enum: ['done', 'cancelled'] }).notNull().default('done'),
   createdAt: now(),
 }, (t) => [index('orders_created_idx').on(t.createdAt)]);
+
+export const debtTransactions = sqliteTable('debt_transactions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  customerId: integer('customer_id').notNull().references(() => customers.id),
+  orderId: integer('order_id').references(() => orders.id),
+  amount: integer('amount').notNull(),   // + nợ thêm, - trả nợ
+  note: text('note'),
+  createdAt: now(),
+}, (t) => [index('debt_tx_customer_idx').on(t.customerId, t.createdAt)]);
 
 export const orderItems = sqliteTable('order_items', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -212,8 +212,7 @@ export const settings = sqliteTable('settings', {
 });
 ```
 
-Migration đầu tiên tạo đủ 12 bảng. `orders` được khai báo trước `debtTransactions`
-trong file để tham chiếu hợp lệ.
+Migration đầu tiên tạo đủ 12 bảng.
 
 ## 6. Quy ước API
 
