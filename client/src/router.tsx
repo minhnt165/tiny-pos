@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { CategoriesPage } from './pages/categories/CategoriesPage';
 import { ProductListPage } from './pages/products/ProductListPage';
+import { QuickAddPage } from './pages/quick-add/QuickAddPage';
 
 export const NAV = [
   { to: '/sell', label: 'Bán hàng', icon: '🛒', disabled: true },
@@ -17,7 +18,7 @@ export function AppRoutes() {
       <Route path="/" element={<Navigate to="/products" replace />} />
       <Route path="/products" element={<ProductListPage />} />
       <Route path="/categories" element={<CategoriesPage />} />
-      <Route path="/quick-add" element={<PlaceholderPage title="Nhập nhanh" />} />
+      <Route path="/quick-add" element={<QuickAddPage />} />
       <Route path="*" element={<PlaceholderPage title="Không tìm thấy trang" />} />
     </Routes>
   );
