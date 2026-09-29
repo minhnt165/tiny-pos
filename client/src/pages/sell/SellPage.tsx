@@ -4,7 +4,7 @@ import { lineFromProduct, type CartLine, type NewCartLine, type OrderDetail, typ
 import { ApiError } from '@/api/client';
 import { lookupBarcode } from '@/api/products';
 import { useSettings } from '@/api/settings';
-import { useConfirm } from '@/components/ConfirmDialog';
+import { useConfirm, type ConfirmOptions } from '@/components/ConfirmDialog';
 import { usePrint } from '@/components/receipt/PrintProvider';
 import { receiptFromOrder } from '@/components/receipt/receipt-data';
 import { Card } from '@/components/ui/card';
@@ -31,8 +31,9 @@ export function SellPage() {
   const [weigh, setWeigh] = useState<WeighTarget | null>(null);
   const [customOpen, setCustomOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [lastOrder, setLastOrder] = useState<OrderDetail | null>(null);
-  const paused = weigh !== null || customOpen || checkoutOpen;
+  const paused = weigh !== null || customOpen || checkoutOpen || confirming;
   // Chỉ dùng phần giữ focus của hook; phím Enter do ProductSearch xử lý (có gợi ý)
   const scan = useScanInput(noop, paused);
 
@@ -75,11 +76,20 @@ export function SellPage() {
     if (cart.lines.length) heldCarts.hold(cart);
     dispatch({ type: 'replace', cart: c });
   };
+  // Báo cho phím tắt biết hộp xác nhận đang mở
+  const ask = async (opts: ConfirmOptions) => {
+    setConfirming(true);
+    try {
+      return await confirm(opts);
+    } finally {
+      setConfirming(false);
+    }
+  };
   const dropHeld = async (id: string) => {
-    if (await confirm({ title: 'Bỏ đơn chờ này?', confirmText: 'Bỏ đơn', destructive: true })) heldCarts.drop(id);
+    if (await ask({ title: 'Bỏ đơn chờ này?', confirmText: 'Bỏ đơn', destructive: true })) heldCarts.drop(id);
   };
   const clearCart = async () => {
-    if (await confirm({ title: 'Xóa toàn bộ giỏ hàng?', confirmText: 'Xóa giỏ', destructive: true })) dispatch({ type: 'clear' });
+    if (await ask({ title: 'Xóa toàn bộ giỏ hàng?', confirmText: 'Xóa giỏ', destructive: true })) dispatch({ type: 'clear' });
   };
 
   const onPaid = (order: OrderDetail) => {
