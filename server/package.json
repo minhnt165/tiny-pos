@@ -1,5 +1,6 @@
 {
   "name": "@tiny-pos/server",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,7 +13,7 @@
   "dependencies": {
     "@tiny-pos/shared": "*",
     "better-sqlite3": "^12.2.0",
-    "drizzle-orm": "^0.44.0",
+    "drizzle-orm": "^0.45.3",
     "express": "^5.1.0",
     "zod": "^4.1.0"
   },
