@@ -58,8 +58,8 @@ export default function App() {
           )}
         </nav>
         <div className="m-3 rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
-          <div className="text-sm font-medium">Giai đoạn 1</div>
-          <div className="text-xs text-emerald-100/60">Sản phẩm, danh mục, nhập nhanh, CSV</div>
+          <div className="text-sm font-medium">Giai đoạn 2</div>
+          <div className="text-xs text-emerald-100/60">Bán hàng, hóa đơn, in, cài đặt</div>
         </div>
       </aside>
 

@@ -5,6 +5,7 @@ import { CategoriesPage } from './pages/categories/CategoriesPage';
 import { OrdersPage } from './pages/orders/OrdersPage';
 import { ProductListPage } from './pages/products/ProductListPage';
 import { QuickAddPage } from './pages/quick-add/QuickAddPage';
+import { SettingsPage } from './pages/settings/SettingsPage';
 import { SellPage } from './pages/sell/SellPage';
 
 export interface NavItem {
@@ -20,7 +21,7 @@ export const NAV: NavItem[] = [
   { to: '/products', label: 'Sản phẩm', icon: Package },
   { to: '/categories', label: 'Danh mục', icon: FolderOpen },
   { to: '/quick-add', label: 'Nhập nhanh', icon: ScanBarcode },
-  { to: '/settings', label: 'Cài đặt', icon: Settings, disabled: true },
+  { to: '/settings', label: 'Cài đặt', icon: Settings },
 ];
 
 export function AppRoutes() {
@@ -32,6 +33,7 @@ export function AppRoutes() {
       <Route path="/products" element={<ProductListPage />} />
       <Route path="/categories" element={<CategoriesPage />} />
       <Route path="/quick-add" element={<QuickAddPage />} />
+      <Route path="/settings" element={<SettingsPage />} />
       <Route path="*" element={<PlaceholderPage title="Không tìm thấy trang" />} />
     </Routes>
   );
