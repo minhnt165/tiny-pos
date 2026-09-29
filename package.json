@@ -13,7 +13,8 @@
     "typecheck": "npm run build -w shared && npm run typecheck --workspaces",
     "test": "npm run build -w shared && npm run test --workspaces --if-present",
     "start": "node server/dist/index.js",
-    "db:generate": "npm run db:generate -w server"
+    "db:generate": "npm run db:generate -w server",
+    "seed": "npm run seed -w server"
   },
   "devDependencies": {
     "concurrently": "^9.2.0",
