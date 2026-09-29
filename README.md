@@ -55,7 +55,7 @@ Tạo shortcut Chrome ở quầy (giai đoạn 5 sẽ có script): `chrome.exe -
 
 - `shared/` – zod schema, types, tiện ích tiền/CSV dùng chung (build ra `dist/`).
 - `server/` – Express 5 + Drizzle + better-sqlite3. Service nhận `db` làm tham số nên test được bằng DB `:memory:`.
-- `client/` – React 18 + Vite + Tailwind v4 + TanStack Query, PWA.
+- `client/` – React 18 + Vite + Tailwind v4 + TanStack Query, PWA. Giao diện dùng [shadcn/ui](https://ui.shadcn.com) (thư mục `src/components/ui`, alias `@/`) và icon `lucide-react`; thêm component mới bằng `npx shadcn@latest add <tên>` trong thư mục `client/`. Font Geist tự host (gói `@fontsource-variable/geist`) nên chạy được offline.
 - `docs/superpowers/` – spec và kế hoạch từng giai đoạn.
 
 ## Kiểm thử thủ công Giai đoạn 1
