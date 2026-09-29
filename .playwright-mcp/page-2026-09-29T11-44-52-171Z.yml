@@ -1,0 +1,16 @@
+- generic [ref=f3e3]:
+  - navigation [ref=f3e4]:
+    - generic [ref=f3e5]: Tạp hóa
+    - generic [ref=f3e6]: 🛒 Bán hàng
+    - link "📦 Sản phẩm" [ref=f3e7] [cursor=pointer]:
+      - /url: /products
+    - link "🗂️ Danh mục" [ref=f3e8] [cursor=pointer]:
+      - /url: /categories
+    - link "📷 Nhập nhanh" [ref=f3e9] [cursor=pointer]:
+      - /url: /quick-add
+    - generic [ref=f3e10]: ⚙️ Cài đặt
+  - main [ref=f3e11]:
+    - generic [ref=f3e12]:
+      - heading "Nhập nhanh" [level=1] [ref=f3e13]
+      - paragraph [ref=f3e14]: Quét mã vạch. Có rồi thì hiện thông tin, chưa có thì mở form thêm mới.
+      - textbox "Quét mã vạch tại đây…" [active] [ref=f3e15]

@@ -22,7 +22,7 @@ export function useScanInput(onScan: (code: string) => void, paused = false) {
   }, [paused, focus]);
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== 'Enter') return;
+    if (e.key !== 'Enter' || paused) return;
     e.preventDefault();
     const code = e.currentTarget.value.trim();
     e.currentTarget.value = '';

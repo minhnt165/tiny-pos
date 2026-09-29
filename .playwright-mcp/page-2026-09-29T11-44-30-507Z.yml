@@ -1,0 +1,58 @@
+- generic [ref=f2e3]:
+  - navigation [ref=f2e4]:
+    - generic [ref=f2e5]: Tạp hóa
+    - generic [ref=f2e6]: 🛒 Bán hàng
+    - link "📦 Sản phẩm" [ref=f2e7] [cursor=pointer]:
+      - /url: /products
+    - link "🗂️ Danh mục" [ref=f2e8] [cursor=pointer]:
+      - /url: /categories
+    - link "📷 Nhập nhanh" [ref=f2e9] [cursor=pointer]:
+      - /url: /quick-add
+    - generic [ref=f2e10]: ⚙️ Cài đặt
+  - main [ref=f2e11]:
+    - generic [ref=f2e12]:
+      - heading "Nhập nhanh" [level=1] [ref=f2e13]
+      - paragraph [ref=f2e14]: Quét mã vạch. Có rồi thì hiện thông tin, chưa có thì mở form thêm mới.
+      - textbox "Quét mã vạch tại đây…" [active] [ref=f2e15]
+      - dialog [ref=f2e16]:
+        - generic [ref=f2e17]:
+          - generic [ref=f2e18]:
+            - heading "Thêm sản phẩm" [level=2] [ref=f2e19]
+            - button "Đóng" [ref=f2e20]: ×
+          - generic [ref=f2e21]:
+            - generic [ref=f2e22]:
+              - generic [ref=f2e23]: Mã vạch
+              - textbox "Mã vạch Quét hoặc để trống nếu hàng không có mã" [ref=f2e24]: "8934588012345"
+              - generic [ref=f2e25]: Quét hoặc để trống nếu hàng không có mã
+            - generic [ref=f2e26]:
+              - generic [ref=f2e27]: Tên sản phẩm
+              - textbox "Tên sản phẩm" [ref=f2e28]
+            - generic [ref=f2e29]:
+              - generic [ref=f2e30]: Đơn vị
+              - textbox "Đơn vị" [ref=f2e31]:
+                - /placeholder: cái, kg, lốc…
+                - text: cái
+            - generic [ref=f2e32]:
+              - generic [ref=f2e33]: Danh mục
+              - combobox "Danh mục" [ref=f2e34]:
+                - option "Không danh mục" [selected]
+                - option "Bánh kẹo"
+                - option "Đồ uống"
+            - generic [ref=f2e35]:
+              - generic [ref=f2e36]: Giá nhập (đ)
+              - textbox "Giá nhập (đ)" [ref=f2e37]: "0"
+            - generic [ref=f2e38]:
+              - generic [ref=f2e39]: Giá bán (đ)
+              - textbox "Giá bán (đ)" [ref=f2e40]: "0"
+            - generic [ref=f2e41]:
+              - generic [ref=f2e42]: Tồn đầu
+              - textbox "Tồn đầu" [ref=f2e43]: "0"
+            - generic [ref=f2e44]:
+              - generic [ref=f2e45]: Tồn tối thiểu (cảnh báo)
+              - textbox "Tồn tối thiểu (cảnh báo)" [ref=f2e46]: "0"
+            - generic [ref=f2e48]:
+              - checkbox "Hàng cân (bán theo kg)" [ref=f2e49]
+              - generic [ref=f2e50]: Hàng cân (bán theo kg)
+            - generic [ref=f2e51]:
+              - button "Hủy" [ref=f2e52]
+              - button "Lưu" [ref=f2e53]

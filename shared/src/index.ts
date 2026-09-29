@@ -1,3 +1,8 @@
+import { z } from 'zod';
+
+// Thông báo lỗi zod bằng tiếng Việt cho cả server lẫn client
+z.config(z.locales.vi());
+
 export * from './money.js';
 export * from './csv.js';
 export * from './types.js';

@@ -45,6 +45,7 @@ export function ProductFormDialog({ open, product, initialBarcode, onClose, onSa
       <form onSubmit={submit} className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <Field label="Mã vạch" hint="Quét hoặc để trống nếu hàng không có mã">
           <Input
+            autoFocus={!product && !initialBarcode}
             value={form.barcode}
             onChange={(e) => set('barcode', e.target.value)}
             onKeyDown={(e) => {
@@ -59,7 +60,7 @@ export function ProductFormDialog({ open, product, initialBarcode, onClose, onSa
         <Field label="Tên sản phẩm">
           <Input
             ref={nameRef}
-            autoFocus={!initialBarcode}
+            autoFocus={!!product || !!initialBarcode}
             required
             value={form.name}
             onChange={(e) => set('name', e.target.value)}

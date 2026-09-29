@@ -54,12 +54,18 @@ export function toInput(f: FormState): ProductInput {
   };
 }
 
-/** Reset state mỗi khi mở dialog với sản phẩm khác / barcode khác. */
+/**
+ * Reset state khi mở dialog với sản phẩm khác / barcode khác.
+ * Chỉ phụ thuộc vào product.id (không phải object) để refetch sau khi thêm/xóa đơn vị
+ * không xóa mất những gì người dùng đang gõ dở.
+ */
 export function useProductForm(open: boolean, product: ProductWithUnits | null | undefined, initialBarcode?: string) {
   const [form, setForm] = useState<FormState>(empty());
+  const productId = product?.id ?? null;
   useEffect(() => {
     if (open) setForm(product ? fromProduct(product) : empty(initialBarcode));
-  }, [open, product, initialBarcode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, productId, initialBarcode]);
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((f) => ({ ...f, [k]: v }));
   return { form, set };
 }

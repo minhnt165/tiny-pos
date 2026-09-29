@@ -1,0 +1,25 @@
+- generic [ref=e3]:
+  - navigation [ref=e4]:
+    - generic [ref=e5]: Tạp hóa
+    - generic [ref=e6]: 🛒 Bán hàng
+    - link "📦 Sản phẩm" [ref=e7] [cursor=pointer]:
+      - /url: /products
+    - link "🗂️ Danh mục" [ref=e8] [cursor=pointer]:
+      - /url: /categories
+    - link "📷 Nhập nhanh" [ref=e9] [cursor=pointer]:
+      - /url: /quick-add
+    - generic [ref=e10]: ⚙️ Cài đặt
+  - main [ref=e11]:
+    - generic [ref=e12]:
+      - heading "Danh mục" [level=1] [ref=e13]
+      - generic [ref=e14]:
+        - textbox "Tên danh mục mới" [active] [ref=e15]
+        - button "Thêm" [ref=e16]
+      - list [ref=e17]:
+        - listitem [ref=e19]:
+          - button "Đồ uống (0 sản phẩm)" [ref=e20]:
+            - text: Đồ uống
+            - generic [ref=e21]: (0 sản phẩm)
+          - button "Lên" [disabled] [ref=e22]: ↑
+          - button "Xuống" [disabled] [ref=e23]: ↓
+          - button "Xóa" [ref=e24]

@@ -1,0 +1,49 @@
+- generic [ref=f4e2]:
+  - generic [ref=f4e3]:
+    - navigation [ref=f4e4]:
+      - generic [ref=f4e5]: Tạp hóa
+      - generic [ref=f4e6]: 🛒 Bán hàng
+      - link "📦 Sản phẩm" [ref=f4e7] [cursor=pointer]:
+        - /url: /products
+      - link "🗂️ Danh mục" [ref=f4e8] [cursor=pointer]:
+        - /url: /categories
+      - link "📷 Nhập nhanh" [ref=f4e9] [cursor=pointer]:
+        - /url: /quick-add
+      - generic [ref=f4e10]: ⚙️ Cài đặt
+    - main [ref=f4e11]:
+      - generic [ref=f4e12]:
+        - generic [ref=f4e13]:
+          - heading "Sản phẩm" [level=1] [ref=f4e14]
+          - button "Nhập / Xuất CSV" [ref=f4e15]
+          - button "+ Thêm sản phẩm" [ref=f4e16]
+        - generic [ref=f4e17]:
+          - textbox "Tìm tên hoặc mã vạch" [ref=f4e18]
+          - combobox [ref=f4e19]:
+            - option "Tất cả danh mục" [selected]
+            - option "Bánh kẹo"
+            - option "Đồ uống"
+          - generic [ref=f4e20]:
+            - checkbox "Hiện hàng ngừng bán" [ref=f4e21]
+            - generic [ref=f4e22]: Hiện hàng ngừng bán
+        - table [ref=f4e24]:
+          - rowgroup [ref=f4e25]:
+            - row [ref=f4e26]:
+              - columnheader "Mã vạch" [ref=f4e27]
+              - columnheader "Tên" [ref=f4e28]
+              - columnheader "ĐV" [ref=f4e29]
+              - columnheader "Giá bán" [ref=f4e30]
+              - columnheader "Tồn" [ref=f4e31]
+              - columnheader "Danh mục" [ref=f4e32]
+              - columnheader [ref=f4e33]
+          - rowgroup [ref=f4e34]:
+            - row [ref=f4e35]:
+              - cell "8934588012345" [ref=f4e36]
+              - cell "Sữa tươi Vinamilk 1L" [ref=f4e37]
+              - cell "cái" [ref=f4e38]
+              - cell "32.000đ" [ref=f4e39]
+              - cell "10" [ref=f4e40]
+              - cell [ref=f4e41]
+              - cell [ref=f4e42]:
+                - button "Sửa" [ref=f4e43]
+                - button "Ngừng bán" [ref=f4e44]
+  - generic: Đã lưu
