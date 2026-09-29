@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { parseVnNumber, productInputSchema, type ProductInput, type ProductWithUnits } from '@tiny-pos/shared';
+import { groupThousands } from '@/lib/money-input';
 
 /** State form giữ dạng chuỗi để người dùng gõ tự do; chỉ đổi sang số khi gửi. */
 export interface FormState {
@@ -32,8 +33,8 @@ const fromProduct = (p: ProductWithUnits): FormState => ({
   barcode: p.barcode ?? '',
   name: p.name,
   unit: p.unit,
-  costPrice: String(p.costPrice),
-  sellPrice: String(p.sellPrice),
+  costPrice: groupThousands(String(p.costPrice)),
+  sellPrice: groupThousands(String(p.sellPrice)),
   stock: String(p.stock),
   isWeighed: p.isWeighed,
   categoryId: p.categoryId ? String(p.categoryId) : '',

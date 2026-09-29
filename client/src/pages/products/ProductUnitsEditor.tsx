@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { FieldError } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from '@/components/ui/input-group';
+import { moneyChange } from '@/lib/money-input';
 import { numberError } from './useProductForm';
 
 const blank = { name: '', barcode: '', factor: '', sellPrice: '' };
@@ -112,7 +113,7 @@ export function ProductUnitsEditor({ product }: { product: ProductWithUnits }) {
             </InputGroupAddon>
           </InputGroup>
           <InputGroup className="h-11 bg-card">
-            <InputGroupInput className="h-11 text-base" placeholder="Giá bán" inputMode="numeric" value={draft.sellPrice} onChange={(e) => update({ sellPrice: e.target.value })} onKeyDown={onKeyDown} />
+            <InputGroupInput className="h-11 text-base tabular-nums" placeholder="Giá bán" inputMode="numeric" value={draft.sellPrice} onChange={moneyChange((v) => update({ sellPrice: v }))} onKeyDown={onKeyDown} />
             <InputGroupAddon align="inline-end">
               <InputGroupText>đ</InputGroupText>
             </InputGroupAddon>

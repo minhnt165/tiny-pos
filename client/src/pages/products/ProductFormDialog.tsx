@@ -9,6 +9,8 @@ import { SectionTitle, TextField } from '@/components/TextField';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { moneyChange } from '@/lib/money-input';
+import { cn } from '@/lib/utils';
 import { ProductUnitsEditor } from './ProductUnitsEditor';
 import { toInput, useProductForm, validateForm, type FormState } from './useProductForm';
 
@@ -53,20 +55,23 @@ export function ProductFormDialog({ open, product, initialBarcode, onClose, onSa
     );
   };
 
-  const numberField = (k: 'sellPrice' | 'costPrice' | 'stock' | 'minStock', label: string, suffix: string, hint?: string) => (
-    <TextField
-      id={fieldId(k)}
-      label={label}
-      suffix={suffix}
-      hint={hint}
-      error={errors[k]}
-      inputMode={suffix === 'đ' ? 'numeric' : 'decimal'}
-      className={k === 'sellPrice' ? 'font-semibold' : undefined}
-      value={form[k]}
-      onChange={(e) => set(k, e.target.value)}
-      onFocus={selectAll}
-    />
-  );
+  const numberField = (k: 'sellPrice' | 'costPrice' | 'stock' | 'minStock', label: string, suffix: string, hint?: string) => {
+    const money = suffix === 'đ';
+    return (
+      <TextField
+        id={fieldId(k)}
+        label={label}
+        suffix={suffix}
+        hint={hint}
+        error={errors[k]}
+        inputMode={money ? 'numeric' : 'decimal'}
+        className={cn('tabular-nums', k === 'sellPrice' && 'font-semibold')}
+        value={form[k]}
+        onChange={money ? moneyChange((v) => set(k, v)) : (e) => set(k, e.target.value)}
+        onFocus={selectAll}
+      />
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
