@@ -15,4 +15,6 @@ export * from './schemas/common.js';
 export * from './schemas/category.js';
 export * from './schemas/product.js';
 export * from './schemas/product-unit.js';
+export * from './schemas/order.js';
+export * from './schemas/settings.js';
 export * from './product-csv.js';
