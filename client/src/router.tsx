@@ -1,7 +1,8 @@
-import { FolderOpen, Package, ScanBarcode, Settings, ShoppingCart, type LucideIcon } from 'lucide-react';
+import { FolderOpen, Package, ReceiptText, ScanBarcode, Settings, ShoppingCart, type LucideIcon } from 'lucide-react';
 import { Navigate, Route, Routes } from 'react-router';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { CategoriesPage } from './pages/categories/CategoriesPage';
+import { OrdersPage } from './pages/orders/OrdersPage';
 import { ProductListPage } from './pages/products/ProductListPage';
 import { QuickAddPage } from './pages/quick-add/QuickAddPage';
 import { SellPage } from './pages/sell/SellPage';
@@ -15,6 +16,7 @@ export interface NavItem {
 
 export const NAV: NavItem[] = [
   { to: '/sell', label: 'Bán hàng', icon: ShoppingCart },
+  { to: '/orders', label: 'Hóa đơn', icon: ReceiptText },
   { to: '/products', label: 'Sản phẩm', icon: Package },
   { to: '/categories', label: 'Danh mục', icon: FolderOpen },
   { to: '/quick-add', label: 'Nhập nhanh', icon: ScanBarcode },
@@ -26,6 +28,7 @@ export function AppRoutes() {
     <Routes>
       <Route path="/" element={<Navigate to="/sell" replace />} />
       <Route path="/sell" element={<SellPage />} />
+      <Route path="/orders" element={<OrdersPage />} />
       <Route path="/products" element={<ProductListPage />} />
       <Route path="/categories" element={<CategoriesPage />} />
       <Route path="/quick-add" element={<QuickAddPage />} />
