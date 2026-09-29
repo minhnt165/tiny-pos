@@ -18,6 +18,13 @@ describe('orderInputSchema', () => {
     expect(orderInputSchema.safeParse({ items: [{ qty: 1, price: 1.5 }], paymentMethod: 'cash' }).success).toBe(false);
     expect(orderInputSchema.safeParse({ items: [{ qty: 1, price: 1 }], paymentMethod: 'debt' }).success).toBe(false);
   });
+  it('giá, giảm giá, tiền khách đưa tối đa 1 tỷ', () => {
+    const ok = { items: [{ qty: 1, price: 1_000_000_000 }], paymentMethod: 'cash', discount: 1_000_000_000, paid: 1_000_000_000 };
+    expect(orderInputSchema.safeParse(ok).success).toBe(true);
+    expect(orderInputSchema.safeParse({ ...ok, items: [{ qty: 1, price: 1_000_000_001 }] }).success).toBe(false);
+    expect(orderInputSchema.safeParse({ ...ok, discount: 1_000_000_001 }).success).toBe(false);
+    expect(orderInputSchema.safeParse({ ...ok, paid: 1_000_000_001 }).success).toBe(false);
+  });
 });
 
 describe('orderListQuerySchema', () => {
@@ -25,6 +32,11 @@ describe('orderListQuerySchema', () => {
     expect(orderListQuerySchema.parse({})).toEqual({});
     expect(orderListQuerySchema.parse({ date: '2026-09-29' })).toEqual({ date: '2026-09-29' });
     expect(orderListQuerySchema.safeParse({ date: '29/09/2026' }).success).toBe(false);
+  });
+  it('từ chối ngày không có thật', () => {
+    expect(orderListQuerySchema.safeParse({ date: '2026-13-45' }).success).toBe(false);
+    expect(orderListQuerySchema.safeParse({ date: '2026-02-30' }).success).toBe(false);
+    expect(orderListQuerySchema.safeParse({ date: '2028-02-29' }).success).toBe(true);
   });
 });
 

@@ -55,6 +55,7 @@ describe('API đơn hàng và cài đặt', () => {
     const badQty = await call('POST', '/api/orders', { items: [{ qty: -1, price: 1 }], paymentMethod: 'cash' });
     expect(badQty.json.error).toContain('Số lượng');
     expect((await call('GET', '/api/orders?date=29-09-2026')).status).toBe(400);
+    expect((await call('GET', '/api/orders?date=2026-13-45')).status).toBe(400);
     expect((await call('GET', '/api/orders/9999')).status).toBe(404);
   });
 
