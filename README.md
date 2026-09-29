@@ -35,6 +35,12 @@ npx pm2 save
 
 Mở `http://localhost:3000`. Điện thoại: `http://<IP máy>:3000`. Server phục vụ luôn giao diện đã build từ `client/dist`.
 
+Lưu ý:
+
+- Chỉ dùng trong mạng nhà. Không mở cổng 3000 ra Internet vì chưa có đăng nhập.
+- Đặt thư mục dự án (đặc biệt `data/`) trên ổ cứng của máy, không đặt trên USB hay ổ mạng: SQLite chế độ WAL không an toàn trên đó.
+- Muốn xóa sạch dữ liệu thử nghiệm: dừng server rồi xóa thư mục `data/`.
+
 Tạo shortcut Chrome ở quầy (giai đoạn 5 sẽ có script): `chrome.exe --app=http://localhost:3000 --kiosk-printing`.
 
 ## Lệnh khác
@@ -56,7 +62,7 @@ Tạo shortcut Chrome ở quầy (giai đoạn 5 sẽ có script): `chrome.exe -
 
 1. **Danh mục**: vào *Danh mục*, thêm "Đồ uống" và "Bánh kẹo"; bấm vào tên để đổi tên; dùng ↑↓ đổi thứ tự; F5 vẫn đúng thứ tự; xóa một danh mục có sản phẩm → sản phẩm về "Không danh mục".
 2. **Sản phẩm**: bấm *+ Thêm sản phẩm*, nhập tên, giá bán, tồn đầu 10 → lưu. Bấm *Sửa*, đổi tồn thành 8 → lưu (server ghi movement adjust -2). Bấm *Ngừng bán*, bật "Hiện hàng ngừng bán", bấm *Bán lại*.
-3. **Đơn vị quy đổi**: mở *Sửa* một sản phẩm, ở mục "Đơn vị quy đổi" thêm "Thùng", mã vạch riêng, = 24, giá bán. Thử thêm đơn vị có mã trùng mã sản phẩm → toast đỏ "Mã vạch đã tồn tại".
+3. **Đơn vị quy đổi**: mở *Sửa* một sản phẩm, ở mục "Đơn vị quy đổi" thêm "Thùng", mã vạch riêng, = 24, giá bán (Enter trong các ô này chỉ thêm đơn vị, không lưu form). Thử thêm đơn vị có mã trùng mã sản phẩm → toast đỏ "Mã vạch đã tồn tại". Đơn vị chỉ có thêm/xóa, muốn sửa thì xóa rồi thêm lại.
 4. **Nhập sai**: sửa giá bán thành chữ "abc" → toast đỏ có chữ "Giá bán".
 5. **Nhập nhanh**: vào *Nhập nhanh*, gõ mã lạ + Enter → form mở với mã điền sẵn, con trỏ ở ô Tên; gõ tên, Enter → toast xanh, form đóng, ô quét lại có focus. Quét lại mã đó → thẻ thông tin. Quét mã thùng → ghi rõ "Mã của Thùng (= 24 …)". Khi form đang mở, gõ mã + Enter không mở tra cứu mới.
 6. **CSV**: *Nhập / Xuất CSV* → *Tải file CSV*, mở bằng Excel thấy tiếng Việt đúng. Sửa giá, thêm 1 dòng mới, để trống Tên ở 1 dòng, lưu CSV rồi nhập lại → báo số tạo / cập nhật / lỗi theo dòng; tồn của hàng cũ không đổi.

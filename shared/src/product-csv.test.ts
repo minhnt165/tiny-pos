@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseProductCsv, parseVnNumber, productToCsvRow, PRODUCT_CSV_HEADERS } from './product-csv.js';
+import { CSV_MISSING_NAME_MESSAGE, parseProductCsv, parseVnNumber, productToCsvRow, PRODUCT_CSV_HEADERS } from './product-csv.js';
 import { toCsv } from './csv.js';
 
 describe('parseProductCsv', () => {
@@ -22,7 +22,7 @@ describe('parseProductCsv', () => {
   it('thiếu cột Tên thì lỗi toàn file', () => {
     const r = parseProductCsv('Ten;Gia\nSữa;1\n');
     expect(r.rows).toEqual([]);
-    expect(r.errors).toEqual([{ line: 1, message: 'Không tìm thấy cột "Tên"' }]);
+    expect(r.errors).toEqual([{ line: 1, message: CSV_MISSING_NAME_MESSAGE }]);
   });
   it('đi vòng với productToCsvRow', () => {
     const p = { barcode: '1', name: 'Kẹo, dẻo', unit: 'gói', costPrice: 3000, sellPrice: 5000, stock: 2.5, isWeighed: false, minStock: 1 };
@@ -38,5 +38,16 @@ describe('parseVnNumber', () => {
     expect(parseVnNumber('1,5')).toBe(1.5);
     expect(parseVnNumber('2.5')).toBe(2.5);
     expect(parseVnNumber('abc')).toBeNaN();
+  });
+});
+
+describe('parseProductCsv tự nhận dấu phân cách', () => {
+  it('đọc được file Excel lưu bằng dấu chấm phẩy', () => {
+    const r = parseProductCsv('Mã vạch;Tên;Giá bán\n1;Sữa;15000\n');
+    expect(r.errors).toEqual([]);
+    expect(r.rows[0]?.data).toMatchObject({ barcode: '1', name: 'Sữa', sellPrice: 15000 });
+  });
+  it('thiếu cột Tên thì hướng dẫn cách lưu file', () => {
+    expect(parseProductCsv('Ten,Gia\n').errors[0]?.message).toContain('CSV UTF-8');
   });
 });

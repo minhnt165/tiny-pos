@@ -56,3 +56,14 @@ describe('exportProductsCsv', () => {
     expect(importProductsCsv(db2, text)).toEqual({ created: 1, updated: 0, errors: [] });
   });
 });
+
+describe('importProductsCsv – mã vạch trùng đơn vị quy đổi', () => {
+  it('dòng có mã trùng mã thùng của sản phẩm khác bị báo lỗi theo dòng, không tạo', async () => {
+    const { createUnit } = await import('./product-units.js');
+    const p = createProduct(db, productInputSchema.parse({ name: 'Coca', barcode: '100' }));
+    createUnit(db, p.id, { name: 'Thùng', barcode: '100T', factor: 24, sellPrice: 1 });
+    const r = importProductsCsv(db, H + '100T,Hàng lạ,cái,0,1,0,0,,0\n');
+    expect(r).toEqual({ created: 0, updated: 0, errors: [{ line: 2, message: 'Mã vạch đã tồn tại' }] });
+    expect(listProducts(db, { includeInactive: false })).toHaveLength(1);
+  });
+});

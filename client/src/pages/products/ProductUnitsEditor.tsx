@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type KeyboardEvent } from 'react';
 import { formatMoney, parseVnNumber, type ProductWithUnits } from '@tiny-pos/shared';
 import { useDeleteUnit, useSaveUnit } from '../../api/products';
 import { Button } from '../../components/ui/Button';
@@ -14,6 +14,15 @@ export function ProductUnitsEditor({ product }: { product: ProductWithUnits }) {
   const toast = useToast();
   const [draft, setDraft] = useState(blank);
   const onError = (e: Error) => toast(e.message, 'error');
+
+  const canAdd = !!draft.name && !!draft.factor && !save.isPending;
+
+  /** Enter (kể cả Enter do máy quét gửi) chỉ thêm đơn vị, không submit form sản phẩm bên ngoài. */
+  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    if (canAdd) add();
+  };
 
   const add = () => {
     save.mutate(
@@ -52,25 +61,33 @@ export function ProductUnitsEditor({ product }: { product: ProductWithUnits }) {
         ))}
       </ul>
       <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
-        <Input placeholder="Tên (thùng)" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+        <Input
+          placeholder="Tên (thùng)"
+          value={draft.name}
+          onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+          onKeyDown={onKeyDown}
+        />
         <Input
           placeholder="Mã vạch"
           value={draft.barcode}
           onChange={(e) => setDraft({ ...draft, barcode: e.target.value })}
+          onKeyDown={onKeyDown}
         />
         <Input
           placeholder={`= ? ${product.unit}`}
           inputMode="decimal"
           value={draft.factor}
           onChange={(e) => setDraft({ ...draft, factor: e.target.value })}
+          onKeyDown={onKeyDown}
         />
         <Input
           placeholder="Giá bán"
           inputMode="numeric"
           value={draft.sellPrice}
           onChange={(e) => setDraft({ ...draft, sellPrice: e.target.value })}
+          onKeyDown={onKeyDown}
         />
-        <Button variant="secondary" onClick={add} disabled={!draft.name || !draft.factor || save.isPending}>
+        <Button variant="secondary" onClick={add} disabled={!canAdd}>
           Thêm
         </Button>
       </div>

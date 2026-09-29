@@ -83,12 +83,23 @@ const FIELD_BY_HEADER: Record<Header, keyof ProductCsvRow> = {
   'Tồn tối thiểu': 'minStock',
 };
 
+/** Excel tiếng Việt lưu CSV bằng ";" — đoán theo dòng tiêu đề. */
+function detectDelimiter(text: string): ',' | ';' {
+  const firstLine = text.split(/\r?\n/, 1)[0] ?? '';
+  const commas = (firstLine.match(/,/g) ?? []).length;
+  const semis = (firstLine.match(/;/g) ?? []).length;
+  return semis > commas ? ';' : ',';
+}
+
+export const CSV_MISSING_NAME_MESSAGE =
+  'Không tìm thấy cột "Tên". Hãy lưu bằng Excel ở dạng "CSV UTF-8" và giữ nguyên dòng tiêu đề.';
+
 /** Đọc CSV sản phẩm theo tên cột (không phụ thuộc thứ tự). Bắt buộc có cột "Tên". */
 export function parseProductCsv(text: string): { rows: { line: number; data: ProductCsvRow }[]; errors: CsvRowError[] } {
-  const table = parseCsv(text);
+  const table = parseCsv(text, detectDelimiter(text));
   const header = (table[0] ?? []).map((h) => h.trim().toLowerCase());
   const indexOf = (h: Header) => header.indexOf(h.toLowerCase());
-  if (indexOf('Tên') < 0) return { rows: [], errors: [{ line: 1, message: 'Không tìm thấy cột "Tên"' }] };
+  if (indexOf('Tên') < 0) return { rows: [], errors: [{ line: 1, message: CSV_MISSING_NAME_MESSAGE }] };
   const rows: { line: number; data: ProductCsvRow }[] = [];
   const errors: CsvRowError[] = [];
   table.slice(1).forEach((cells, i) => {

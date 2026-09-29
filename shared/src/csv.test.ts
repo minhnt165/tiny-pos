@@ -25,3 +25,9 @@ describe('toCsv', () => {
     expect(parseCsv(toCsv(rows))).toEqual(rows);
   });
 });
+
+describe('parseCsv với dấu chấm phẩy (Excel tiếng Việt)', () => {
+  it('nhận delimiter truyền vào', () => {
+    expect(parseCsv('a;b\n1;"x;y"\n', ';')).toEqual([['a', 'b'], ['1', 'x;y']]);
+  });
+});

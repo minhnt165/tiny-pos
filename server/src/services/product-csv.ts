@@ -9,7 +9,8 @@ import {
 } from '@tiny-pos/shared';
 import type { Db, DbOrTx } from '../db/connection.js';
 import { categories, products } from '../db/schema.js';
-import { listProducts } from './products.js';
+import { ConflictError } from '../errors.js';
+import { assertBarcodeFree, listProducts } from './products.js';
 import { adjustStockTo } from './stock.js';
 
 /** CSV có BOM để Excel mở đúng dấu tiếng Việt. Chỉ xuất hàng đang bán. */
@@ -54,6 +55,8 @@ function upsertRow(tx: DbOrTx, cache: Map<string, number>, row: ProductCsvRow): 
       .run();
     return 'updated';
   }
+  // Mã có thể đang là mã thùng/lốc của sản phẩm khác → từ chối như API thường
+  assertBarcodeFree(tx, row.barcode);
   const created = tx
     .insert(products)
     .values({ ...fields, barcode: row.barcode })
@@ -63,17 +66,26 @@ function upsertRow(tx: DbOrTx, cache: Map<string, number>, row: ProductCsvRow): 
   return 'created';
 }
 
-/** Nhập CSV trong 1 transaction. Lỗi từng dòng (parse) được trả về; lỗi hệ thống → rollback. */
+/**
+ * Nhập CSV trong 1 transaction. Lỗi từng dòng (parse, trùng mã) được trả về kèm số dòng;
+ * lỗi hệ thống → rollback.
+ */
 export function importProductsCsv(db: Db, text: string): CsvImportResult {
   const { rows, errors } = parseProductCsv(text);
   return db.transaction((tx) => {
     const cache = new Map<string, number>();
     let created = 0;
     let updated = 0;
-    for (const { data } of rows) {
-      if (upsertRow(tx, cache, data) === 'created') created++;
-      else updated++;
+    for (const { line, data } of rows) {
+      try {
+        if (upsertRow(tx, cache, data) === 'created') created++;
+        else updated++;
+      } catch (e) {
+        if (!(e instanceof ConflictError)) throw e;
+        errors.push({ line, message: e.message });
+      }
     }
+    errors.sort((a, b) => a.line - b.line);
     return { created, updated, errors };
   });
 }

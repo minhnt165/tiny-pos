@@ -67,3 +67,13 @@ describe('products', () => {
     expect(() => getProduct(db, 42)).toThrow('Không tìm thấy sản phẩm');
   });
 });
+
+describe('listProducts – tìm không phân biệt hoa thường tiếng Việt', () => {
+  it('gõ thường vẫn thấy tên viết hoa có dấu', () => {
+    createProduct(db, input({ name: 'Đường cát', barcode: '77' }));
+    createProduct(db, input({ name: 'Ớt bột' }));
+    expect(listProducts(db, { q: 'đường', includeInactive: false }).map((p) => p.name)).toEqual(['Đường cát']);
+    expect(listProducts(db, { q: 'ớt', includeInactive: false }).map((p) => p.name)).toEqual(['Ớt bột']);
+    expect(listProducts(db, { q: '%', includeInactive: false })).toEqual([]);
+  });
+});

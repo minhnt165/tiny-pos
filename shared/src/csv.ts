@@ -1,7 +1,10 @@
 export type CsvCell = string | number | boolean | null | undefined;
 
-/** Đọc CSV (RFC 4180): hỗ trợ ngoặc kép, dấu phẩy trong ô, CRLF/LF, BOM. Bỏ dòng trống. */
-export function parseCsv(text: string): string[][] {
+/**
+ * Đọc CSV (RFC 4180): hỗ trợ ngoặc kép, dấu phẩy trong ô, CRLF/LF, BOM. Bỏ dòng trống.
+ * `delimiter` mặc định là dấu phẩy; Excel tiếng Việt lưu bằng dấu chấm phẩy.
+ */
+export function parseCsv(text: string, delimiter = ','): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let field = '';
@@ -19,7 +22,7 @@ export function parseCsv(text: string): string[][] {
       continue;
     }
     if (c === '"') inQuotes = true;
-    else if (c === ',') {
+    else if (c === delimiter) {
       row.push(field);
       field = '';
     } else if (c === '\n') {

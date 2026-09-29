@@ -1,4 +1,4 @@
-import { and, asc, eq, getTableColumns, like, or, sql } from 'drizzle-orm';
+import { and, asc, eq, getTableColumns, sql } from 'drizzle-orm';
 import type { BarcodeLookup, Product, ProductInput, ProductListQuery, ProductWithUnits } from '@tiny-pos/shared';
 import type { Db, DbOrTx } from '../db/connection.js';
 import { categories, productUnits, products } from '../db/schema.js';
@@ -12,18 +12,23 @@ function selectProducts(tx: DbOrTx) {
   return tx.select(productColumns).from(products).leftJoin(categories, eq(products.categoryId, categories.id));
 }
 
+/**
+ * Lọc `q` bằng JS vì LIKE của SQLite chỉ bỏ phân biệt hoa/thường với ASCII
+ * ("đường" không khớp "Đường"). Danh mục tạp hóa nhỏ nên lọc trong bộ nhớ là đủ.
+ */
 export function listProducts(db: Db, query: ProductListQuery): Product[] {
-  const q = query.q ? `%${query.q}%` : undefined;
-  return selectProducts(db)
+  const rows = selectProducts(db)
     .where(
       and(
         query.includeInactive ? undefined : eq(products.isActive, true),
         query.categoryId ? eq(products.categoryId, query.categoryId) : undefined,
-        q ? or(like(products.name, q), like(products.barcode, q)) : undefined,
       ),
     )
     .orderBy(asc(products.name))
     .all();
+  const q = query.q?.trim().toLowerCase();
+  if (!q) return rows;
+  return rows.filter((p) => p.name.toLowerCase().includes(q) || (p.barcode?.toLowerCase().includes(q) ?? false));
 }
 
 function getProductRow(tx: DbOrTx, id: number): Product {
