@@ -70,6 +70,7 @@ export const orders = sqliteTable(
     customerId: integer('customer_id').references(() => customers.id),
     status: text('status', { enum: ['done', 'cancelled'] }).notNull().default('done'),
     createdAt: createdAt(),
+    cancelledAt: text('cancelled_at'),
   },
   (t) => [index('orders_created_idx').on(t.createdAt)],
 );
@@ -96,14 +97,14 @@ export const orderItems = sqliteTable(
     orderId: integer('order_id')
       .notNull()
       .references(() => orders.id, { onDelete: 'cascade' }),
-    productId: integer('product_id')
-      .notNull()
-      .references(() => products.id),
+    productId: integer('product_id').references(() => products.id), // null = món ngoài
     productName: text('product_name').notNull(),
     unit: text('unit').notNull(),
     qty: real('qty').notNull(),
     price: integer('price').notNull(),
     costPrice: integer('cost_price').notNull(),
+    factor: real('factor').notNull().default(1), // hệ số đơn vị lúc bán, dùng khi hủy đơn
+    amount: integer('amount').notNull().default(0), // thành tiền dòng lúc bán
   },
   (t) => [index('order_items_order_idx').on(t.orderId)],
 );

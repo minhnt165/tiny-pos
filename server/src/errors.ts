@@ -18,3 +18,9 @@ export class ConflictError extends HttpError {
     super(409, message);
   }
 }
+
+export class BadRequestError extends HttpError {
+  constructor(message: string) {
+    super(400, message);
+  }
+}

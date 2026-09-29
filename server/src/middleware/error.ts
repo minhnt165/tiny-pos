@@ -8,7 +8,8 @@ export function formatZodError(err: ZodError): string {
   return err.issues
     .map((i) => {
       const field = i.path.map(String).join('.');
-      const label = FIELD_LABELS[field] ?? field;
+      // "items.0.qty" không có nhãn riêng → dùng nhãn của trường cuối ("Số lượng")
+      const label = FIELD_LABELS[field] ?? FIELD_LABELS[String(i.path.at(-1) ?? '')] ?? field;
       return label ? `${label}: ${i.message}` : i.message;
     })
     .join('; ');

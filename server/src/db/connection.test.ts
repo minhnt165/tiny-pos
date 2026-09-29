@@ -22,4 +22,13 @@ describe('migration', () => {
     ]);
     expect(db.get<{ foreign_keys: number }>(sql`pragma foreign_keys`)?.foreign_keys).toBe(1);
   });
+
+  it('order_items cho phép product_id null, có factor và amount; orders có cancelled_at', () => {
+    const db = createTestDb();
+    const cols = (t: string) => db.all<{ name: string; notnull: number }>(sql.raw(`PRAGMA table_info(${t})`));
+    const items = cols('order_items');
+    expect(items.find((c) => c.name === 'product_id')?.notnull).toBe(0);
+    expect(items.map((c) => c.name)).toEqual(expect.arrayContaining(['factor', 'amount']));
+    expect(cols('orders').map((c) => c.name)).toContain('cancelled_at');
+  });
 });
