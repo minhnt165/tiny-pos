@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ClipboardList, CheckCheck, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatMoney, type Product, type StocktakeDetail, type StocktakeItem } from '@tiny-pos/shared';
+import { formatMoney, formatQty, type Product, type ProductUnit, type StocktakeDetail, type StocktakeItem } from '@tiny-pos/shared';
 import { ApiError } from '@/api/client';
 import { fetchProduct, lookupBarcode } from '@/api/products';
 import { useCancelStocktake, useCountItem, useFinishStocktake, useRemoveCountItem } from '@/api/stocktakes';
@@ -29,11 +29,20 @@ export function StocktakeSession({ session }: { session: StocktakeDetail }) {
   const confirm = useConfirm();
   const scan = useScanInput(noop, target !== null || confirming);
 
-  const openFor = (p: Product) =>
-    setTarget({ productId: p.id, name: p.name, unit: p.unit, stock: p.stock, counted: session.items.find((i) => i.productId === p.id)?.counted });
+  const openFor = (p: Product, u?: ProductUnit | null) =>
+    setTarget({
+      productId: p.id,
+      name: p.name,
+      unit: p.unit,
+      stock: p.stock,
+      counted: session.items.find((i) => i.productId === p.id)?.counted,
+      // Quét mã thùng/lốc: đếm theo đơn vị đó, lưu quy về đơn vị gốc
+      ...(u ? { unitLabel: `${u.name} (${formatQty(u.factor)} ${p.unit})`, unitName: u.name, factor: u.factor } : {}),
+    });
   const onScan = async (code: string) => {
     try {
-      openFor((await lookupBarcode(code)).product);
+      const r = await lookupBarcode(code);
+      openFor(r.product, r.unit);
     } catch (e) {
       toast.error(e instanceof ApiError && e.status === 404 ? `Không có mã ${code}` : (e as Error).message);
     }
@@ -90,7 +99,7 @@ export function StocktakeSession({ session }: { session: StocktakeDetail }) {
         icon={ClipboardList}
         actions={
           <>
-            <Button variant="outline" className="h-11 text-base text-destructive" onClick={() => void onCancel()}>
+            <Button variant="outline" className="h-11 text-base text-destructive" disabled={cancel.isPending} onClick={() => void onCancel()}>
               <X data-icon="inline-start" />
               Hủy phiên
             </Button>
@@ -101,7 +110,7 @@ export function StocktakeSession({ session }: { session: StocktakeDetail }) {
           </>
         }
       />
-      <ProductSearch inputRef={scan.ref} onScan={(c) => void onScan(c)} onPick={openFor} />
+      <ProductSearch inputRef={scan.ref} includeInactive onScan={(c) => void onScan(c)} onPick={(p) => openFor(p)} />
       <label className="flex min-h-11 items-center gap-3">
         <Switch checked={onlyDiff} onCheckedChange={setOnlyDiff} />
         <span>Chỉ món lệch</span>

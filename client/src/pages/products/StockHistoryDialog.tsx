@@ -15,6 +15,12 @@ const when = (iso: string) => {
   return `${pad(d.getHours())}:${pad(d.getMinutes())} ${pad(d.getDate())}/${pad(d.getMonth() + 1)}${year}`;
 };
 
+/** Ghi chú bỏ mã chứng từ (đã hiện riêng) và chữ "Nhập" thừa: "Hủy PN-…" → "Hủy". */
+const extraNote = (note: string | null, refCode: string | null) => {
+  const rest = (refCode && note ? note.replace(refCode, '') : note ?? '').trim();
+  return rest === 'Nhập' ? '' : rest;
+};
+
 /** 100 lần thay đổi tồn gần nhất của một sản phẩm. */
 export function StockHistoryDialog({ product, onClose }: { product: Product | null; onClose: () => void }) {
   const { data = [], isLoading } = useMovements(product?.id ?? null);
@@ -52,7 +58,7 @@ export function StockHistoryDialog({ product, onClose }: { product: Product | nu
                     <TableCell className="px-2 py-2 whitespace-normal">
                       <Badge variant="secondary" className="mr-2">{TYPE_LABEL[m.type]}</Badge>
                       {m.refCode && <span className="mr-2 font-mono break-all">{m.refCode}</span>}
-                      <span className="text-muted-foreground">{m.note && m.note !== `Nhập ${m.refCode}` ? m.note : ''}</span>
+                      <span className="text-muted-foreground">{extraNote(m.note, m.refCode)}</span>
                     </TableCell>
                   </TableRow>
                 ))}

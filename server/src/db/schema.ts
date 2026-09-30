@@ -177,7 +177,7 @@ export const stockMovements = sqliteTable(
       .references(() => products.id),
     qty: real('qty').notNull(), // +/- theo đơn vị gốc
     type: text('type', { enum: ['sale', 'import', 'return', 'adjust'] }).notNull(),
-    refId: integer('ref_id'), // order_id / import_id, null với adjust
+    refId: integer('ref_id'), // order_id / import_id / stocktake_id (adjust do hủy phiếu nhập hoặc chốt kiểm kê)
     note: text('note'),
     createdAt: createdAt(),
   },

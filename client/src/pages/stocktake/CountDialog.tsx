@@ -14,6 +14,11 @@ export interface CountTarget {
   stock: number;
   /** Số đã đếm trước đó trong phiên, nếu có. */
   counted?: number;
+  /** Quét mã của đơn vị quy đổi (thùng, lốc…): đếm theo đơn vị đó, ví dụ 'Thùng (24 lon)'. */
+  unitLabel?: string;
+  unitName?: string;
+  /** Hệ số quy về đơn vị gốc; bỏ trống = 1 (đếm theo đơn vị gốc). */
+  factor?: number;
 }
 
 interface Props {
@@ -25,16 +30,19 @@ interface Props {
 
 export function CountDialog({ target, saving, onClose, onSave }: Props) {
   const [value, setValue] = useState('');
+  const factor = target?.factor ?? 1;
   useEffect(() => {
-    if (target) setValue(target.counted !== undefined ? formatQty(target.counted) : '');
+    if (target) setValue(target.counted !== undefined ? formatQty(target.counted / (target.factor ?? 1)) : '');
   }, [target]);
 
   const n = parseVnNumber(value);
   const valid = value.trim() !== '' && Number.isFinite(n) && n >= 0;
-  const diff = valid && target ? Math.round((n - target.stock) * 1000) / 1000 : null;
+  // Server lưu theo đơn vị gốc: số đếm × hệ số
+  const base = Math.round(n * factor * 1000) / 1000;
+  const diff = valid && target ? Math.round((base - target.stock) * 1000) / 1000 : null;
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (valid && !saving) onSave(n);
+    if (valid && !saving) onSave(base);
   };
 
   return (
@@ -47,13 +55,14 @@ export function CountDialog({ target, saving, onClose, onSave }: Props) {
           </DialogTitle>
           <DialogDescription className="text-base">
             Tồn máy: {target && `${formatQty(target.stock)} ${target.unit}`}
+            {target?.unitLabel && ` (= ${formatQty(target.stock / factor)} ${target.unitName}) · Đếm theo ${target.unitLabel}`}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <TextField
             id="cd-counted"
             label="Số đếm được"
-            suffix={target?.unit}
+            suffix={target?.unitName ?? target?.unit}
             inputMode="decimal"
             autoFocus
             value={value}

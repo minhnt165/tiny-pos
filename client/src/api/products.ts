@@ -98,9 +98,13 @@ export function useImportCsv() {
   });
 }
 
-/** Gợi ý ở màn Bán hàng: chỉ hàng đang bán, chỉ gọi khi có chữ để tìm. */
-export const useProductSuggestions = (q: string) =>
-  useQuery({ queryKey: ['products', { q }], queryFn: () => api<Product[]>(`/products${qs({ q })}`), enabled: q.length > 0 });
+/** Gợi ý theo tên: mặc định chỉ hàng đang bán (màn Bán hàng); màn Nhập hàng/Kiểm kê thêm cả hàng ngừng bán. Chỉ gọi khi có chữ để tìm. */
+export const useProductSuggestions = (q: string, includeInactive?: boolean) =>
+  useQuery({
+    queryKey: ['products', { q, includeInactive }],
+    queryFn: () => api<Product[]>(`/products${qs({ q, includeInactive })}`),
+    enabled: q.length > 0,
+  });
 
 /** Sản phẩm kèm đơn vị quy đổi (màn Nhập hàng cần danh sách đơn vị để chọn). */
 export const fetchProduct = (id: number) => api<ProductWithUnits>(`/products/${id}`);

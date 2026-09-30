@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, PackagePlus } from 'lucide-react';
 import { Link, useNavigate } from 'react-router';
 import { toast } from 'sonner';
@@ -64,11 +64,20 @@ export function ImportFormPage() {
     });
   };
 
+  // Bản save mới nhất (sau khi React render lại) để F9 lưu đúng giá trị vừa chốt
+  const saveRef = useRef(save);
+  useEffect(() => {
+    saveRef.current = save;
+  });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'F9' || newBarcode !== null) return;
+      // Đang mở hộp thoại/popover (thêm sản phẩm, thêm NCC…) thì F9 không lưu phiếu phía sau
+      if (document.querySelector('[role="dialog"],[role="alertdialog"]')) return;
       e.preventDefault();
-      save();
+      // Blur để ô đang gõ (CommitInput) ghi giá trị, rồi lưu sau khi React đã áp dụng
+      (document.activeElement as HTMLElement | null)?.blur();
+      setTimeout(() => saveRef.current(), 0);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -99,7 +108,7 @@ export function ImportFormPage() {
           className="h-11 min-w-0 flex-1 text-base"
         />
       </div>
-      <ProductSearch inputRef={scan.ref} onScan={(c) => void onScan(c)} onPick={(p) => void onPick(p)} />
+      <ProductSearch inputRef={scan.ref} includeInactive onScan={(c) => void onScan(c)} onPick={(p) => void onPick(p)} />
       <Card className="gap-0 overflow-hidden py-0">
         <ImportLinesTable lines={draft.lines} dispatch={dispatch} onDone={scan.focus} />
       </Card>

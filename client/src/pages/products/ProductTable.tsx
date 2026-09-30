@@ -26,7 +26,7 @@ export function StockCell({ p }: { p: Product }) {
   );
 }
 
-/** Menu thao tác của một sản phẩm (Sửa / Ngừng bán / Bán lại). */
+/** Menu thao tác của một sản phẩm (Sửa / Lịch sử tồn / Ngừng bán / Bán lại). */
 export function ProductMenu({ p, onEdit, onToggle }: { p: Product; onEdit: () => void; onToggle: () => void }) {
   const [history, setHistory] = useState(false);
   return (

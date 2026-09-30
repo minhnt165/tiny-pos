@@ -3,19 +3,22 @@ import { ScanBarcode } from 'lucide-react';
 import { formatMoney, formatQty, type Product } from '@tiny-pos/shared';
 import { useProductSuggestions } from '@/api/products';
 import { ProductAvatar } from '@/components/ProductAvatar';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 interface Props {
   inputRef: RefObject<HTMLInputElement | null>;
   onScan: (code: string) => void;
   onPick: (p: Product) => void;
+  /** Gợi ý cả hàng ngừng bán (màn Nhập hàng, Kiểm kê). */
+  includeInactive?: boolean;
 }
 
 /**
  * Ô quét mã luôn focus. Máy quét gõ nhanh rồi Enter (chưa kịp debounce) → tra mã vạch.
  * Gõ chữ → sau 200ms hiện tối đa 8 gợi ý; ↑↓ chọn, Enter thêm.
  */
-export function ProductSearch({ inputRef, onScan, onPick }: Props) {
+export function ProductSearch({ inputRef, onScan, onPick, includeInactive }: Props) {
   const [q, setQ] = useState('');
   const [term, setTerm] = useState('');
   const [active, setActive] = useState(-1);
@@ -27,7 +30,7 @@ export function ProductSearch({ inputRef, onScan, onPick }: Props) {
   useEffect(() => setActive(-1), [term]);
 
   const searching = term.length >= 2 && /\D/.test(term);
-  const { data = [] } = useProductSuggestions(searching ? term : '');
+  const { data = [] } = useProductSuggestions(searching ? term : '', includeInactive);
   const items = searching && q.trim() ? data.slice(0, 8) : [];
 
   const reset = () => {
@@ -94,6 +97,11 @@ export function ProductSearch({ inputRef, onScan, onPick }: Props) {
                 <div className="truncate font-medium">{p.name}</div>
                 <div className="text-sm text-muted-foreground">
                   Tồn {formatQty(p.stock)} {p.unit}
+                  {!p.isActive && (
+                    <Badge variant="secondary" className="ml-2">
+                      Ngừng bán
+                    </Badge>
+                  )}
                 </div>
               </div>
               <div className="font-semibold tabular-nums">{formatMoney(p.sellPrice)}</div>
