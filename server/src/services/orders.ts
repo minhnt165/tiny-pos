@@ -1,7 +1,6 @@
-import { and, asc, desc, eq, gte, like, lt, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, lt, sql } from 'drizzle-orm';
 import {
   cartTotals,
-  currentTzOffset,
   lineAmount,
   localDate,
   localDayRange,
@@ -14,17 +13,9 @@ import type { Db, DbOrTx } from '../db/connection.js';
 import { orderItems, orders, productUnits, products } from '../db/schema.js';
 import { BadRequestError, ConflictError, NotFoundError } from '../errors.js';
 import { recordMovement } from './stock.js';
+import { nextDailyCode, resolveClock, type Clock } from './daily-code.js';
 
-/** Giờ hiện tại và múi giờ; test truyền vào để không phụ thuộc máy chạy. */
-export interface Clock {
-  now?: Date;
-  tzOffsetMin?: number;
-}
-
-function resolveClock(c: Clock = {}) {
-  const now = c.now ?? new Date();
-  return { now, tz: c.tzOffsetMin ?? currentTzOffset(now) };
-}
+export type { Clock } from './daily-code.js';
 
 const CUSTOM_NAME = 'Hàng khác';
 
@@ -69,20 +60,6 @@ function resolveLine(tx: DbOrTx, it: OrderInput['items'][number]): ResolvedLine 
     factor,
     isWeighed: p.isWeighed && it.unitId === null,
   };
-}
-
-/** HD-YYYYMMDD-NNNN: số lớn nhất trong ngày + 1 (đọc trong cùng transaction). */
-function nextCode(tx: DbOrTx, day: string): string {
-  const prefix = `HD-${day.replaceAll('-', '')}-`;
-  const last = tx
-    .select({ code: orders.code })
-    .from(orders)
-    .where(like(orders.code, `${prefix}%`))
-    .orderBy(desc(orders.code))
-    .limit(1)
-    .get();
-  const seq = last ? Number(last.code.slice(prefix.length)) + 1 : 1;
-  return prefix + String(seq).padStart(4, '0');
 }
 
 type OrderRow = typeof orders.$inferSelect;
@@ -136,7 +113,7 @@ export function createOrder(db: Db, input: OrderInput, clock?: Clock): OrderDeta
     const { id } = tx
       .insert(orders)
       .values({
-        code: nextCode(tx, localDate(now, tz)),
+        code: nextDailyCode(tx, 'orders', 'HD', localDate(now, tz), 4),
         total,
         discount: input.discount,
         paid,
