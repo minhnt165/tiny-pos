@@ -26,20 +26,20 @@ export function StocktakeItemsTable({ items, onEdit, onRemove }: Props) {
     <Table>
       <TableHeader>
         <TableRow className="bg-muted/40 hover:bg-muted/40">
-          <TableHead className="px-4">Sản phẩm</TableHead>
-          <TableHead className="px-4 text-right">Tồn máy</TableHead>
-          <TableHead className="px-4 text-right">Đếm được</TableHead>
-          <TableHead className="px-4 text-right">Lệch</TableHead>
+          <TableHead className="px-2 sm:px-4">Sản phẩm</TableHead>
+          <TableHead className="hidden px-4 text-right sm:table-cell">Tồn máy</TableHead>
+          <TableHead className="px-2 text-right sm:px-4">Đếm được</TableHead>
+          <TableHead className="px-2 text-right sm:px-4">Lệch</TableHead>
           {editable && <TableHead className="w-28" />}
         </TableRow>
       </TableHeader>
       <TableBody>
         {items.map((i) => (
           <TableRow key={i.productId}>
-            <TableCell className="px-4 py-2 font-medium whitespace-normal">{i.productName}</TableCell>
-            <TableCell className="px-4 py-2 text-right tabular-nums">{formatQty(i.expected)}</TableCell>
-            <TableCell className="px-4 py-2 text-right tabular-nums">{formatQty(i.counted)}</TableCell>
-            <TableCell className="px-4 py-2 text-right">
+            <TableCell className="px-2 py-2 sm:px-4 font-medium whitespace-normal">{i.productName}</TableCell>
+            <TableCell className="hidden px-4 py-2 text-right tabular-nums sm:table-cell">{formatQty(i.expected)}</TableCell>
+            <TableCell className="px-2 py-2 sm:px-4 text-right tabular-nums">{formatQty(i.counted)}</TableCell>
+            <TableCell className="px-2 py-2 sm:px-4 text-right">
               <DiffText diff={i.diff} unit={i.unit} />
             </TableCell>
             {editable && (

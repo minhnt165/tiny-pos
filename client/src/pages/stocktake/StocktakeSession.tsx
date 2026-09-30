@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { ClipboardList, CheckCheck, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatMoney, type Product, type StocktakeDetail } from '@tiny-pos/shared';
+import { formatMoney, type Product, type StocktakeDetail, type StocktakeItem } from '@tiny-pos/shared';
 import { ApiError } from '@/api/client';
-import { lookupBarcode } from '@/api/products';
+import { fetchProduct, lookupBarcode } from '@/api/products';
 import { useCancelStocktake, useCountItem, useFinishStocktake, useRemoveCountItem } from '@/api/stocktakes';
 import { useConfirm, type ConfirmOptions } from '@/components/ConfirmDialog';
 import { EmptyState } from '@/components/EmptyState';
@@ -36,6 +36,14 @@ export function StocktakeSession({ session }: { session: StocktakeDetail }) {
       openFor((await lookupBarcode(code)).product);
     } catch (e) {
       toast.error(e instanceof ApiError && e.status === 404 ? `Không có mã ${code}` : (e as Error).message);
+    }
+  };
+  /** Sửa dòng đã đếm: lấy tồn hiện tại (server ghi lại tồn khi đếm lại), không dùng tồn lúc đếm trước. */
+  const onEdit = async (i: StocktakeItem) => {
+    try {
+      openFor(await fetchProduct(i.productId));
+    } catch (e) {
+      toast.error((e as Error).message);
     }
   };
   const save = (counted: number) => {
@@ -94,7 +102,7 @@ export function StocktakeSession({ session }: { session: StocktakeDetail }) {
         }
       />
       <ProductSearch inputRef={scan.ref} onScan={(c) => void onScan(c)} onPick={openFor} />
-      <label className="flex items-center gap-3">
+      <label className="flex min-h-11 items-center gap-3">
         <Switch checked={onlyDiff} onCheckedChange={setOnlyDiff} />
         <span>Chỉ món lệch</span>
       </label>
@@ -102,7 +110,7 @@ export function StocktakeSession({ session }: { session: StocktakeDetail }) {
         {items.length ? (
           <StocktakeItemsTable
             items={items}
-            onEdit={(i) => setTarget({ productId: i.productId, name: i.productName, unit: i.unit, stock: i.expected, counted: i.counted })}
+            onEdit={(i) => void onEdit(i)}
             onRemove={(i) => remove.mutate({ id: session.id, productId: i.productId }, { onError: (e) => toast.error(e.message) })}
           />
         ) : (
