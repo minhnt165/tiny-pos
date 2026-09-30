@@ -1,12 +1,15 @@
-import { and, asc, desc, eq, gte, lt, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, isNull, lt, sql } from 'drizzle-orm';
 import {
   baseCost,
   importLineAmount,
   localDate,
   localDayRange,
+  PAGE_SIZE,
+  resolveRange,
   type ImportDetail,
   type ImportInput,
   type ImportList,
+  type ImportListQuery,
   type ImportSummary,
 } from '@tiny-pos/shared';
 import type { Db, DbOrTx } from '../db/connection.js';
@@ -15,6 +18,7 @@ import { BadRequestError, ConflictError, NotFoundError } from '../errors.js';
 import { nextDailyCode, resolveClock, type Clock } from './daily-code.js';
 import { recordMovement } from './stock.js';
 import { recordSupplierTx } from './supplier-ledger.js';
+import { likeTerm } from './orders.js';
 
 interface ResolvedLine {
   productId: number;
@@ -168,17 +172,40 @@ export function createImport(db: Db, input: ImportInput, clock?: Clock): ImportD
 // Viết tên bảng cứng: drizzle bỏ tiền tố bảng khi render cột trong subquery
 const itemCount = sql<number>`(select count(*) from import_items where import_items.import_id = imports.id)`;
 
-export function listImports(db: Db, date: string, clock?: Clock): ImportList {
-  const { tz } = resolveClock(clock);
-  const { start, end } = localDayRange(date, tz);
+export function listImports(db: Db, query: ImportListQuery, clock?: Clock): ImportList {
+  const { now, tz } = resolveClock(clock);
+  const { from, to } = resolveRange(query, localDate(now, tz));
+  const start = localDayRange(from, tz).start;
+  const end = localDayRange(to, tz).end;
+  const inRange = and(gte(imports.createdAt, start), lt(imports.createdAt, end));
+  const term = likeTerm(query.q);
+  const where = and(
+    inRange,
+    query.status?.length ? inArray(imports.status, query.status) : undefined,
+    query.supplierId === 'none' ? isNull(imports.supplierId) : query.supplierId ? eq(imports.supplierId, query.supplierId) : undefined,
+    query.unpaid ? sql`(imports.status = 'done' and imports.paid < imports.total)` : undefined,
+    // Viết tên bảng cứng như itemCount: drizzle bỏ tiền tố bảng trong sql``
+    term
+      ? sql`(vn_fold(imports.code) like ${term} escape '\\' or exists (select 1 from import_items where import_items.import_id = imports.id and vn_fold(import_items.product_name) like ${term} escape '\\'))`
+      : undefined,
+  );
+  const page = query.page ?? 1;
+  const total = db.select({ n: count() }).from(imports).where(where).get()?.n ?? 0;
   const list = db
     .select({ row: imports, itemCount })
     .from(imports)
-    .where(and(gte(imports.createdAt, start), lt(imports.createdAt, end)))
+    .where(where)
     .orderBy(desc(imports.id))
+    .limit(PAGE_SIZE)
+    .offset((page - 1) * PAGE_SIZE)
     .all()
     .map((r) => toSummary(r.row, Number(r.itemCount)));
-  const done = list.filter((i) => i.status === 'done');
+  // Số liệu theo khoảng ngày, không theo lọc khác
+  const done = db
+    .select({ total: imports.total, paid: imports.paid })
+    .from(imports)
+    .where(and(inRange, eq(imports.status, 'done')))
+    .all();
   return {
     imports: list,
     summary: {
@@ -186,6 +213,9 @@ export function listImports(db: Db, date: string, clock?: Clock): ImportList {
       total: done.reduce((s, i) => s + i.total, 0),
       paid: done.reduce((s, i) => s + i.paid, 0),
     },
+    total,
+    page,
+    pageSize: PAGE_SIZE,
   };
 }
 

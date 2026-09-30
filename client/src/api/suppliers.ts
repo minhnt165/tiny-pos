@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Supplier, SupplierInputBody, SupplierPaymentBody, SupplierTransaction } from '@tiny-pos/shared';
+import type { Supplier, SupplierInputBody, SupplierListItem, SupplierPaymentBody, SupplierTransaction } from '@tiny-pos/shared';
 import { api } from './client';
 
-export const useSuppliers = () => useQuery({ queryKey: ['suppliers'], queryFn: () => api<Supplier[]>('/suppliers') });
+export const useSuppliers = (includeInactive = false) =>
+  useQuery({ queryKey: ['suppliers', { includeInactive }], queryFn: () => api<SupplierListItem[]>(`/suppliers${includeInactive ? '?includeInactive=1' : ''}`) });
 
 export const useSupplierTransactions = (id: number | null) =>
   useQuery({

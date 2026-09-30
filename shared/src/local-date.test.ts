@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDateVn, localDate, localDayRange, shiftDate } from './local-date.js';
+import { datePresetRange, detectPreset, formatDateVn, formatRangeVn, localDate, localDayRange, shiftDate } from './local-date.js';
 
 const VN = 420;
 
@@ -34,5 +34,27 @@ describe('formatDateVn', () => {
   it('chuỗi khác dạng thì trả nguyên', () => {
     expect(formatDateVn('')).toBe('');
     expect(formatDateVn('30/09/2026')).toBe('30/09/2026');
+  });
+});
+
+describe('datePresetRange', () => {
+  it('các mốc tính từ hôm nay', () => {
+    expect(datePresetRange('today', '2026-09-30')).toEqual({ from: '2026-09-30', to: '2026-09-30' });
+    expect(datePresetRange('yesterday', '2026-10-01')).toEqual({ from: '2026-09-30', to: '2026-09-30' });
+    expect(datePresetRange('last7', '2026-10-03')).toEqual({ from: '2026-09-27', to: '2026-10-03' });
+    expect(datePresetRange('thisMonth', '2026-09-30')).toEqual({ from: '2026-09-01', to: '2026-09-30' });
+    expect(datePresetRange('lastMonth', '2026-03-15')).toEqual({ from: '2026-02-01', to: '2026-02-28' });
+    expect(datePresetRange('lastMonth', '2028-03-01')).toEqual({ from: '2028-02-01', to: '2028-02-29' });
+    expect(datePresetRange('lastMonth', '2027-01-10')).toEqual({ from: '2026-12-01', to: '2026-12-31' });
+  });
+  it('detectPreset nhận ra mốc, không khớp thì null', () => {
+    expect(detectPreset('2026-09-30', '2026-09-30', '2026-09-30')).toBe('today');
+    expect(detectPreset('2026-09-01', '2026-09-30', '2026-09-30')).toBe('thisMonth');
+    expect(detectPreset('2026-09-02', '2026-09-30', '2026-09-30')).toBeNull();
+  });
+  it('formatRangeVn: cùng năm hiện tại bỏ năm, khác năm thì ghi năm', () => {
+    expect(formatRangeVn('2026-09-01', '2026-09-15', '2026-09-30')).toBe('01/09 – 15/09');
+    expect(formatRangeVn('2026-09-15', '2026-09-15', '2026-09-30')).toBe('15/09');
+    expect(formatRangeVn('2025-12-20', '2026-01-05', '2026-09-30')).toBe('20/12/2025 – 05/01/2026');
   });
 });

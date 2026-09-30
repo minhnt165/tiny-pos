@@ -99,4 +99,19 @@ describe('customers', () => {
     expect(debtBalanceAt(db, c.id, t2)).toBe(120000);
     expect(getCustomer(db, c.id).debt).toBe(ledgerSum(c.id));
   });
+
+  it('includeInactive và lastActivityAt', () => {
+    const lan = createCustomer(db, customerCreateSchema.parse({ name: 'Chị Lan', openingDebt: 1000 }));
+    const cu = createCustomer(db, customerCreateSchema.parse({ name: 'Ông Cũ' }));
+    deleteCustomer(db, cu.id);
+    const active = listCustomers(db);
+    expect(active.customers.map((c) => c.name)).toEqual([lan.name]);
+    expect(active.customers[0]!.lastActivityAt).toEqual(expect.any(String));
+    const all = listCustomers(db, undefined, true);
+    expect(all.customers.map((c) => [c.name, c.isActive, c.lastActivityAt === null])).toEqual([
+      ['Chị Lan', true, false],
+      ['Ông Cũ', false, true],
+    ]);
+    expect(all.totalDebt).toBe(1000);
+  });
 });

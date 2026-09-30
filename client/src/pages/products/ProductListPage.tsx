@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { FileSpreadsheet, Package, Plus, ScanBarcode, Search } from 'lucide-react';
-import { useSearchParams } from 'react-router';
 import { toast } from 'sonner';
-import type { Product } from '@tiny-pos/shared';
+import { filterProducts, productViewFields, sortProducts, type Product } from '@tiny-pos/shared';
 import { useCategories } from '@/api/categories';
 import { useProduct, useProducts, useSetProductActive } from '@/api/products';
 import { useConfirm } from '@/components/ConfirmDialog';
@@ -12,32 +11,27 @@ import { ListPanel } from '@/components/ListPanel';
 import { Pager } from '@/components/Pager';
 import { TableSkeleton } from '@/components/TableSkeleton';
 import { Button } from '@/components/ui/button';
+import { useUrlFilters } from '@/hooks/useUrlFilters';
 import { CsvDialog } from './CsvDialog';
 import { ProductCardList } from './ProductCardList';
 import { ProductFormDialog } from './ProductFormDialog';
 import { ProductStats } from './ProductStats';
 import { ProductTable } from './ProductTable';
-import { ProductToolbar } from './ProductToolbar';
+import { ProductFilters, productFilterCount } from './ProductToolbar';
 
 const PAGE_SIZE = 20;
 
 export function ProductListPage() {
-  // Màn Danh mục mở sang đây kèm ?categoryId= để lọc sẵn
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [q, setQ] = useState('');
-  const [categoryId, setCategoryId] = useState(() => searchParams.get('categoryId') ?? '');
-  const [includeInactive, setIncludeInactive] = useState(false);
-  const [page, setPage] = useState(1);
+  // Màn Danh mục mở sang đây kèm ?categoryId= (cùng khóa URL của bộ lọc)
+  const { filters: view, set, clear } = useUrlFilters(productViewFields);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [creating, setCreating] = useState(false);
   const [csvOpen, setCsvOpen] = useState(false);
 
-  const { data: all = [] } = useProducts({});
-  const { data: products = [], isLoading } = useProducts({
-    q,
-    categoryId: categoryId ? Number(categoryId) : undefined,
-    includeInactive,
-  });
+  // Tải hết một lần (kể cả ngừng bán) rồi lọc/sắp xếp trên trình duyệt
+  const { data: everything = [], isLoading } = useProducts({ includeInactive: true });
+  const all = everything.filter((p) => p.isActive);
+  const products = sortProducts(filterProducts(everything, view), view.sort);
   const { data: categories = [] } = useCategories();
   const { data: editing } = useProduct(editingId);
   const setActive = useSetProductActive();
@@ -63,15 +57,9 @@ export function ProductListPage() {
     setEditingId(null);
     setCreating(false);
   };
-  const filtered = q !== '' || categoryId !== '';
-  // Đổi bộ lọc thì quay về trang 1; danh sách ngắn lại thì kẹp về trang cuối còn có
-  const resetPage =
-    <T,>(set: (v: T) => void) =>
-    (v: T) => {
-      set(v);
-      setPage(1);
-    };
-  const currentPage = Math.min(page, Math.max(1, Math.ceil(products.length / PAGE_SIZE)));
+  const filtered = !!view.q || productFilterCount(view) > 0;
+  // Danh sách ngắn lại thì kẹp về trang cuối còn có
+  const currentPage = Math.min(view.page, Math.max(1, Math.ceil(products.length / PAGE_SIZE)));
   const pageItems = products.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
@@ -90,20 +78,9 @@ export function ProductListPage() {
 
       <ListPanel
         toolbar={
-          <ProductToolbar
-            q={q}
-            setQ={resetPage(setQ)}
-            categoryId={categoryId}
-            setCategoryId={resetPage((v: string) => {
-              setCategoryId(v);
-              if (searchParams.has('categoryId')) setSearchParams({}, { replace: true });
-            })}
-            includeInactive={includeInactive}
-            setIncludeInactive={resetPage(setIncludeInactive)}
-            categories={categories}
-          />
+          <ProductFilters view={view} set={set} clear={clear} categories={categories} resultCount={products.length} />
         }
-        footer={products.length > 0 && <Pager page={currentPage} pageSize={PAGE_SIZE} total={products.length} onPageChange={setPage} noun="mặt hàng" />}
+        footer={products.length > 0 && <Pager page={currentPage} pageSize={PAGE_SIZE} total={products.length} onPageChange={(page) => set({ page })} noun="mặt hàng" />}
       >
         {isLoading ? (
           <TableSkeleton />
@@ -111,9 +88,13 @@ export function ProductListPage() {
           <EmptyState
             icon={filtered ? Search : Package}
             title={filtered ? 'Không tìm thấy sản phẩm nào' : 'Chưa có sản phẩm'}
-            description={filtered ? 'Thử từ khóa khác hoặc bỏ lọc danh mục.' : 'Thêm bằng tay, quét mã ở Nhập nhanh, hoặc nhập từ file CSV.'}
+            description={filtered ? 'Thử từ khóa khác hoặc bỏ bớt lọc.' : 'Thêm bằng tay, quét mã ở Nhập nhanh, hoặc nhập từ file CSV.'}
             action={
-              !filtered && (
+              filtered ? (
+                <Button variant="outline" onClick={clear}>
+                  Xóa lọc
+                </Button>
+              ) : (
                 <Button onClick={() => setCreating(true)}>
                   <Plus data-icon="inline-start" />
                   Thêm sản phẩm

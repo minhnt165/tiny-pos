@@ -24,4 +24,6 @@ export * from './schemas/supplier.js';
 export * from './schemas/import.js';
 export * from './schemas/stocktake.js';
 export * from './schemas/customer.js';
+export * from './schemas/list-filters.js';
+export * from './list-filters.js';
 export * from './product-csv.js';

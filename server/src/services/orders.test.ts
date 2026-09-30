@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { eq, sql } from 'drizzle-orm';
-import { customerCreateSchema, orderInputSchema, productInputSchema, productUnitInputSchema } from '@tiny-pos/shared';
+import { customerCreateSchema, orderInputSchema, orderListQuerySchema, productInputSchema, productUnitInputSchema } from '@tiny-pos/shared';
 import type { Db } from '../db/connection.js';
 import { stockMovements } from '../db/schema.js';
 import { createTestDb } from '../db/test-db.js';
@@ -14,6 +14,8 @@ const at = (iso: string) => ({ now: new Date(iso), tzOffsetMin: VN });
 const MORNING = at('2026-09-29T03:00:00.000Z'); // 10:00 ngày 29/9 giờ VN
 const order = (o: Record<string, unknown>) =>
   orderInputSchema.parse({ paymentMethod: 'cash', paid: 10_000_000, ...o });
+const list = (q: Record<string, unknown>, clock: { now?: Date; tzOffsetMin: number } = { tzOffsetMin: VN }) =>
+  listOrders(db, orderListQuerySchema.parse(q), clock);
 
 let db: Db;
 beforeEach(() => {
@@ -153,10 +155,57 @@ describe('listOrders', () => {
     const b = createOrder(db, order({ ...item, paymentMethod: 'transfer' }), MORNING);
     const c = createOrder(db, order(item), MORNING);
     cancelOrder(db, c.id);
-    const r = listOrders(db, '2026-09-29', { tzOffsetMin: VN });
+    const r = list({ date: '2026-09-29' });
     expect(r.orders.map((o) => o.id)).toEqual([c.id, b.id, a.id]);
     expect(r.orders[0]).toMatchObject({ status: 'cancelled', itemCount: 1 });
     expect(r.summary).toEqual({ count: 2, total: 20000, cash: 10000, transfer: 10000, debt: 0, debtCollected: { cash: 0, transfer: 0 } });
+  });
+
+  const item = (name = 'Sữa tươi') => ({ items: [{ name, qty: 1, price: 10000 }] });
+
+  it('khoảng ngày theo giờ VN gồm cả hai đầu; mặc định hôm nay theo clock', () => {
+    const d28 = createOrder(db, order(item()), at('2026-09-28T16:30:00.000Z')); // 23:30 ngày 28
+    const d29 = createOrder(db, order(item()), at('2026-09-28T17:00:00.000Z')); // 00:00 ngày 29
+    const d30 = createOrder(db, order(item()), at('2026-09-30T03:00:00.000Z'));
+    expect(list({ from: '2026-09-28', to: '2026-09-29' }).orders.map((o) => o.id)).toEqual([d29.id, d28.id]);
+    expect(list({}, at('2026-09-30T10:00:00.000Z')).orders.map((o) => o.id)).toEqual([d30.id]);
+  });
+
+  it('lọc pay/status/customerId; summary chỉ theo khoảng ngày', () => {
+    const c = createCustomer(db, customerCreateSchema.parse({ name: 'Chị Lan' }));
+    const cash = createOrder(db, order(item()), MORNING);
+    const tr = createOrder(db, order({ ...item(), paymentMethod: 'transfer' }), MORNING);
+    const debt = createOrder(db, order({ ...item(), paymentMethod: 'debt', customerId: c.id, paid: 0 }), MORNING);
+    const gone = createOrder(db, order(item()), MORNING);
+    cancelOrder(db, gone.id);
+    const all = list({ date: '2026-09-29' });
+    expect(all.total).toBe(4);
+    const ids = (q: Record<string, unknown>) => list({ date: '2026-09-29', ...q }).orders.map((o) => o.id);
+    expect(ids({ pay: 'cash,transfer' })).toEqual([gone.id, tr.id, cash.id]);
+    expect(ids({ status: 'cancelled' })).toEqual([gone.id]);
+    expect(ids({ customerId: String(c.id) })).toEqual([debt.id]);
+    const narrowed = list({ date: '2026-09-29', pay: 'debt', q: 'khong-co' });
+    expect(narrowed.total).toBe(0);
+    expect(narrowed.summary).toEqual(all.summary);
+  });
+
+  it('tìm mã hoặc tên hàng không dấu; % không khớp mọi dòng', () => {
+    const a = createOrder(db, order(item('Sữa tươi Vinamilk')), MORNING);
+    const b = createOrder(db, order(item('Bánh mì')), MORNING);
+    const ids = (q: string) => list({ date: '2026-09-29', q }).orders.map((o) => o.id);
+    expect(ids('sua tuoi')).toEqual([a.id]);
+    expect(ids('BÁNH')).toEqual([b.id]);
+    expect(ids(b.code.slice(-4))).toEqual([b.id]);
+    expect(ids('%')).toEqual([]);
+  });
+
+  it('phân trang 50 dòng, mới nhất trước', () => {
+    for (let i = 0; i < 53; i++) createOrder(db, order(item()), MORNING);
+    const p1 = list({ date: '2026-09-29' });
+    const p2 = list({ date: '2026-09-29', page: '2' });
+    expect([p1.total, p1.page, p1.pageSize, p1.orders.length]).toEqual([53, 1, 50, 50]);
+    expect([p2.page, p2.orders.length]).toEqual([2, 3]);
+    expect(p1.orders[0]!.id).toBeGreaterThan(p2.orders[0]!.id);
   });
 });
 
@@ -196,7 +245,7 @@ describe('đơn ghi nợ', () => {
     collectDebt(db, c.id, { amount: 100000, method: 'cash', note: null });
     deleteCustomer(db, c.id);
     expect(() => debtOrder(c.id, 0)).toThrow('Khách hàng không còn theo dõi');
-    expect(listOrders(db, '2026-09-29', { tzOffsetMin: VN }).orders).toEqual([]);
+    expect(list({ date: '2026-09-29' }).orders).toEqual([]);
   });
 
   it('đơn tiền mặt gửi kèm customerId → không gắn khách, không ghi nợ', () => {
@@ -246,7 +295,7 @@ describe('đơn ghi nợ', () => {
     collectDebt(db, c.id, { amount: 50000, method: 'cash', note: null }, MORNING);
     collectDebt(db, c.id, { amount: 30000, method: 'transfer', note: null }, MORNING);
     collectDebt(db, c.id, { amount: 1000, method: 'cash', note: null }, at('2026-09-28T16:59:59.000Z')); // 23:59 ngày 28 VN
-    expect(listOrders(db, '2026-09-29', { tzOffsetMin: VN }).summary).toEqual({
+    expect(list({ date: '2026-09-29' }).summary).toEqual({
       count: 3,
       total: 30000,
       cash: 14000,

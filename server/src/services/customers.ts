@@ -1,4 +1,4 @@
-import { asc, desc, eq } from 'drizzle-orm';
+import { asc, desc, eq, sql } from 'drizzle-orm';
 import { stripDiacritics } from '@tiny-pos/shared';
 import type {
   Customer,
@@ -6,6 +6,7 @@ import type {
   CustomerCreate,
   CustomerInput,
   CustomerList,
+  CustomerListItem,
   CustomerPayment,
   CustomerPaymentResult,
   CustomerTransaction,
@@ -17,14 +18,17 @@ import { recordCustomerDebtTx } from './customer-ledger.js';
 import { resolveClock, type Clock } from './daily-code.js';
 
 /** Lọc bằng JS vì LIKE của SQLite không bỏ hoa/thường với chữ có dấu ("đức" ≠ "Đức"); tên so khớp cả khi gõ không dấu ("duc" → "Đức"). */
-export function listCustomers(db: Db, q?: string): CustomerList {
-  const rows = db
-    .select()
+export function listCustomers(db: Db, q?: string, includeInactive = false): CustomerList {
+  // Viết tên bảng cứng trong subquery (drizzle bỏ tiền tố bảng khi render cột)
+  const lastActivityAt = sql<string | null>`(select max(created_at) from debt_transactions where debt_transactions.customer_id = customers.id)`;
+  const rows: CustomerListItem[] = db
+    .select({ c: customers, lastActivityAt })
     .from(customers)
-    .where(eq(customers.isActive, true))
+    .where(includeInactive ? undefined : eq(customers.isActive, true))
     .orderBy(desc(customers.debt), asc(customers.name))
-    .all();
-  const totalDebt = rows.reduce((s, c) => s + Math.max(0, c.debt), 0);
+    .all()
+    .map((r) => ({ ...r.c, lastActivityAt: r.lastActivityAt }));
+  const totalDebt = rows.filter((c) => c.isActive).reduce((s, c) => s + Math.max(0, c.debt), 0);
   const t = q ? stripDiacritics(q.trim()).toLowerCase() : '';
   if (!t) return { customers: rows, totalDebt };
   return { customers: rows.filter((c) => stripDiacritics(c.name).toLowerCase().includes(t) || (c.phone?.includes(t) ?? false)), totalDebt };

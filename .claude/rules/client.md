@@ -10,8 +10,9 @@ paths:
   - Dùng shadcn trong `components/ui`, alias `@/`, `cn` từ `@/lib/utils`, icon lucide-react.
   - Ô nhập của form dùng `TextField` và `SelectField`; ô số hoặc tiền chỉ ghi khi Enter hoặc blur thì dùng `CommitInput`.
   - Trạng thái rỗng dùng `EmptyState`, xác nhận dùng `ConfirmDialog`, đang tải dùng `TableSkeleton`.
-  - Tiêu đề trang + nút hành động dùng `PageTitle` (`actions: PageAction[]`, vẽ lên topbar bằng portal; nút submit form dùng `form: '<id>'`). Danh sách dùng `ListPanel` (toolbar: `SearchInput`, `ToolbarSelect`, `DayPicker`), số liệu `StatStrip` + `Stat`.
-  - Ngày dùng `DateField`/`DayPicker` (hiện `dd/mm/yyyy`), không dùng `<input type="date">`; ngày in ra chữ dùng `formatDateVn` (shared).
+  - Tiêu đề trang + nút hành động dùng `PageTitle` (`actions: PageAction[]`, vẽ lên topbar bằng portal; nút submit form dùng `form: '<id>'`). Danh sách dùng `ListPanel`, số liệu `StatStrip` + `Stat`.
+  - Danh sách có lọc dùng `FilterBar` (`components/filters/`) trong toolbar `ListPanel`; bộ lọc lưu trên URL bằng `useUrlFilters(fields)` với `fields` là schema zod trong `shared/src/schemas/list-filters.ts` (hằng số module). Hóa đơn/Nhập hàng lọc và phân trang ở server; Sản phẩm/Khách/NCC tải hết rồi lọc bằng `filterProducts`/`filterParties` (shared).
+  - Ngày dùng `DateField` / khoảng ngày `DateRangeFilter` (hiện `dd/mm/yyyy`), không dùng `<input type="date">`; ngày in ra chữ dùng `formatDateVn` (shared).
   - Dialog chọn cỡ bằng `size` của `DialogContent` (`sm`/`md`/`lg`/`xl`), không tự đặt `sm:max-w-*`.
 - **Màu và tùy chỉnh giao diện**: dùng token (`primary`, `accent`, `muted-foreground`, `success`, `warning`, `destructive`), không viết `emerald-*`/`amber-*`/mã hex trong trang. Màu nhấn, cỡ chữ, mật độ, bo góc là `data-*` trên `<html>` (`lib/ui-prefs.ts`, CSS ở `index.css`); chế độ sáng/tối do next-themes.
 - **Radix Select**: `SelectItem` không được có `value=''`, nên giá trị "không chọn" là `NONE` trong `SelectField`. Radix có thể tự bắn `onValueChange('')` khi `value` đổi lúc option chưa mount; `SelectField` đã bỏ qua trường hợp này. Đừng gỡ chỗ bỏ qua đó.

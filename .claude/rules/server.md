@@ -13,5 +13,6 @@ paths:
 - **Drizzle**:
   - Subquery viết bằng `sql` phải ghi tên bảng cứng (`import_items.import_id = imports.id`), vì drizzle bỏ tiền tố bảng khi nội suy cột vào subquery.
   - `LIKE` của SQLite không bỏ hoa/thường với chữ có dấu ("đại" ≠ "Đại"): tìm theo tên tiếng Việt thì lấy ra rồi lọc bằng JS `toLowerCase().includes()` (mẫu: `listSuppliers`).
+  - Tìm không dấu ngay trong SQL (danh sách lớn, có phân trang): dùng hàm `vn_fold(cột)` (đăng ký trong `db/connection.ts`) với chuỗi tìm qua `likeTerm()` (`services/orders.ts`: bỏ dấu, escape `% _ \`, `LIKE … ESCAPE '\'`). Danh sách chứng từ phân trang `PAGE_SIZE`, `summary` tính theo khoảng ngày, không theo lọc khác.
 - **Test** (vitest): mỗi test tạo `createTestDb()` riêng; test service gọi thẳng service, test API dùng app thật trong `*-api.test.ts`. Truyền `Clock` cố định khi test phụ thuộc ngày. Chạy một file: `npx vitest run src/services/<tên>.test.ts` trong `server/`.
 - **Seed** (`src/seed/`): dữ liệu ở `seed-data.ts`, nạp qua service thật để tồn/giá vốn/công nợ khớp nhau, và phải chạy lại được không tạo trùng (khớp theo mã vạch, tên hoặc ghi chú).

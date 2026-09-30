@@ -66,4 +66,24 @@ describe('API đơn hàng và cài đặt', () => {
     expect((await call('GET', '/api/settings')).json.storeName).toBe('Tạp hóa Út');
     expect((await call('PUT', '/api/settings', { bankBin: '12' })).status).toBe(400);
   });
+
+  it('lọc hóa đơn: khoảng ngày, pay, trang; 400 tiếng Việt khi query sai; date cũ vẫn chạy', async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const p = await call('POST', '/api/products', { name: 'Kẹo lọc', sellPrice: 1000, stock: 5 });
+    await call('POST', '/api/orders', { items: [{ productId: p.json.id, qty: 1, price: 1000 }], paymentMethod: 'cash', paid: 1000 });
+    const cashOnly = await call('GET', '/api/orders?pay=cash');
+    expect(cashOnly.json.total).toBeGreaterThan(0);
+    expect((await call('GET', '/api/orders?pay=transfer')).json.total).toBe(0);
+    const ok = await call('GET', `/api/orders?from=${today}&to=${today}&pay=cash,debt&page=1`);
+    expect(ok.status).toBe(200);
+    expect(ok.json).toMatchObject({ page: 1, pageSize: 50 });
+    expect(typeof ok.json.total).toBe('number');
+    expect((await call('GET', `/api/orders?date=${today}`)).status).toBe(200);
+    const bad = await call('GET', '/api/orders?from=2026-09-30&to=2026-09-01');
+    expect(bad).toMatchObject({ status: 400, json: { error: 'Ngày bắt đầu phải trước ngày kết thúc' } });
+    expect((await call('GET', '/api/orders?from=2025-01-01&to=2026-09-30')).json.error).toBe('Khoảng ngày tối đa 1 năm');
+    expect((await call('GET', '/api/orders?pay=abc')).status).toBe(400);
+    expect((await call('GET', '/api/imports?supplierId=abc')).status).toBe(400);
+    expect((await call('GET', '/api/imports?supplierId=none&unpaid=1')).status).toBe(200);
+  });
 });

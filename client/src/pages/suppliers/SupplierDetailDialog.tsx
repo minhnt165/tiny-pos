@@ -14,7 +14,7 @@ const when = (iso: string) => new Date(iso).toLocaleString('vi-VN', { hour: '2-d
 
 /** Thông tin NCC + sổ nợ + trả nợ / sửa / xóa. */
 export function SupplierDetailDialog({ id, onClose }: { id: number | null; onClose: () => void }) {
-  const { data: suppliers = [] } = useSuppliers();
+  const { data: suppliers = [] } = useSuppliers(true); // Lấy cả NCC đã xóa: danh sách bật "Hiện cả người đã xóa" vẫn mở được chi tiết
   const s = suppliers.find((x) => x.id === id) ?? null;
   const { data: txs = [] } = useSupplierTransactions(id);
   const [editing, setEditing] = useState(false);
@@ -72,22 +72,26 @@ export function SupplierDetailDialog({ id, onClose }: { id: number | null; onClo
               <p className="text-muted-foreground">Chưa có giao dịch.</p>
             )}
           </div>
-          <DialogFooter className="gap-2">
-            {s?.debt === 0 && (
-              <Button variant="outline" className="h-11 text-base text-destructive" onClick={() => void onDelete()}>
-                <Trash2 data-icon="inline-start" />
-                Xóa
+          {s && !s.isActive ? (
+            <p className="text-sm text-muted-foreground">Nhà cung cấp đã xóa: chỉ xem sổ nợ, không trả nợ hay sửa được.</p>
+          ) : (
+            <DialogFooter className="gap-2">
+              {s?.debt === 0 && (
+                <Button variant="outline" className="h-11 text-base text-destructive" onClick={() => void onDelete()}>
+                  <Trash2 data-icon="inline-start" />
+                  Xóa
+                </Button>
+              )}
+              <Button variant="outline" className="h-11 text-base" onClick={() => setEditing(true)}>
+                <Pencil data-icon="inline-start" />
+                Sửa
               </Button>
-            )}
-            <Button variant="outline" className="h-11 text-base" onClick={() => setEditing(true)}>
-              <Pencil data-icon="inline-start" />
-              Sửa
-            </Button>
-            <Button className="h-11 text-base" disabled={!s || s.debt <= 0} onClick={() => setPaying(true)}>
-              <HandCoins data-icon="inline-start" />
-              Trả nợ
-            </Button>
-          </DialogFooter>
+              <Button className="h-11 text-base" disabled={!s || s.debt <= 0} onClick={() => setPaying(true)}>
+                <HandCoins data-icon="inline-start" />
+                Trả nợ
+              </Button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
       <SupplierFormDialog open={editing} supplier={s} onClose={() => setEditing(false)} onSaved={() => setEditing(false)} />

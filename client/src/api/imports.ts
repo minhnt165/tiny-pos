@@ -1,9 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ImportDetail, ImportInputBody, ImportList } from '@tiny-pos/shared';
-import { api } from './client';
+import type { DocStatus, ImportDetail, ImportInputBody, ImportList } from '@tiny-pos/shared';
+import { api, queryString } from './client';
 
-export const useImports = (date: string) =>
-  useQuery({ queryKey: ['imports', 'day', date], queryFn: () => api<ImportList>(`/imports?date=${date}`) });
+export interface ImportListParams {
+  from: string;
+  to: string;
+  q?: string;
+  status?: DocStatus[];
+  supplierId?: number | 'none';
+  unpaid?: boolean;
+  page?: number;
+}
+
+export const useImports = (p: ImportListParams) =>
+  useQuery({ queryKey: ['imports', 'list', p], queryFn: () => api<ImportList>(`/imports${queryString({ ...p })}`), placeholderData: (prev) => prev });
 
 export const useImport = (id: number | null) =>
   useQuery({ queryKey: ['imports', 'detail', id], queryFn: () => api<ImportDetail>(`/imports/${id}`), enabled: id !== null });

@@ -157,8 +157,8 @@ Kết quả `ImportList` thêm `total`, `page`, `pageSize`; `summary` tính trê
 
 | Trang | Nội dung bảng lọc | Chip |
 |---|---|---|
-| Hóa đơn | Thời gian; Thanh toán (nhiều); Trạng thái (nhiều); Khách (`CustomerPicker`) | Mốc thời gian (không có × khi là Hôm nay – mặc định), từng lựa chọn |
-| Nhập hàng | Thời gian; NCC (`SupplierPicker` + "Không ghi NCC"); Trạng thái; Chỉ phiếu còn nợ | Như trên |
+| Hóa đơn | Thời gian; Thanh toán (nhiều); Trạng thái (nhiều); Khách (ô chọn `ToolbarSelect`, có cả khách đã xóa) | Mốc thời gian (không có × khi là Hôm nay – mặc định), từng lựa chọn |
+| Nhập hàng | Thời gian; NCC (ô chọn `ToolbarSelect` + "Không ghi NCC", có cả NCC đã xóa); Trạng thái; Chỉ phiếu còn nợ | Như trên |
 | Sản phẩm | Danh mục; Tồn kho; Loại hàng (Hàng cân, Không mã vạch); Giá bán từ–đến; Hiện hàng ngừng bán; Sắp xếp | Mọi lọc khác mặc định; sắp xếp không thành chip |
 | Khách hàng, NCC | Chỉ người đang nợ; Hiện cả người đã xóa; Sắp xếp | Như trên |
 

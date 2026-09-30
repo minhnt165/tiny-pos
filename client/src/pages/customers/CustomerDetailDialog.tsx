@@ -26,7 +26,7 @@ const userNote = (t: CustomerTransaction) => (t.kind === 'manual' || (t.kind ===
 
 /** Thông tin khách + sổ nợ + thu nợ / ghi nợ tay / sửa / xóa. */
 export function CustomerDetailDialog({ id, onClose }: { id: number | null; onClose: () => void }) {
-  const { data } = useCustomers();
+  const { data } = useCustomers(true); // Lấy cả khách đã xóa: danh sách bật "Hiện cả người đã xóa" vẫn mở được chi tiết
   const c = data?.customers.find((x) => x.id === id) ?? null;
   const { data: txs = [] } = useCustomerTransactions(id);
   const [editing, setEditing] = useState(false);
@@ -95,26 +95,30 @@ export function CustomerDetailDialog({ id, onClose }: { id: number | null; onClo
               <p className="text-muted-foreground">Chưa có giao dịch.</p>
             )}
           </div>
-          <DialogFooter className="gap-2">
-            {debt === 0 && (
-              <Button variant="outline" className="h-11 text-base text-destructive" onClick={() => void onDelete()}>
-                <Trash2 data-icon="inline-start" />
-                Xóa
+          {c && !c.isActive ? (
+            <p className="text-sm text-muted-foreground">Khách đã xóa: chỉ xem sổ nợ, không thu nợ hay sửa được.</p>
+          ) : (
+            <DialogFooter className="gap-2">
+              {debt === 0 && (
+                <Button variant="outline" className="h-11 text-base text-destructive" onClick={() => void onDelete()}>
+                  <Trash2 data-icon="inline-start" />
+                  Xóa
+                </Button>
+              )}
+              <Button variant="outline" className="h-11 text-base" onClick={() => setEditing(true)}>
+                <Pencil data-icon="inline-start" />
+                Sửa
               </Button>
-            )}
-            <Button variant="outline" className="h-11 text-base" onClick={() => setEditing(true)}>
-              <Pencil data-icon="inline-start" />
-              Sửa
-            </Button>
-            <Button variant="outline" className="h-11 text-base" disabled={!c} onClick={() => setAdding(true)}>
-              <NotebookPen data-icon="inline-start" />
-              Ghi nợ tay
-            </Button>
-            <Button className="h-11 text-base" disabled={!c || debt <= 0} onClick={() => setCollecting(true)}>
-              <HandCoins data-icon="inline-start" />
-              Thu nợ
-            </Button>
-          </DialogFooter>
+              <Button variant="outline" className="h-11 text-base" disabled={!c} onClick={() => setAdding(true)}>
+                <NotebookPen data-icon="inline-start" />
+                Ghi nợ tay
+              </Button>
+              <Button className="h-11 text-base" disabled={!c || debt <= 0} onClick={() => setCollecting(true)}>
+                <HandCoins data-icon="inline-start" />
+                Thu nợ
+              </Button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
       <CustomerFormDialog open={editing} customer={c} onClose={() => setEditing(false)} onSaved={() => setEditing(false)} />

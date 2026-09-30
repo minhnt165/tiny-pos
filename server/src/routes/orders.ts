@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { currentTzOffset, localDate, orderInputSchema, orderListQuerySchema, type OrderListQuery } from '@tiny-pos/shared';
+import { orderInputSchema, orderListQuerySchema, type OrderListQuery } from '@tiny-pos/shared';
 import type { Db } from '../db/connection.js';
 import { intParam, validateBody, validateQuery } from '../middleware/validate.js';
 import { cancelOrder, createOrder, getOrder, listOrders } from '../services/orders.js';
@@ -7,8 +7,7 @@ import { cancelOrder, createOrder, getOrder, listOrders } from '../services/orde
 export function ordersRouter(db: Db): Router {
   const r = Router();
   r.get('/', validateQuery(orderListQuerySchema), (_req, res) => {
-    const { date } = res.locals['query'] as OrderListQuery;
-    res.json(listOrders(db, date ?? localDate(new Date(), currentTzOffset())));
+    res.json(listOrders(db, res.locals['query'] as OrderListQuery));
   });
   r.get('/:id', (req, res) => res.json(getOrder(db, intParam(req, 'id'))));
   r.post('/', validateBody(orderInputSchema), (req, res) => res.status(201).json(createOrder(db, req.body)));

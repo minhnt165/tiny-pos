@@ -11,7 +11,8 @@ import type {
 } from '@tiny-pos/shared';
 import { api } from './client';
 
-export const useCustomers = () => useQuery({ queryKey: ['customers'], queryFn: () => api<CustomerList>('/customers') });
+export const useCustomers = (includeInactive = false) =>
+  useQuery({ queryKey: ['customers', { includeInactive }], queryFn: () => api<CustomerList>(`/customers${includeInactive ? '?includeInactive=1' : ''}`) });
 
 export const useCustomerTransactions = (id: number | null) =>
   useQuery({

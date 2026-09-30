@@ -27,3 +27,50 @@ export function formatDateVn(date: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
   return m ? `${m[3]}/${m[2]}/${m[1]}` : date;
 }
+
+export type DatePreset = 'today' | 'yesterday' | 'last7' | 'thisMonth' | 'lastMonth';
+export const DATE_PRESETS: readonly DatePreset[] = ['today', 'yesterday', 'last7', 'thisMonth', 'lastMonth'];
+
+/** Ngày cuối tháng của "YYYY-MM". */
+const monthEnd = (ym: string) => {
+  const [y, m] = ym.split('-').map(Number);
+  return new Date(Date.UTC(y!, m!, 0)).toISOString().slice(0, 10);
+};
+
+/** Khoảng [from, to] của một mốc thời gian, tính theo ngày địa phương `today`. */
+export function datePresetRange(preset: DatePreset, today: string): { from: string; to: string } {
+  const ym = today.slice(0, 7);
+  switch (preset) {
+    case 'today':
+      return { from: today, to: today };
+    case 'yesterday': {
+      const d = shiftDate(today, -1);
+      return { from: d, to: d };
+    }
+    case 'last7':
+      return { from: shiftDate(today, -6), to: today };
+    case 'thisMonth':
+      return { from: `${ym}-01`, to: today };
+    case 'lastMonth': {
+      const prev = shiftDate(`${ym}-01`, -1).slice(0, 7);
+      return { from: `${prev}-01`, to: monthEnd(prev) };
+    }
+  }
+}
+
+/** Khoảng đang chọn có trùng một mốc sẵn không (để hiện tên mốc thay vì ngày). */
+export function detectPreset(from: string, to: string, today: string): DatePreset | null {
+  return (
+    DATE_PRESETS.find((p) => {
+      const r = datePresetRange(p, today);
+      return r.from === from && r.to === to;
+    }) ?? null
+  );
+}
+
+/** Nhãn ngắn của khoảng ngày: "01/09 – 15/09"; khác năm hiện tại thì ghi đủ năm. */
+export function formatRangeVn(from: string, to: string, today: string): string {
+  const sameYear = from.slice(0, 4) === today.slice(0, 4) && to.slice(0, 4) === today.slice(0, 4);
+  const f = (d: string) => (sameYear ? formatDateVn(d).slice(0, 5) : formatDateVn(d));
+  return from === to ? f(from) : `${f(from)} – ${f(to)}`;
+}

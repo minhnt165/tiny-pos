@@ -1,9 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { OrderDetail, OrderInputBody, OrderList } from '@tiny-pos/shared';
-import { api } from './client';
+import type { DocStatus, OrderDetail, OrderInputBody, OrderList, PayMethod } from '@tiny-pos/shared';
+import { api, queryString } from './client';
 
-export const useOrders = (date: string) =>
-  useQuery({ queryKey: ['orders', 'day', date], queryFn: () => api<OrderList>(`/orders?date=${date}`) });
+export interface OrderListParams {
+  from: string;
+  to: string;
+  q?: string;
+  pay?: PayMethod[];
+  status?: DocStatus[];
+  customerId?: number;
+  page?: number;
+}
+
+export const useOrders = (p: OrderListParams) =>
+  useQuery({ queryKey: ['orders', 'list', p], queryFn: () => api<OrderList>(`/orders${queryString({ ...p })}`), placeholderData: (prev) => prev });
 
 export const useOrder = (id: number | null) =>
   useQuery({

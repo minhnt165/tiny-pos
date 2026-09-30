@@ -22,7 +22,8 @@ interface Props {
 }
 
 function TodaySummary() {
-  const { data } = useOrders(localDate(new Date(), currentTzOffset()));
+  const today = localDate(new Date(), currentTzOffset());
+  const { data } = useOrders({ from: today, to: today });
   const s = data?.summary;
   if (!s) return null;
   return (

@@ -26,7 +26,7 @@ npm workspaces, TypeScript ESM:
 - `client/` – React 19 + Vite 7 + Tailwind v4 + TanStack Query 5 + react-router 7, PWA. UI bằng shadcn/ui (style `radix-nova`, gói `radix-ui`) + icon lucide-react. Version ở `package.json` gốc (Vite chèn `__APP_VERSION__`); tùy chọn giao diện theo máy ở `lib/ui-prefs.ts` (`data-*` trên `<html>`).
 - `docs/superpowers/specs|plans/` – spec và kế hoạch từng giai đoạn. Đọc spec của giai đoạn liên quan trước khi sửa hành vi nghiệp vụ.
 
-Đã xong: Giai đoạn 1 (sản phẩm, danh mục, đơn vị quy đổi, CSV), 2 (bán hàng, hóa đơn 80mm, VietQR, cài đặt), 3 (nhập hàng, nhà cung cấp + công nợ, kiểm kê, lịch sử tồn), 4 (khách hàng, công nợ khách), làm mới giao diện 0.5.0 (sidebar nhóm menu, tùy chỉnh giao diện theo máy, version).
+Đã xong: Giai đoạn 1 (sản phẩm, danh mục, đơn vị quy đổi, CSV), 2 (bán hàng, hóa đơn 80mm, VietQR, cài đặt), 3 (nhập hàng, nhà cung cấp + công nợ, kiểm kê, lịch sử tồn), 4 (khách hàng, công nợ khách), làm mới giao diện 0.5.0 (sidebar nhóm menu, tùy chỉnh giao diện theo máy, version), bộ lọc nâng cao 0.6.0 (khoảng ngày, lọc chứng từ ở server, lọc sản phẩm/khách/NCC ở trình duyệt, lưu trên URL).
 
 ## Bất biến nghiệp vụ (không được phá)
 
@@ -45,7 +45,7 @@ npm workspaces, TypeScript ESM:
 - **Ngôn ngữ**: text trên UI, thông báo lỗi API, comment trong code, commit message đều bằng tiếng Việt.
 - **Không format lại file có sẵn**: diff chỉ chứa đúng dòng cần đổi, không thụt lề lại, không sắp xếp lại import của code không liên quan. Repo không có prettier/eslint; theo phong cách xung quanh (2 space, nháy đơn, có `;`, dòng dài tới ~130 ký tự). Trước khi commit xem `git diff --stat`; file cũ có số dòng đổi lớn bất thường thì kiểm tra lại.
 - **Git**: làm trên một nhánh (`master`), không tạo nhánh mới cho từng việc. Không chia nhỏ commit: mỗi đợt việc/đợt sửa một commit. Commit theo dạng `feat(server): …`, `fix(client): …`, `docs: …`, `chore: …`.
-- **UI**: dùng component shadcn có sẵn trong `client/src/components/ui` và component dùng chung trong `client/src/components`; thiếu thì `npx shadcn@latest add <tên>` trong `client/`. Không tự viết component thô. Tiêu đề + nút của trang dùng `PageTitle` (vẽ lên topbar), danh sách dùng `ListPanel`, số liệu `StatStrip`, ngày `DateField`/`DayPicker`; màu lấy từ token CSS (`primary`, `success`, `warning`, `destructive`), không viết mã màu trong trang.
+- **UI**: dùng component shadcn có sẵn trong `client/src/components/ui` và component dùng chung trong `client/src/components`; thiếu thì `npx shadcn@latest add <tên>` trong `client/`. Không tự viết component thô. Tiêu đề + nút của trang dùng `PageTitle` (vẽ lên topbar), danh sách dùng `ListPanel`, số liệu `StatStrip`, bộ lọc `FilterBar` + `useUrlFilters`, chọn ngày `DateRangeFilter`/`DateField`; màu lấy từ token CSS (`primary`, `success`, `warning`, `destructive`), không viết mã màu trong trang.
 - **Kiểm thử giao diện**: thay đổi ở client phải kiểm trên trình duyệt thật (xem skill `browser-verify`), vì client không có test tự động. Không ghi vào DB dev của người dùng khi kiểm.
 - **Migration**: DB dev đã chạy tới `0003`. Đổi schema thì tạo migration mới, không sửa migration đã có (xem `.claude/rules/database.md`).
 

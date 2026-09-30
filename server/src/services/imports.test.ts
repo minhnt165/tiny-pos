@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import {
   importInputSchema,
+  importListQuerySchema,
   orderInputSchema,
   productInputSchema,
   productUnitInputSchema,
@@ -29,6 +30,7 @@ const supplier = (name = 'Đại lý Hùng') => createSupplier(db, supplierInput
 const crateOf = (productId: number) =>
   createUnit(db, productId, productUnitInputSchema.parse({ name: 'Thùng', factor: 24, sellPrice: 280000 }));
 const imp = (o: Record<string, unknown>, clock = MORNING) => createImport(db, importInputSchema.parse(o), clock);
+const list = (q: Record<string, unknown>) => listImports(db, importListQuerySchema.parse(q), { tzOffsetMin: VN });
 
 describe('createImport', () => {
   it('nhập theo thùng: +qty×factor, giá vốn gốc, giá bán thùng; ghi nợ phần chưa trả', () => {
@@ -138,9 +140,28 @@ describe('listImports / getImport', () => {
     const b = imp({ paid: 3000, items: [{ productId: p.id, qty: 3, unitCost: 1000 }] });
     const c = imp(one);
     cancelImport(db, c.id);
-    const r = listImports(db, '2026-09-29', { tzOffsetMin: VN });
+    const r = list({ date: '2026-09-29' });
     expect(r.imports.map((i) => i.id)).toEqual([c.id, b.id, a.id]);
     expect(r.summary).toEqual({ count: 2, total: 4000, paid: 4000 });
     expect(getImport(db, b.id).items).toHaveLength(1);
+  });
+
+  it('lọc NCC / không ghi NCC / còn nợ / trạng thái / tìm tên hàng; summary theo ngày; phân trang', () => {
+    const s = createSupplier(db, supplierInputSchema.parse({ name: 'Đại lý Hùng' }));
+    const milk = product({ name: 'Sữa đặc' });
+    const other = product({ name: 'Mì gói' });
+    const owe = imp({ supplierId: s.id, paid: 0, items: [{ productId: milk.id, qty: 2, unitCost: 1000 }] });
+    const full = imp({ supplierId: s.id, paid: 1000, items: [{ productId: other.id, qty: 1, unitCost: 1000 }] });
+    const none = imp({ paid: 1000, items: [{ productId: other.id, qty: 1, unitCost: 1000 }] });
+    const ids = (q: Record<string, unknown>) => list({ date: '2026-09-29', ...q }).imports.map((i) => i.id);
+    expect(ids({ supplierId: String(s.id) })).toEqual([full.id, owe.id]);
+    expect(ids({ supplierId: 'none' })).toEqual([none.id]);
+    expect(ids({ unpaid: '1' })).toEqual([owe.id]);
+    expect(ids({ q: 'sua dac' })).toEqual([owe.id]);
+    cancelImport(db, full.id);
+    expect(ids({ status: 'cancelled' })).toEqual([full.id]);
+    const r = list({ date: '2026-09-29', supplierId: 'none' });
+    expect(r).toMatchObject({ total: 1, page: 1, pageSize: 50 });
+    expect(r.summary).toEqual(list({ date: '2026-09-29' }).summary);
   });
 });

@@ -38,3 +38,14 @@ export async function api<T>(path: string, opts: Options = {}): Promise<T> {
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
+
+/** Query string từ object: bỏ giá trị rỗng/false/mảng rỗng; mảng nối bằng dấu phẩy; true → '1'. */
+export function queryString(params: Record<string, string | number | boolean | readonly string[] | undefined>): string {
+  const p = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v === undefined || v === '' || v === false || (Array.isArray(v) && !v.length)) continue;
+    p.set(k, v === true ? '1' : Array.isArray(v) ? v.join(',') : String(v));
+  }
+  const s = p.toString();
+  return s ? `?${s}` : '';
+}

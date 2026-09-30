@@ -1,13 +1,21 @@
-import { asc, eq } from 'drizzle-orm';
-import type { Supplier, SupplierInput, SupplierPayment, SupplierTransaction } from '@tiny-pos/shared';
+import { asc, eq, sql } from 'drizzle-orm';
+import type { Supplier, SupplierInput, SupplierListItem, SupplierPayment, SupplierTransaction } from '@tiny-pos/shared';
 import type { Db, DbOrTx } from '../db/connection.js';
 import { imports, supplierTransactions, suppliers } from '../db/schema.js';
 import { BadRequestError, ConflictError, NotFoundError } from '../errors.js';
 import { recordSupplierTx } from './supplier-ledger.js';
 
 /** Lọc bằng JS vì LIKE của SQLite không bỏ hoa/thường với chữ có dấu ("đại" ≠ "Đại"). */
-export function listSuppliers(db: Db, q?: string): Supplier[] {
-  const rows = db.select().from(suppliers).where(eq(suppliers.isActive, true)).orderBy(asc(suppliers.name)).all();
+export function listSuppliers(db: Db, q?: string, includeInactive = false): SupplierListItem[] {
+  // Viết tên bảng cứng trong subquery (drizzle bỏ tiền tố bảng khi render cột)
+  const lastActivityAt = sql<string | null>`(select max(created_at) from supplier_transactions where supplier_transactions.supplier_id = suppliers.id)`;
+  const rows: SupplierListItem[] = db
+    .select({ s: suppliers, lastActivityAt })
+    .from(suppliers)
+    .where(includeInactive ? undefined : eq(suppliers.isActive, true))
+    .orderBy(asc(suppliers.name))
+    .all()
+    .map((r) => ({ ...r.s, lastActivityAt: r.lastActivityAt }));
   const t = q?.trim().toLowerCase();
   if (!t) return rows;
   return rows.filter((s) => s.name.toLowerCase().includes(t) || (s.phone?.includes(t) ?? false));

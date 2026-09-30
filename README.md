@@ -116,6 +116,15 @@ In không hỏi: tạo shortcut `chrome.exe --app=http://localhost:3000 --kiosk-
 
 1. Mở máy tính: sidebar trắng có tên cửa hàng, 3 nhóm menu, chân ghi *Phiên bản 0.5.0*. Tiêu đề và nút của trang nằm trên thanh trên cùng.
 2. *Cài đặt → Giao diện (trên máy này)*: đổi màu nhấn, cỡ chữ, mật độ, bo góc, chế độ sáng/tối → thấy đổi ngay; tải lại trang vẫn giữ, không nháy. *Khôi phục mặc định* về xanh dương, chữ Vừa.
-3. *Hóa đơn*: ô ngày hiện `dd/mm/yyyy`, bấm mở lịch tiếng Việt.
+3. *Hóa đơn* → *Bộ lọc* → *Tùy chọn…*: lịch tiếng Việt, tuần bắt đầu Thứ Hai; chip khoảng ngày hiện `dd/mm` (từ 0.6.0 ô ◀ ngày ▶ được thay bằng bộ lọc thời gian).
 4. *Bán hàng*: quét 2 món, *Cất chờ* → có tab *Chờ 1*; bấm tab mở lại đúng giỏ. F2/F4/F9 như cũ. In thử hóa đơn vẫn khổ 80mm.
 5. Điện thoại: thanh dưới 4 mục + *Thêm*; nút chính của trang là nút icon trên header, các nút khác trong ⋯; không trang nào cuộn ngang, kể cả cỡ chữ *Rất lớn*.
+
+## Kiểm thử thủ công – Bộ lọc 0.6.0
+
+1. *Hóa đơn* → *Bộ lọc* → *Tháng này* + *Ghi nợ*: chip hiện, số liệu là của cả tháng; tải lại trang vẫn giữ lọc. Bấm × ở chip *Ghi nợ* chỉ bỏ lọc đó.
+2. Gõ "sua" vào ô tìm: ra các hóa đơn có hàng "Sữa…". Chọn *Tùy chọn…* rồi chọn khoảng ngày trên lịch.
+3. *Nhập hàng* → *Không ghi NCC*, *Chỉ phiếu còn nợ*: danh sách đúng; *Xóa lọc* về hôm nay.
+4. *Sản phẩm* → *Sắp hết*, *Giá bán* từ–đến, *Sắp xếp giá giảm dần*; từ *Danh mục* → *Xem sản phẩm* vẫn lọc đúng danh mục.
+5. *Khách hàng*/*Nhà cung cấp* → *Chỉ người đang nợ*, *Hiện cả người đã xóa* (dòng mờ, nhãn "Đã xóa"), *Nợ nhiều nhất*.
+6. Điện thoại: *Bộ lọc* mở bảng trượt từ dưới lên, nút *Xem n …* đóng bảng; không trang nào cuộn ngang.

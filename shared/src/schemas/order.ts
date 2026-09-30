@@ -30,16 +30,3 @@ export const orderInputSchema = z.object({
 export type OrderInput = z.output<typeof orderInputSchema>;
 /** Kiểu body client gửi lên (trước khi zod điền mặc định). */
 export type OrderInputBody = z.input<typeof orderInputSchema>;
-
-export const orderListQuerySchema = z.object({
-  date: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'phải có dạng YYYY-MM-DD')
-    // Ngày phải có thật (2026-13-45 hay 2026-02-30 trả 400 thay vì làm hỏng localDayRange)
-    .refine((d) => {
-      const t = Date.parse(`${d}T00:00:00Z`);
-      return !Number.isNaN(t) && new Date(t).toISOString().startsWith(d);
-    }, 'không phải ngày hợp lệ')
-    .optional(),
-});
-export type OrderListQuery = z.infer<typeof orderListQuerySchema>;

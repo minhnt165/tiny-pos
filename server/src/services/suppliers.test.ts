@@ -55,6 +55,19 @@ describe('suppliers', () => {
     expect(() => paySupplier(db, s.id, { amount: 1, note: null })).toThrow('Nhà cung cấp không còn hoạt động');
     expect(() => getSupplier(db, 999)).toThrow('Không tìm thấy nhà cung cấp');
   });
+
+  it('includeInactive trả cả NCC đã xóa; lastActivityAt là dòng sổ nợ mới nhất', () => {
+    const a = make({ name: 'A' });
+    const b = make({ name: 'B' });
+    recordSupplierTx(db, { supplierId: a.id, amount: 1000, note: 'x', createdAt: '2026-09-01T00:00:00.000Z' });
+    recordSupplierTx(db, { supplierId: a.id, amount: 1000, note: 'y', createdAt: '2026-09-05T00:00:00.000Z' });
+    deleteSupplier(db, b.id);
+    expect(listSuppliers(db).map((s) => [s.name, s.lastActivityAt])).toEqual([['A', '2026-09-05T00:00:00.000Z']]);
+    expect(listSuppliers(db, undefined, true).map((s) => [s.name, s.isActive, s.lastActivityAt])).toEqual([
+      ['A', true, '2026-09-05T00:00:00.000Z'],
+      ['B', false, null],
+    ]);
+  });
 });
 
 describe('nextDailyCode', () => {

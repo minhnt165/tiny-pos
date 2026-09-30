@@ -104,6 +104,10 @@ export interface DaySummary {
 export interface OrderList {
   orders: OrderSummary[];
   summary: DaySummary;
+  /** Số đơn khớp mọi bộ lọc; orders chỉ là trang hiện tại. */
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface Supplier {
@@ -115,6 +119,11 @@ export interface Supplier {
   debt: number;
   isActive: boolean;
   createdAt: string;
+}
+
+/** Dòng danh sách nhà cung cấp: thêm thời điểm giao dịch sổ nợ gần nhất (null nếu chưa có). */
+export interface SupplierListItem extends Supplier {
+  lastActivityAt: string | null;
 }
 
 export interface SupplierTransaction {
@@ -164,6 +173,10 @@ export interface ImportDetail extends ImportSummary {
 export interface ImportList {
   imports: ImportSummary[];
   summary: { count: number; total: number; paid: number };
+  /** Số phiếu khớp mọi bộ lọc; imports chỉ là trang hiện tại. */
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface StocktakeItem {
@@ -222,8 +235,13 @@ export interface Customer {
   isActive: boolean;
 }
 
+/** Dòng danh sách khách: thêm thời điểm giao dịch sổ nợ gần nhất (null nếu chưa có). */
+export interface CustomerListItem extends Customer {
+  lastActivityAt: string | null;
+}
+
 export interface CustomerList {
-  customers: Customer[];
+  customers: CustomerListItem[];
   /** Σ nợ dương của mọi khách đang theo dõi, không phụ thuộc ô tìm. */
   totalDebt: number;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { orderInputSchema, orderListQuerySchema } from './order.js';
+import { orderInputSchema } from './order.js';
 import { SETTINGS_DEFAULTS, settingsInputSchema } from './settings.js';
 
 describe('orderInputSchema', () => {
@@ -29,19 +29,6 @@ describe('orderInputSchema', () => {
     expect(orderInputSchema.safeParse({ ...ok, items: [{ qty: 1, price: 1_000_000_001 }] }).success).toBe(false);
     expect(orderInputSchema.safeParse({ ...ok, discount: 1_000_000_001 }).success).toBe(false);
     expect(orderInputSchema.safeParse({ ...ok, paid: 1_000_000_001 }).success).toBe(false);
-  });
-});
-
-describe('orderListQuerySchema', () => {
-  it('date dạng YYYY-MM-DD hoặc bỏ trống', () => {
-    expect(orderListQuerySchema.parse({})).toEqual({});
-    expect(orderListQuerySchema.parse({ date: '2026-09-29' })).toEqual({ date: '2026-09-29' });
-    expect(orderListQuerySchema.safeParse({ date: '29/09/2026' }).success).toBe(false);
-  });
-  it('từ chối ngày không có thật', () => {
-    expect(orderListQuerySchema.safeParse({ date: '2026-13-45' }).success).toBe(false);
-    expect(orderListQuerySchema.safeParse({ date: '2026-02-30' }).success).toBe(false);
-    expect(orderListQuerySchema.safeParse({ date: '2028-02-29' }).success).toBe(true);
   });
 });
 

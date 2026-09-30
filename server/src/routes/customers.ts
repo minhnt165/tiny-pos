@@ -1,7 +1,14 @@
 import { Router } from 'express';
-import { customerAdjustmentSchema, customerCreateSchema, customerInputSchema, customerPaymentSchema } from '@tiny-pos/shared';
+import {
+  customerAdjustmentSchema,
+  customerCreateSchema,
+  customerInputSchema,
+  customerPaymentSchema,
+  partyListQuerySchema,
+  type PartyListQuery,
+} from '@tiny-pos/shared';
 import type { Db } from '../db/connection.js';
-import { intParam, validateBody } from '../middleware/validate.js';
+import { intParam, validateBody, validateQuery } from '../middleware/validate.js';
 import {
   addManualDebt,
   collectDebt,
@@ -14,7 +21,10 @@ import {
 
 export function customersRouter(db: Db): Router {
   const r = Router();
-  r.get('/', (req, res) => res.json(listCustomers(db, typeof req.query['q'] === 'string' ? req.query['q'] : undefined)));
+  r.get('/', validateQuery(partyListQuerySchema), (_req, res) => {
+    const { q, includeInactive } = res.locals['query'] as PartyListQuery;
+    res.json(listCustomers(db, q, includeInactive));
+  });
   r.post('/', validateBody(customerCreateSchema), (req, res) => res.status(201).json(createCustomer(db, req.body)));
   r.put('/:id', validateBody(customerInputSchema), (req, res) => res.json(updateCustomer(db, intParam(req, 'id'), req.body)));
   r.delete('/:id', (req, res) => {

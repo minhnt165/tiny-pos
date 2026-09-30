@@ -1,13 +1,17 @@
-import { and, asc, desc, eq, gte, lt, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, lt, sql } from 'drizzle-orm';
 import {
   cartTotals,
   lineAmount,
   localDate,
   localDayRange,
+  PAGE_SIZE,
+  resolveRange,
+  stripDiacritics,
   type OrderDebt,
   type OrderDetail,
   type OrderInput,
   type OrderList,
+  type OrderListQuery,
   type OrderSummary,
 } from '@tiny-pos/shared';
 import type { Db, DbOrTx } from '../db/connection.js';
@@ -171,19 +175,50 @@ export function createOrder(db: Db, input: OrderInput, clock?: Clock): OrderDeta
 // Viết tên bảng cứng: drizzle bỏ tiền tố bảng khi render cột, `id` sẽ bị hiểu là order_items.id
 const itemCount = sql<number>`(select count(*) from order_items where order_items.order_id = orders.id)`;
 
-export function listOrders(db: Db, date: string, clock?: Clock): OrderList {
-  const { tz } = resolveClock(clock);
-  const { start, end } = localDayRange(date, tz);
+/** Chuỗi tìm cho LIKE: bỏ dấu, chữ thường, escape % _ \ ; rỗng → không tìm. */
+export function likeTerm(q: string | undefined): string | undefined {
+  if (!q) return undefined;
+  return `%${stripDiacritics(q).toLowerCase().replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+}
+
+export function listOrders(db: Db, query: OrderListQuery, clock?: Clock): OrderList {
+  const { now, tz } = resolveClock(clock);
+  const { from, to } = resolveRange(query, localDate(now, tz));
+  const start = localDayRange(from, tz).start;
+  const end = localDayRange(to, tz).end;
+  const inRange = and(gte(orders.createdAt, start), lt(orders.createdAt, end));
+  const term = likeTerm(query.q);
+  const where = and(
+    inRange,
+    query.pay?.length ? inArray(orders.paymentMethod, query.pay) : undefined,
+    query.status?.length ? inArray(orders.status, query.status) : undefined,
+    query.customerId ? eq(orders.customerId, query.customerId) : undefined,
+    // Viết tên bảng cứng như itemCount: drizzle bỏ tiền tố bảng trong sql``
+    term
+      ? sql`(vn_fold(orders.code) like ${term} escape '\\' or exists (select 1 from order_items where order_items.order_id = orders.id and vn_fold(order_items.product_name) like ${term} escape '\\'))`
+      : undefined,
+  );
+  const page = query.page ?? 1;
+  const total = db.select({ n: count() }).from(orders).where(where).get()?.n ?? 0;
   const list = db
     .select({ order: orders, itemCount, customerName: customers.name })
     .from(orders)
     .leftJoin(customers, eq(orders.customerId, customers.id))
-    .where(and(gte(orders.createdAt, start), lt(orders.createdAt, end)))
+    .where(where)
     .orderBy(desc(orders.id))
+    .limit(PAGE_SIZE)
+    .offset((page - 1) * PAGE_SIZE)
     .all()
     .map((r) => toSummary(r.order, Number(r.itemCount), r.customerName));
-  const done = list.filter((o) => o.status === 'done');
-  const sum = (rows: OrderSummary[]) => rows.reduce((s, o) => s + o.payable, 0);
+
+  // Số liệu theo khoảng ngày, không theo lọc khác: đối soát két vẫn đúng khi đang lọc
+  const done = db
+    .select({ paymentMethod: orders.paymentMethod, total: orders.total, discount: orders.discount, paid: orders.paid })
+    .from(orders)
+    .where(and(inRange, eq(orders.status, 'done')))
+    .all()
+    .map((o) => ({ paymentMethod: o.paymentMethod, payable: o.total - o.discount, paid: o.paid }));
+  const sum = (rows: { payable: number }[]) => rows.reduce((s, o) => s + o.payable, 0);
   const debtOrders = done.filter((o) => o.paymentMethod === 'debt');
   const collected = db
     .select({ method: debtTransactions.method, amount: debtTransactions.amount })
@@ -201,6 +236,9 @@ export function listOrders(db: Db, date: string, clock?: Clock): OrderList {
       debt: debtOrders.reduce((s, o) => s + o.payable - o.paid, 0),
       debtCollected: { cash: collectedBy('cash'), transfer: collectedBy('transfer') },
     },
+    total,
+    page,
+    pageSize: PAGE_SIZE,
   };
 }
 
