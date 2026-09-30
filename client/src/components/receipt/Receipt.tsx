@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { formatMoney, formatQty, type Settings } from '@tiny-pos/shared';
-import type { ReceiptData } from './receipt-data';
+import type { DebtReceiptData, ReceiptData } from './receipt-data';
 
 const METHOD_LABEL = { cash: 'Tiền mặt', transfer: 'Chuyển khoản', debt: 'Ghi nợ' } as const;
 
@@ -30,18 +30,27 @@ function Row({ label, value, strong }: { label: ReactNode; value: ReactNode; str
 const timeLabel = (iso: string) =>
   new Date(iso).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
 
+function StoreHeader({ settings }: { settings: Settings }) {
+  return (
+    <>
+      <div style={{ ...center, fontSize: '16px', fontWeight: 700 }}>{settings.storeName}</div>
+      {settings.storeAddress && <div style={center}>{settings.storeAddress}</div>}
+      {settings.storePhone && <div style={center}>ĐT: {settings.storePhone}</div>}
+    </>
+  );
+}
+
 /** Hóa đơn nhiệt 80mm (vùng in 72mm), đen trắng. */
 export function Receipt({ data, settings, qrUrl }: { data: ReceiptData; settings: Settings; qrUrl: string | null }) {
   const paidOrder = data.code !== null;
   return (
     <div style={page}>
-      <div style={{ ...center, fontSize: '16px', fontWeight: 700 }}>{settings.storeName}</div>
-      {settings.storeAddress && <div style={center}>{settings.storeAddress}</div>}
-      {settings.storePhone && <div style={center}>ĐT: {settings.storePhone}</div>}
+      <StoreHeader settings={settings} />
       <div style={rule} />
       <div style={{ ...center, fontWeight: 700 }}>{!paidOrder ? 'TẠM TÍNH – chưa thanh toán' : data.cancelled ? 'HÓA ĐƠN ĐÃ HỦY' : 'HÓA ĐƠN BÁN HÀNG'}</div>
       {paidOrder && <div style={center}>{data.code}</div>}
       <div style={center}>{timeLabel(data.createdAt)}</div>
+      {data.customerName && <div style={center}>Khách: {data.customerName}</div>}
       <div style={rule} />
       {data.items.map((it, i) => (
         <div key={i} style={{ marginBottom: '3px' }}>
@@ -59,6 +68,17 @@ export function Receipt({ data, settings, qrUrl }: { data: ReceiptData; settings
           <Row label="Tiền thối" value={formatMoney(data.paid - data.payable)} />
         </>
       )}
+      {paidOrder && data.debt && (
+        <>
+          <Row label="Khách trả" value={formatMoney(data.paid)} />
+          <Row label="Ghi nợ đơn này" value={formatMoney(data.debt.amount)} />
+          <Row
+            label={data.debt.balanceAfter - data.debt.amount < 0 ? 'Tiệm nợ khách (trước đơn)' : 'Nợ cũ'}
+            value={formatMoney(Math.abs(data.debt.balanceAfter - data.debt.amount))}
+          />
+          <Row label={data.debt.balanceAfter < 0 ? 'Tiệm còn nợ khách' : 'Tổng nợ'} value={formatMoney(Math.abs(data.debt.balanceAfter))} strong />
+        </>
+      )}
       {paidOrder && <Row label="Thanh toán" value={METHOD_LABEL[data.paymentMethod]} />}
       {qrUrl && (
         <div style={{ ...center, marginTop: '6px' }}>
@@ -66,6 +86,28 @@ export function Receipt({ data, settings, qrUrl }: { data: ReceiptData; settings
           <div>Quét mã để chuyển khoản</div>
         </div>
       )}
+      <div style={rule} />
+      {settings.receiptFooter && <div style={center}>{settings.receiptFooter}</div>}
+    </div>
+  );
+}
+
+const COLLECT_LABEL = { cash: 'Tiền mặt', transfer: 'Chuyển khoản' } as const;
+
+/** Biên nhận thu nợ 80mm. */
+export function DebtReceipt({ data, settings }: { data: DebtReceiptData; settings: Settings }) {
+  return (
+    <div style={page}>
+      <StoreHeader settings={settings} />
+      <div style={rule} />
+      <div style={{ ...center, fontWeight: 700 }}>BIÊN NHẬN THU NỢ</div>
+      <div style={center}>{timeLabel(data.createdAt)}</div>
+      <div style={rule} />
+      {/* Tên khách dài phải xuống dòng: Row giữ giá trị trên một dòng nên sẽ tràn khỏi giấy */}
+      <div style={{ overflowWrap: 'anywhere' }}>Khách: {data.customerName}</div>
+      <Row label="Đã thu" value={formatMoney(data.amount)} strong />
+      <Row label="Hình thức" value={COLLECT_LABEL[data.method]} />
+      <Row label={data.balanceAfter < 0 ? 'Tiệm nợ lại' : 'Còn nợ'} value={formatMoney(Math.abs(data.balanceAfter))} />
       <div style={rule} />
       {settings.receiptFooter && <div style={center}>{settings.receiptFooter}</div>}
     </div>

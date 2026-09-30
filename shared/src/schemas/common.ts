@@ -46,4 +46,7 @@ export const FIELD_LABELS: Record<string, string> = {
   phone: 'Số điện thoại',
   note: 'Ghi chú',
   limit: 'Giới hạn',
+  customerId: 'Khách hàng',
+  openingDebt: 'Nợ đầu kỳ',
+  method: 'Hình thức',
 };

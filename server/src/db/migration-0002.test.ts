@@ -2,24 +2,7 @@ import { describe, expect, it } from 'vitest';
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const here = path.dirname(fileURLToPath(import.meta.url));
-const migrationsFolder = path.resolve(here, '../../drizzle');
-
-/** Bản sao thư mục migration chỉ giữ `count` migration đầu, giả lập DB của giai đoạn trước. */
-function partialMigrations(count: number): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tiny-pos-mig-'));
-  fs.cpSync(migrationsFolder, dir, { recursive: true });
-  const journalPath = path.join(dir, 'meta', '_journal.json');
-  const journal = JSON.parse(fs.readFileSync(journalPath, 'utf8')) as { entries: unknown[] };
-  journal.entries = journal.entries.slice(0, count);
-  fs.writeFileSync(journalPath, JSON.stringify(journal));
-  return dir;
-}
+import { migrationsFolder, partialMigrations } from './test-migrations.js';
 
 describe('migration 0002', () => {
   it('chạy được trên DB giai đoạn 2 đã có phiếu nhập và đơn hàng; dữ liệu cũ còn nguyên', () => {

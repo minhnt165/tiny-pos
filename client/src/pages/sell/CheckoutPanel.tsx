@@ -28,6 +28,7 @@ function TodaySummary() {
       <div className="font-medium">Hôm nay: {s.count} đơn</div>
       <div className="text-muted-foreground">
         Tiền mặt {formatMoney(s.cash)} · Chuyển khoản {formatMoney(s.transfer)}
+        {s.debt > 0 && ` · Ghi nợ ${formatMoney(s.debt)}`}
       </div>
     </div>
   );

@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import QRCode from 'qrcode';
-import { Banknote, Check, Landmark, Printer } from 'lucide-react';
-import { Link } from 'react-router';
+import { Banknote, Check, Landmark, NotebookPen, Printer } from 'lucide-react';
 import { toast } from 'sonner';
-import { BANKS, formatMoney, parseVnNumber, suggestCash, toOrderItems, vietQrFromSettings, type Cart, type OrderDetail } from '@tiny-pos/shared';
+import { formatMoney, parseVnNumber, suggestCash, toOrderItems, vietQrFromSettings, type Cart, type Customer, type OrderDetail } from '@tiny-pos/shared';
 import { useCreateOrder } from '@/api/orders';
 import { useSettings } from '@/api/settings';
+import { TransferQr } from '@/components/TransferQr';
 import { usePrint } from '@/components/receipt/PrintProvider';
 import { draftReceipt } from '@/components/receipt/receipt-data';
 import { Button } from '@/components/ui/button';
@@ -14,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { groupThousands, moneyChange } from '@/lib/money-input';
 import { cn } from '@/lib/utils';
+import { DebtPanel } from './DebtPanel';
 
 interface Props {
   open: boolean;
@@ -22,45 +22,32 @@ interface Props {
   onClose: () => void;
   onDone: (order: OrderDetail) => void;
 }
-type Method = 'cash' | 'transfer';
+type Method = 'cash' | 'transfer' | 'debt';
 
 export function CheckoutDialog({ open, cart, payable, onClose, onDone }: Props) {
   const [method, setMethod] = useState<Method>('cash');
   const [given, setGiven] = useState('');
-  const [qrUrl, setQrUrl] = useState<string | null>(null);
-  const [qrError, setQrError] = useState(false);
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [prepaid, setPrepaid] = useState('');
   const givenRef = useRef<HTMLInputElement>(null);
   const { data: settings } = useSettings();
   const create = useCreateOrder();
   const print = usePrint();
   const qrPayload = settings ? vietQrFromSettings(settings, payable) : null;
-  const bank = BANKS.find((b) => b.bin === settings?.bankBin);
-  // Nhắc theo trường còn thiếu trong Cài đặt (không dựa vào qrUrl để tránh chớp trong lúc QR đang sinh)
-  const missing = !settings ? null : !settings.bankBin ? 'Chưa chọn ngân hàng' : !settings.bankAccount ? 'Chưa nhập số tài khoản' : null;
 
   useEffect(() => {
     if (!open) return;
     setMethod('cash');
     setGiven(groupThousands(String(payable)));
+    setCustomer(null);
+    setPrepaid('');
   }, [open, payable]);
-  useEffect(() => {
-    setQrError(false);
-    if (!qrPayload) {
-      setQrUrl(null);
-      return;
-    }
-    let alive = true;
-    QRCode.toDataURL(qrPayload, { margin: 1, width: 320 })
-      .then((u) => alive && setQrUrl(u))
-      .catch(() => alive && setQrError(true));
-    return () => {
-      alive = false;
-    };
-  }, [qrPayload]);
 
-  const paid = method === 'cash' ? parseVnNumber(given || '0') : payable;
+  const paid = method === 'cash' ? parseVnNumber(given || '0') : method === 'debt' ? parseVnNumber(prepaid || '0') : payable;
   const change = paid - payable;
   const short = method === 'cash' && (!Number.isFinite(paid) || change < 0);
+  // Ghi nợ: phải chọn khách và còn thiếu ít nhất 1đ (trả đủ thì là đơn tiền mặt)
+  const debtInvalid = method === 'debt' && (customer === null || !Number.isFinite(paid) || paid < 0 || paid >= payable);
 
   const pickCash = (v: number) => {
     setGiven(groupThousands(String(v)));
@@ -70,9 +57,15 @@ export function CheckoutDialog({ open, cart, payable, onClose, onDone }: Props) 
   const submit = (e?: FormEvent) => {
     e?.preventDefault();
     // Khóa khi đang gửi để Enter/bấm hai lần không tạo hai đơn
-    if (short || create.isPending) return;
+    if (short || debtInvalid || create.isPending) return;
     create.mutate(
-      { items: toOrderItems(cart.lines), discount: cart.discount, paymentMethod: method, paid },
+      {
+        items: toOrderItems(cart.lines),
+        discount: cart.discount,
+        paymentMethod: method,
+        paid,
+        customerId: method === 'debt' ? (customer?.id ?? null) : null,
+      },
       { onSuccess: onDone, onError: (err) => toast.error(err.message) },
     );
   };
@@ -88,12 +81,15 @@ export function CheckoutDialog({ open, cart, payable, onClose, onDone }: Props) 
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <Tabs value={method} onValueChange={(v) => setMethod(v as Method)}>
-            <TabsList className="grid h-11 w-full grid-cols-2">
-              <TabsTrigger value="cash" className="text-base">
+            <TabsList className="grid h-11 w-full grid-cols-3">
+              <TabsTrigger value="cash" className="text-sm sm:text-base max-sm:[&_svg]:hidden">
                 <Banknote /> Tiền mặt
               </TabsTrigger>
-              <TabsTrigger value="transfer" className="text-base">
+              <TabsTrigger value="transfer" className="text-sm sm:text-base max-sm:[&_svg]:hidden">
                 <Landmark /> Chuyển khoản
+              </TabsTrigger>
+              <TabsTrigger value="debt" className="text-sm sm:text-base max-sm:[&_svg]:hidden">
+                <NotebookPen /> Ghi nợ
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -125,27 +121,9 @@ export function CheckoutDialog({ open, cart, payable, onClose, onDone }: Props) 
                 <span className="font-heading text-3xl font-semibold tabular-nums">{formatMoney(Math.abs(Number.isFinite(change) ? change : 0))}</span>
               </div>
             </div>
-          ) : (
+          ) : method === 'transfer' ? (
             <div className="space-y-3 text-center">
-              {qrUrl ? (
-                <img src={qrUrl} alt="Mã VietQR" className="mx-auto size-64 rounded-xl border bg-white p-2" />
-              ) : missing || qrError ? (
-                <p className="rounded-xl bg-muted px-4 py-6 text-muted-foreground">
-                  {missing ?? 'Không tạo được mã QR'}.{' '}
-                  <Link to="/settings" className="font-medium text-primary underline">
-                    Mở Cài đặt
-                  </Link>
-                </p>
-              ) : (
-                <div className="mx-auto size-64 animate-pulse rounded-xl bg-muted" />
-              )}
-              {!missing && settings?.bankAccount && (
-                <div className="text-sm">
-                  <div className="font-medium">{bank?.shortName ?? settings.bankBin}</div>
-                  <div className="font-mono text-base">{settings.bankAccount}</div>
-                  <div className="text-muted-foreground">{settings.bankAccountName}</div>
-                </div>
-              )}
+              <TransferQr amount={payable} />
               {qrPayload && (
                 <Button type="button" variant="outline" className="h-11 w-full text-base" onClick={() => void print(draftReceipt(cart, qrPayload))}>
                   <Printer data-icon="inline-start" />
@@ -153,11 +131,13 @@ export function CheckoutDialog({ open, cart, payable, onClose, onDone }: Props) 
                 </Button>
               )}
             </div>
+          ) : (
+            <DebtPanel payable={payable} customer={customer} onCustomer={setCustomer} prepaid={prepaid} onPrepaid={setPrepaid} paid={paid} />
           )}
 
-          <Button type="submit" className="h-12 w-full text-lg" disabled={short || create.isPending}>
+          <Button type="submit" className="h-12 w-full text-lg" disabled={short || debtInvalid || create.isPending}>
             <Check data-icon="inline-start" />
-            {method === 'cash' ? 'Xác nhận (Enter)' : 'Đã nhận tiền'}
+            {method === 'cash' ? 'Xác nhận (Enter)' : method === 'debt' ? 'Ghi nợ (Enter)' : 'Đã nhận tiền'}
           </Button>
         </form>
       </DialogContent>

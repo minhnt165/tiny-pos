@@ -29,7 +29,9 @@ export function OrderTable({ orders, onOpen }: { orders: OrderSummary[]; onOpen:
               <TableCell className="px-4 py-3 tabular-nums">{time(o.createdAt)}</TableCell>
               <TableCell className="px-4 py-3 text-right tabular-nums">{o.itemCount}</TableCell>
               <TableCell className={cn('px-4 py-3 text-right font-semibold tabular-nums', cancelled && 'line-through')}>{formatMoney(o.payable)}</TableCell>
-              <TableCell className="px-4 py-3">{METHOD_LABEL[o.paymentMethod]}</TableCell>
+              <TableCell className="px-4 py-3">
+                {o.paymentMethod === 'debt' ? <Badge variant="outline">Ghi nợ · {o.customerName}</Badge> : METHOD_LABEL[o.paymentMethod]}
+              </TableCell>
               <TableCell className="px-4 py-3">{cancelled ? <Badge variant="secondary">Đã hủy</Badge> : <Badge>Hoàn tất</Badge>}</TableCell>
             </TableRow>
           );

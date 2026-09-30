@@ -185,7 +185,7 @@ sách nav ở `client/src/router.tsx`; điện thoại nằm trong nút *Thêm*.
 Làm theo trang Nhà cung cấp:
 
 - `PageHeader` + nút *Thêm khách*; `StatCard` **Tổng nợ phải thu**; ô tìm.
-- Bảng (điện thoại: danh sách thẻ): tên, SĐT, nợ. Nợ > 0 tô cảnh báo; nợ âm hiện
+- Bảng: tên, SĐT (ẩn trên điện thoại), nợ. Nợ > 0 tô cảnh báo; nợ âm hiện
   "Tiệm nợ khách …".
 - `CustomerFormDialog`: tên, SĐT, ghi chú; ô **Nợ đầu kỳ** chỉ khi tạo mới.
 - `CustomerDetailDialog`: thông tin khách, nút *Sửa*, *Xóa* (`ConfirmDialog`), sổ nợ

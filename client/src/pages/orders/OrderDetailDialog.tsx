@@ -29,7 +29,7 @@ export function OrderDetailDialog({ id, onClose }: { id: number | null; onClose:
     if (!o) return;
     const ok = await confirm({
       title: `Hủy ${o.code} và trả hàng về kho?`,
-      description: 'Hóa đơn vẫn được giữ lại với trạng thái Đã hủy và không tính vào doanh thu.',
+      description: `${o.debt && o.paid > 0 ? `Trả lại khách ${formatMoney(o.paid)} đã trả trước. ` : ''}${o.debt ? 'Nợ của khách được trừ lại. ' : ''}Hóa đơn vẫn được giữ lại với trạng thái Đã hủy và không tính vào doanh thu.`,
       confirmText: 'Hủy hóa đơn',
       cancelText: 'Không',
       destructive: true,
@@ -47,7 +47,7 @@ export function OrderDetailDialog({ id, onClose }: { id: number | null; onClose:
             {o?.status === 'cancelled' && <Badge variant="secondary">Đã hủy</Badge>}
           </DialogTitle>
           <DialogDescription className="text-base">
-            {o && `${new Date(o.createdAt).toLocaleString('vi-VN')} · ${METHOD_LABEL[o.paymentMethod]}`}
+            {o && `${new Date(o.createdAt).toLocaleString('vi-VN')} · ${METHOD_LABEL[o.paymentMethod]}${o.customerName ? ` · ${o.customerName}` : ''}`}
           </DialogDescription>
         </DialogHeader>
         {o && (
@@ -73,6 +73,17 @@ export function OrderDetailDialog({ id, onClose }: { id: number | null; onClose:
                 <>
                   <Line label="Khách đưa" value={formatMoney(o.paid)} />
                   <Line label="Tiền thối" value={formatMoney(o.paid - o.payable)} />
+                </>
+              )}
+              {o.debt && (
+                <>
+                  <Line label="Khách trả" value={formatMoney(o.paid)} />
+                  <Line label="Ghi nợ đơn này" value={formatMoney(o.debt.amount)} />
+                  <Line
+                    label={o.debt.balanceAfter - o.debt.amount < 0 ? 'Tiệm nợ khách (trước đơn)' : 'Nợ cũ'}
+                    value={formatMoney(Math.abs(o.debt.balanceAfter - o.debt.amount))}
+                  />
+                  <Line label={o.debt.balanceAfter < 0 ? 'Tiệm còn nợ khách' : 'Tổng nợ sau đơn'} value={formatMoney(Math.abs(o.debt.balanceAfter))} />
                 </>
               )}
             </div>

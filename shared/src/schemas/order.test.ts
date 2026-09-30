@@ -10,13 +10,18 @@ describe('orderInputSchema', () => {
       discount: 0,
       paymentMethod: 'cash',
       paid: 5000,
+      customerId: null,
     });
   });
-  it('từ chối giỏ rỗng, qty ≤ 0, giá lẻ, phương thức debt', () => {
+  it('từ chối giỏ rỗng, qty ≤ 0, giá lẻ, phương thức lạ', () => {
     expect(orderInputSchema.safeParse({ items: [], paymentMethod: 'cash' }).success).toBe(false);
     expect(orderInputSchema.safeParse({ items: [{ qty: 0, price: 1 }], paymentMethod: 'cash' }).success).toBe(false);
     expect(orderInputSchema.safeParse({ items: [{ qty: 1, price: 1.5 }], paymentMethod: 'cash' }).success).toBe(false);
-    expect(orderInputSchema.safeParse({ items: [{ qty: 1, price: 1 }], paymentMethod: 'debt' }).success).toBe(false);
+    expect(orderInputSchema.safeParse({ items: [{ qty: 1, price: 1 }], paymentMethod: 'card' }).success).toBe(false);
+  });
+  it('ghi nợ: nhận paymentMethod debt kèm customerId', () => {
+    const r = orderInputSchema.parse({ items: [{ qty: 1, price: 5000 }], paymentMethod: 'debt', customerId: 3, paid: 1000 });
+    expect(r).toMatchObject({ paymentMethod: 'debt', customerId: 3, paid: 1000 });
   });
   it('giá, giảm giá, tiền khách đưa tối đa 1 tỷ', () => {
     const ok = { items: [{ qty: 1, price: 1_000_000_000 }], paymentMethod: 'cash', discount: 1_000_000_000, paid: 1_000_000_000 };

@@ -96,7 +96,7 @@ export function SellPage() {
     setCheckoutOpen(false);
     dispatch({ type: 'clear' });
     setLastOrder(order);
-    toast.success(`Đã thanh toán ${order.code}`);
+    toast.success(`${order.debt ? 'Đã ghi nợ' : 'Đã thanh toán'} ${order.code}`);
     if (settings?.autoPrint ?? true) void print(receiptFromOrder(order));
   };
 

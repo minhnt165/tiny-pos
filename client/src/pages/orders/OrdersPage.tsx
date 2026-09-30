@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Banknote, Landmark, ReceiptText, Wallet } from 'lucide-react';
+import { Banknote, HandCoins, Landmark, NotebookPen, ReceiptText, Wallet } from 'lucide-react';
 import { formatMoney } from '@tiny-pos/shared';
 import { useOrders } from '@/api/orders';
 import { EmptyState } from '@/components/EmptyState';
@@ -20,11 +20,18 @@ export function OrdersPage() {
   return (
     <>
       <PageHeader title="Hóa đơn" description="Xem, in lại và hủy hóa đơn theo ngày" icon={ReceiptText} actions={<DayPicker value={date} onChange={setDate} />} />
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <StatCard icon={ReceiptText} label="Số đơn" value={String(s?.count ?? 0)} hint="Không tính đơn đã hủy" />
         <StatCard icon={Wallet} label="Doanh thu" value={formatMoney(s?.total ?? 0)} tone="info" />
         <StatCard icon={Banknote} label="Tiền mặt" value={formatMoney(s?.cash ?? 0)} />
         <StatCard icon={Landmark} label="Chuyển khoản" value={formatMoney(s?.transfer ?? 0)} tone="warn" />
+        <StatCard icon={NotebookPen} label="Ghi nợ" value={formatMoney(s?.debt ?? 0)} tone="danger" hint="Phần khách còn thiếu" />
+        <StatCard
+          icon={HandCoins}
+          label="Thu nợ"
+          value={formatMoney((s?.debtCollected.cash ?? 0) + (s?.debtCollected.transfer ?? 0))}
+          hint={`Tiền mặt ${formatMoney(s?.debtCollected.cash ?? 0)} · CK ${formatMoney(s?.debtCollected.transfer ?? 0)}`}
+        />
       </div>
       <Card className="gap-0 overflow-hidden py-0">
         {isLoading ? (

@@ -4,15 +4,17 @@ import {
   lineAmount,
   localDate,
   localDayRange,
+  type OrderDebt,
   type OrderDetail,
   type OrderInput,
   type OrderList,
   type OrderSummary,
 } from '@tiny-pos/shared';
 import type { Db, DbOrTx } from '../db/connection.js';
-import { orderItems, orders, productUnits, products } from '../db/schema.js';
+import { customers, debtTransactions, orderItems, orders, productUnits, products } from '../db/schema.js';
 import { BadRequestError, ConflictError, NotFoundError } from '../errors.js';
 import { recordMovement } from './stock.js';
+import { debtBalanceAt, recordCustomerDebtTx } from './customer-ledger.js';
 import { nextDailyCode, resolveClock, type Clock } from './daily-code.js';
 
 export type { Clock } from './daily-code.js';
@@ -64,7 +66,7 @@ function resolveLine(tx: DbOrTx, it: OrderInput['items'][number]): ResolvedLine 
 
 type OrderRow = typeof orders.$inferSelect;
 
-function toSummary(o: OrderRow, itemCount: number): OrderSummary {
+function toSummary(o: OrderRow, itemCount: number, customerName: string | null): OrderSummary {
   return {
     id: o.id,
     code: o.code,
@@ -73,6 +75,8 @@ function toSummary(o: OrderRow, itemCount: number): OrderSummary {
     payable: o.total - o.discount,
     paid: o.paid,
     paymentMethod: o.paymentMethod,
+    customerId: o.customerId,
+    customerName,
     status: o.status,
     itemCount,
     createdAt: o.createdAt,
@@ -80,9 +84,26 @@ function toSummary(o: OrderRow, itemCount: number): OrderSummary {
   };
 }
 
+/** Nợ của đơn ghi nợ tại lúc bán: lấy dòng sổ `order` của đơn và số dư của khách ngay sau dòng đó. */
+function orderDebt(db: DbOrTx, o: OrderRow): OrderDebt | null {
+  if (o.paymentMethod !== 'debt') return null;
+  const t = db
+    .select()
+    .from(debtTransactions)
+    .where(and(eq(debtTransactions.orderId, o.id), eq(debtTransactions.kind, 'order')))
+    .get();
+  return t ? { amount: t.amount, balanceAfter: debtBalanceAt(db, t.customerId, t.id) } : null;
+}
+
 export function getOrder(db: DbOrTx, id: number): OrderDetail {
-  const o = db.select().from(orders).where(eq(orders.id, id)).get();
-  if (!o) throw new NotFoundError('Không tìm thấy hóa đơn');
+  const r = db
+    .select({ order: orders, customerName: customers.name })
+    .from(orders)
+    .leftJoin(customers, eq(orders.customerId, customers.id))
+    .where(eq(orders.id, id))
+    .get();
+  if (!r) throw new NotFoundError('Không tìm thấy hóa đơn');
+  const o = r.order;
   const items = db
     .select({
       id: orderItems.id,
@@ -99,7 +120,7 @@ export function getOrder(db: DbOrTx, id: number): OrderDetail {
     .where(eq(orderItems.orderId, id))
     .orderBy(asc(orderItems.id))
     .all();
-  return { ...toSummary(o, items.length), items };
+  return { ...toSummary(o, items.length, r.customerName), items, debt: orderDebt(db, o) };
 }
 
 export function createOrder(db: Db, input: OrderInput, clock?: Clock): OrderDetail {
@@ -109,15 +130,26 @@ export function createOrder(db: Db, input: OrderInput, clock?: Clock): OrderDeta
     const { total, payable } = cartTotals(lines, input.discount);
     if (input.discount > total) throw new BadRequestError('Giảm giá lớn hơn tổng tiền');
     if (input.paymentMethod === 'cash' && input.paid < payable) throw new BadRequestError('Tiền khách đưa chưa đủ');
-    const paid = input.paymentMethod === 'cash' ? input.paid : payable;
+    let customerId: number | null = null;
+    if (input.paymentMethod === 'debt') {
+      if (input.customerId === null) throw new BadRequestError('Chưa chọn khách');
+      const c = tx.select().from(customers).where(eq(customers.id, input.customerId)).get();
+      if (!c || !c.isActive) throw new BadRequestError('Khách hàng không còn theo dõi');
+      if (input.paid >= payable) throw new BadRequestError('Khách trả đủ thì chọn Tiền mặt');
+      customerId = c.id;
+    }
+    // Ghi nợ: paid là tiền mặt khách trả trước; chuyển khoản luôn đủ
+    const paid = input.paymentMethod === 'transfer' ? payable : input.paid;
+    const code = nextDailyCode(tx, 'orders', 'HD', localDate(now, tz), 4);
     const { id } = tx
       .insert(orders)
       .values({
-        code: nextDailyCode(tx, 'orders', 'HD', localDate(now, tz), 4),
+        code,
         total,
         discount: input.discount,
         paid,
         paymentMethod: input.paymentMethod,
+        customerId,
         createdAt: now.toISOString(),
       })
       .returning({ id: orders.id })
@@ -130,6 +162,8 @@ export function createOrder(db: Db, input: OrderInput, clock?: Clock): OrderDeta
       // Không kiểm tra tồn: cho bán âm, số kho sửa khi kiểm kê
       if (l.productId !== null) recordMovement(tx, { productId: l.productId, qty: -l.qty * l.factor, type: 'sale', refId: id });
     }
+    if (customerId !== null)
+      recordCustomerDebtTx(tx, { customerId, amount: payable - paid, kind: 'order', orderId: id, note: `Bán ${code}`, createdAt: now.toISOString() });
     return getOrder(tx, id);
   });
 }
@@ -141,21 +175,31 @@ export function listOrders(db: Db, date: string, clock?: Clock): OrderList {
   const { tz } = resolveClock(clock);
   const { start, end } = localDayRange(date, tz);
   const list = db
-    .select({ order: orders, itemCount })
+    .select({ order: orders, itemCount, customerName: customers.name })
     .from(orders)
+    .leftJoin(customers, eq(orders.customerId, customers.id))
     .where(and(gte(orders.createdAt, start), lt(orders.createdAt, end)))
     .orderBy(desc(orders.id))
     .all()
-    .map((r) => toSummary(r.order, Number(r.itemCount)));
+    .map((r) => toSummary(r.order, Number(r.itemCount), r.customerName));
   const done = list.filter((o) => o.status === 'done');
   const sum = (rows: OrderSummary[]) => rows.reduce((s, o) => s + o.payable, 0);
+  const debtOrders = done.filter((o) => o.paymentMethod === 'debt');
+  const collected = db
+    .select({ method: debtTransactions.method, amount: debtTransactions.amount })
+    .from(debtTransactions)
+    .where(and(eq(debtTransactions.kind, 'payment'), gte(debtTransactions.createdAt, start), lt(debtTransactions.createdAt, end)))
+    .all();
+  const collectedBy = (m: 'cash' | 'transfer') => collected.filter((r) => r.method === m).reduce((s, r) => s - r.amount, 0);
   return {
     orders: list,
     summary: {
       count: done.length,
       total: sum(done),
-      cash: sum(done.filter((o) => o.paymentMethod === 'cash')),
+      cash: sum(done.filter((o) => o.paymentMethod === 'cash')) + debtOrders.reduce((s, o) => s + o.paid, 0),
       transfer: sum(done.filter((o) => o.paymentMethod === 'transfer')),
+      debt: debtOrders.reduce((s, o) => s + o.payable - o.paid, 0),
+      debtCollected: { cash: collectedBy('cash'), transfer: collectedBy('transfer') },
     },
   };
 }
@@ -170,6 +214,15 @@ export function cancelOrder(db: Db, id: number, clock?: Clock): OrderDetail {
       if (it.productId === null) continue;
       recordMovement(tx, { productId: it.productId, qty: it.qty * it.factor, type: 'return', refId: id, note: 'Hủy hóa đơn' });
     }
+    if (o.paymentMethod === 'debt' && o.customerId !== null && o.payable > o.paid)
+      recordCustomerDebtTx(tx, {
+        customerId: o.customerId,
+        amount: -(o.payable - o.paid),
+        kind: 'order_cancel',
+        orderId: id,
+        note: `Hủy ${o.code}`,
+        createdAt: now.toISOString(),
+      });
     tx.update(orders).set({ status: 'cancelled', cancelledAt: now.toISOString() }).where(eq(orders.id, id)).run();
     return getOrder(tx, id);
   });

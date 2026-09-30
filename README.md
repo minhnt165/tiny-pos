@@ -99,3 +99,15 @@ In không hỏi: tạo shortcut `chrome.exe --app=http://localhost:3000 --kiosk-
 9. **Kiểm kê từng phần / hủy**: mở phiên mới, đếm 1 món rồi *Hủy phiên* → tồn không đổi; lịch sử có phiên "Đã hủy".
 10. **Lịch sử tồn**: *Sản phẩm* → ⋯ → *Lịch sử tồn* → thấy Nhập (PN-…), Bán (HD-…), Điều chỉnh (KK-… / Hủy PN-…).
 11. **Điện thoại**: thanh dưới có Bán hàng, Hóa đơn, Kiểm kê, Sản phẩm, *Thêm*; *Thêm* mở menu các mục còn lại.
+
+## Kiểm thử thủ công Giai đoạn 4
+
+1. **Thêm khách có nợ cũ**: *Khách hàng* → *Thêm khách* "Chị Lan", nợ đầu kỳ 350.000 → danh sách hiện nợ 350.000, sổ nợ có dòng "Nợ đầu kỳ".
+2. **Ghi nợ khi bán**: *Bán hàng* → thêm món 50.000 → *Thanh toán* → tab *Ghi nợ* → chọn "Chị Lan", khách trả trước 20.000 → thấy Nợ cũ 350.000, Ghi nợ đơn này 30.000, Tổng nợ 380.000 → Enter. Hóa đơn in có tên khách, Nợ cũ, Tổng nợ.
+3. **Khách mới ngay tại quầy**: tab *Ghi nợ* → gõ tên chưa có → *+ Thêm khách "…"* → khách được chọn luôn.
+4. **Trả đủ không cho ghi nợ**: gõ trả trước bằng số phải trả → nút khóa, nhắc chọn Tiền mặt.
+5. **Thu nợ**: mở "Chị Lan" → *Thu nợ* 100.000, Chuyển khoản → hiện QR đúng số tiền → xác nhận → *In biên nhận*. Sổ nợ có dòng "Thu nợ (CK)", còn 280.000.
+6. **Ghi nợ tay**: *Ghi nợ tay* 5.000, ghi chú "quên ghi" → nợ tăng 5.000.
+7. **Hủy đơn ghi nợ**: *Hóa đơn* → mở đơn ghi nợ → *Hủy đơn* → nợ khách trừ lại 30.000; sổ có dòng "Hủy đơn".
+8. **Tổng kết ngày**: trang *Hóa đơn* có thẻ Ghi nợ và Thu nợ (TM/CK); tiền mặt trong két = thẻ Tiền mặt + thu nợ tiền mặt.
+9. **Xóa khách**: khách còn nợ thì không có nút *Xóa*; thu hết nợ → *Xóa* được.

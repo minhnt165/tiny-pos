@@ -3,14 +3,14 @@ import { createPortal } from 'react-dom';
 import QRCode from 'qrcode';
 import { SETTINGS_DEFAULTS } from '@tiny-pos/shared';
 import { useSettings } from '@/api/settings';
-import { Receipt } from './Receipt';
-import type { ReceiptData } from './receipt-data';
+import { DebtReceipt, Receipt } from './Receipt';
+import type { PrintData } from './receipt-data';
 
-type PrintFn = (data: ReceiptData) => Promise<void>;
+type PrintFn = (data: PrintData) => Promise<void>;
 const Ctx = createContext<PrintFn>(() => Promise.resolve());
 
 interface Job {
-  data: ReceiptData;
+  data: PrintData;
   qrUrl: string | null;
 }
 
@@ -24,7 +24,8 @@ export function PrintProvider({ children }: { children: ReactNode }) {
   const done = useRef<(() => void) | null>(null);
 
   const print = useCallback<PrintFn>(async (data) => {
-    const qrUrl = data.qrPayload ? await QRCode.toDataURL(data.qrPayload, { margin: 1, width: 320 }) : null;
+    const qrPayload = 'kind' in data ? null : data.qrPayload;
+    const qrUrl = qrPayload ? await QRCode.toDataURL(qrPayload, { margin: 1, width: 320 }) : null;
     await new Promise<void>((resolve) => {
       done.current?.(); // lệnh in trước còn treo thì trả về trước, không để await treo mãi
       done.current = resolve;
@@ -71,7 +72,16 @@ export function PrintProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={print}>
       {children}
-      {root && job && createPortal(<Receipt data={job.data} settings={settings ?? SETTINGS_DEFAULTS} qrUrl={job.qrUrl} />, root)}
+      {root &&
+        job &&
+        createPortal(
+          'kind' in job.data ? (
+            <DebtReceipt data={job.data} settings={settings ?? SETTINGS_DEFAULTS} />
+          ) : (
+            <Receipt data={job.data} settings={settings ?? SETTINGS_DEFAULTS} qrUrl={job.qrUrl} />
+          ),
+          root,
+        )}
     </Ctx.Provider>
   );
 }

@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { eq } from 'drizzle-orm';
-import { orderInputSchema, productInputSchema, productUnitInputSchema } from '@tiny-pos/shared';
+import { eq, sql } from 'drizzle-orm';
+import { customerCreateSchema, orderInputSchema, productInputSchema, productUnitInputSchema } from '@tiny-pos/shared';
 import type { Db } from '../db/connection.js';
 import { stockMovements } from '../db/schema.js';
 import { createTestDb } from '../db/test-db.js';
 import { cancelOrder, createOrder, getOrder, listOrders } from './orders.js';
 import { createUnit, deleteUnit } from './product-units.js';
 import { createProduct, getProduct, setProductActive, updateProduct } from './products.js';
+import { collectDebt, createCustomer, deleteCustomer, getCustomer, listCustomerTransactions } from './customers.js';
 
 const VN = 420;
 const at = (iso: string) => ({ now: new Date(iso), tzOffsetMin: VN });
@@ -155,6 +156,103 @@ describe('listOrders', () => {
     const r = listOrders(db, '2026-09-29', { tzOffsetMin: VN });
     expect(r.orders.map((o) => o.id)).toEqual([c.id, b.id, a.id]);
     expect(r.orders[0]).toMatchObject({ status: 'cancelled', itemCount: 1 });
-    expect(r.summary).toEqual({ count: 2, total: 20000, cash: 10000, transfer: 10000 });
+    expect(r.summary).toEqual({ count: 2, total: 20000, cash: 10000, transfer: 10000, debt: 0, debtCollected: { cash: 0, transfer: 0 } });
+  });
+});
+
+describe('đơn ghi nợ', () => {
+  const customer = (openingDebt = 0) => createCustomer(db, customerCreateSchema.parse({ name: 'Chị Lan', openingDebt }));
+  const debtOrder = (customerId: number | null, paid: number, clock = MORNING) =>
+    createOrder(db, order({ items: [{ qty: 1, price: 50000 }], paymentMethod: 'debt', customerId, paid }), clock);
+
+  it('trả 0 và trả một phần: nợ tăng đúng phần thiếu, dòng sổ order, chi tiết có khách và nợ', () => {
+    const c = customer(100000);
+    const a = debtOrder(c.id, 0);
+    const b = debtOrder(c.id, 20000);
+    expect(a.debt).toEqual({ amount: 50000, balanceAfter: 150000 });
+    expect(b).toMatchObject({
+      paymentMethod: 'debt',
+      paid: 20000,
+      customerId: c.id,
+      customerName: 'Chị Lan',
+      debt: { amount: 30000, balanceAfter: 180000 },
+    });
+    expect(getCustomer(db, c.id).debt).toBe(180000);
+    expect(listCustomerTransactions(db, c.id)[0]).toMatchObject({
+      kind: 'order',
+      amount: 30000,
+      orderId: b.id,
+      orderCode: b.code,
+      note: `Bán ${b.code}`,
+      createdAt: '2026-09-29T03:00:00.000Z',
+    });
+  });
+
+  it('thiếu khách, khách không có/đã xóa, trả đủ → 400 và không lưu đơn', () => {
+    const c = customer(100000);
+    expect(() => debtOrder(null, 0)).toThrow('Chưa chọn khách');
+    expect(() => debtOrder(999, 0)).toThrow('Khách hàng không còn theo dõi');
+    expect(() => debtOrder(c.id, 50000)).toThrow('Khách trả đủ thì chọn Tiền mặt');
+    collectDebt(db, c.id, { amount: 100000, method: 'cash', note: null });
+    deleteCustomer(db, c.id);
+    expect(() => debtOrder(c.id, 0)).toThrow('Khách hàng không còn theo dõi');
+    expect(listOrders(db, '2026-09-29', { tzOffsetMin: VN }).orders).toEqual([]);
+  });
+
+  it('đơn tiền mặt gửi kèm customerId → không gắn khách, không ghi nợ', () => {
+    const c = customer();
+    const o = createOrder(db, order({ items: [{ qty: 1, price: 10000 }], customerId: c.id }), MORNING);
+    expect(o).toMatchObject({ customerId: null, customerName: null, debt: null });
+    expect(getCustomer(db, c.id).debt).toBe(0);
+  });
+
+  it('hủy đơn ghi nợ: dòng order_cancel trừ đúng phần nợ; thu hết rồi hủy → nợ âm; in lại vẫn số lúc bán', () => {
+    const c = customer();
+    const o = debtOrder(c.id, 10000); // nợ 40.000
+    collectDebt(db, c.id, { amount: 40000, method: 'cash', note: null });
+    const x = cancelOrder(db, o.id, MORNING);
+    expect(getCustomer(db, c.id).debt).toBe(-40000);
+    expect(x.debt).toEqual({ amount: 40000, balanceAfter: 40000 });
+    expect(listCustomerTransactions(db, c.id)[0]).toMatchObject({ kind: 'order_cancel', amount: -40000, orderId: o.id, note: `Hủy ${o.code}` });
+    const ledger = db.get<{ s: number }>(sql`select coalesce(sum(amount), 0) as s from debt_transactions where customer_id = ${c.id}`)?.s;
+    expect(getCustomer(db, c.id).debt).toBe(ledger);
+  });
+
+  it('hủy đơn ghi nợ của khách đã ngừng theo dõi vẫn được', () => {
+    const c = customer();
+    const o = debtOrder(c.id, 0);
+    collectDebt(db, c.id, { amount: 50000, method: 'cash', note: null });
+    deleteCustomer(db, c.id);
+    expect(cancelOrder(db, o.id, MORNING).status).toBe('cancelled');
+    expect(getCustomer(db, c.id).debt).toBe(-50000);
+  });
+
+  it('in lại sau nhiều giao dịch khác của khách vẫn ra nợ cũ / tổng nợ lúc bán', () => {
+    const c = customer(100000);
+    const a = debtOrder(c.id, 0); // 150.000
+    collectDebt(db, c.id, { amount: 70000, method: 'cash', note: null }); // 80.000
+    debtOrder(c.id, 0); // 130.000
+    expect(getOrder(db, a.id).debt).toEqual({ amount: 50000, balanceAfter: 150000 });
+  });
+
+  it('tổng kết ngày VN: total = cash + transfer + debt; thu nợ tách TM/CK, không tính ngày khác', () => {
+    const c = customer(200000);
+    const item = { items: [{ qty: 1, price: 10000 }] };
+    createOrder(db, order(item), MORNING);
+    createOrder(db, order({ ...item, paymentMethod: 'transfer' }), MORNING);
+    createOrder(db, order({ ...item, paymentMethod: 'debt', customerId: c.id, paid: 4000 }), MORNING);
+    const cancelled = createOrder(db, order({ ...item, paymentMethod: 'debt', customerId: c.id, paid: 0 }), MORNING);
+    cancelOrder(db, cancelled.id, MORNING);
+    collectDebt(db, c.id, { amount: 50000, method: 'cash', note: null }, MORNING);
+    collectDebt(db, c.id, { amount: 30000, method: 'transfer', note: null }, MORNING);
+    collectDebt(db, c.id, { amount: 1000, method: 'cash', note: null }, at('2026-09-28T16:59:59.000Z')); // 23:59 ngày 28 VN
+    expect(listOrders(db, '2026-09-29', { tzOffsetMin: VN }).summary).toEqual({
+      count: 3,
+      total: 30000,
+      cash: 14000,
+      transfer: 10000,
+      debt: 6000,
+      debtCollected: { cash: 50000, transfer: 30000 },
+    });
   });
 });

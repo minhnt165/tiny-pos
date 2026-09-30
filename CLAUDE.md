@@ -26,13 +26,14 @@ npm workspaces, TypeScript ESM:
 - `client/` – React 19 + Vite 7 + Tailwind v4 + TanStack Query 5 + react-router 7, PWA. UI bằng shadcn/ui (style `radix-nova`, gói `radix-ui`) + icon lucide-react.
 - `docs/superpowers/specs|plans/` – spec và kế hoạch từng giai đoạn. Đọc spec của giai đoạn liên quan trước khi sửa hành vi nghiệp vụ.
 
-Đã xong: Giai đoạn 1 (sản phẩm, danh mục, đơn vị quy đổi, CSV), 2 (bán hàng, hóa đơn 80mm, VietQR, cài đặt), 3 (nhập hàng, nhà cung cấp + công nợ, kiểm kê, lịch sử tồn).
+Đã xong: Giai đoạn 1 (sản phẩm, danh mục, đơn vị quy đổi, CSV), 2 (bán hàng, hóa đơn 80mm, VietQR, cài đặt), 3 (nhập hàng, nhà cung cấp + công nợ, kiểm kê, lịch sử tồn), 4 (khách hàng, công nợ khách).
 
 ## Bất biến nghiệp vụ (không được phá)
 
 - **Tiền** là số nguyên đồng (không có phần lẻ), trần `MAX_MONEY` (1 tỷ). **Tồn kho** là số thực theo đơn vị gốc (hàng cân theo kg).
 - **Mọi thay đổi tồn kho** đi qua `recordMovement` (`server/src/services/stock.ts`), trong cùng transaction với chứng từ. Không `update products set stock` trực tiếp.
 - **Mọi thay đổi nợ nhà cung cấp** đi qua `recordSupplierTx` (`services/supplier-ledger.ts`), cùng transaction.
+- **Mọi thay đổi nợ khách** đi qua `recordCustomerDebtTx` (`services/customer-ledger.ts`), cùng transaction. Hóa đơn ghi nợ: `paid` là tiền mặt trả trước, nợ = `payable − paid`.
 - **Mã chứng từ** theo ngày địa phương qua `nextDailyCode`: `HD-YYYYMMDD-NNNN` (hóa đơn), `PN-YYYYMMDD-NNNN` (phiếu nhập), `KK-YYYYMMDD-NN` (kiểm kê). Thời gian truyền qua `Clock` (`services/daily-code.ts`) để test không phụ thuộc máy.
 - **Chứng từ không sửa, chỉ hủy**: hủy đơn/phiếu nhập ghi movement bù và bút toán nợ bù, không xóa dòng.
 - **Giá vốn** = giá nhập lần gần nhất, quy về đơn vị gốc (giá thùng / factor).
@@ -46,7 +47,7 @@ npm workspaces, TypeScript ESM:
 - **Git**: làm trên một nhánh (`master`), không tạo nhánh mới cho từng việc. Không chia nhỏ commit: mỗi đợt việc/đợt sửa một commit. Commit theo dạng `feat(server): …`, `fix(client): …`, `docs: …`, `chore: …`.
 - **UI**: dùng component shadcn có sẵn trong `client/src/components/ui` và component dùng chung trong `client/src/components`; thiếu thì `npx shadcn@latest add <tên>` trong `client/`. Không tự viết component thô.
 - **Kiểm thử giao diện**: thay đổi ở client phải kiểm trên trình duyệt thật (xem skill `browser-verify`), vì client không có test tự động. Không ghi vào DB dev của người dùng khi kiểm.
-- **Migration**: DB dev đã chạy tới `0002`. Đổi schema thì tạo migration mới, không sửa migration đã có (xem `.claude/rules/database.md`).
+- **Migration**: DB dev đã chạy tới `0003`. Đổi schema thì tạo migration mới, không sửa migration đã có (xem `.claude/rules/database.md`).
 
 ## Môi trường
 

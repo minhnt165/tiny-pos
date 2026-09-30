@@ -11,11 +11,15 @@ export function SaleResult({ order, onReprint }: { order: OrderDetail; onReprint
       <CircleCheck className="size-8 shrink-0 text-emerald-600" />
       <div className="min-w-0 flex-1">
         <div className="font-medium">
-          Đã thanh toán {order.code} · {formatMoney(order.payable)}
+          {order.debt ? 'Đã ghi nợ' : 'Đã thanh toán'} {order.code} · {formatMoney(order.payable)}
         </div>
         {cash ? (
           <div className="font-heading text-3xl font-semibold text-emerald-700 tabular-nums dark:text-emerald-300">
             Tiền thối: {formatMoney(order.paid - order.payable)}
+          </div>
+        ) : order.debt ? (
+          <div className="text-muted-foreground">
+            Ghi nợ {order.customerName} · {formatMoney(order.debt.amount)} ({order.debt.balanceAfter < 0 ? 'tiệm nợ khách' : 'tổng nợ'} {formatMoney(Math.abs(order.debt.balanceAfter))})
           </div>
         ) : (
           <div className="text-muted-foreground">Chuyển khoản</div>

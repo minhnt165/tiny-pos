@@ -22,7 +22,9 @@ export const orderItemInputSchema = z.object({
 export const orderInputSchema = z.object({
   items: z.array(orderItemInputSchema).min(1, 'chưa có món nào'),
   discount: z.number().int().min(0).max(MAX_MONEY).default(0),
-  paymentMethod: z.enum(['cash', 'transfer']),
+  paymentMethod: z.enum(['cash', 'transfer', 'debt']),
+  /** Chỉ dùng khi ghi nợ; đơn tiền mặt/chuyển khoản bỏ qua. */
+  customerId: optionalId,
   paid: z.number().int().min(0).max(MAX_MONEY).default(0),
 });
 export type OrderInput = z.output<typeof orderInputSchema>;

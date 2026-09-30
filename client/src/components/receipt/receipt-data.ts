@@ -1,4 +1,4 @@
-import { cartTotals, lineAmount, type Cart, type OrderDetail, type PaymentMethod } from '@tiny-pos/shared';
+import { cartTotals, lineAmount, type Cart, type CollectMethod, type CustomerPaymentResult, type OrderDebt, type OrderDetail, type PaymentMethod } from '@tiny-pos/shared';
 
 export interface ReceiptItem {
   name: string;
@@ -22,6 +22,9 @@ export interface ReceiptData {
   cancelled: boolean;
   /** Chuỗi VietQR in kèm phiếu tạm tính. */
   qrPayload: string | null;
+  /** Đơn ghi nợ: tên khách và nợ tại lúc bán; đơn khác null. */
+  customerName: string | null;
+  debt: OrderDebt | null;
 }
 
 export function receiptFromOrder(o: OrderDetail): ReceiptData {
@@ -36,6 +39,8 @@ export function receiptFromOrder(o: OrderDetail): ReceiptData {
     paymentMethod: o.paymentMethod,
     cancelled: o.status === 'cancelled',
     qrPayload: null,
+    customerName: o.customerName,
+    debt: o.debt,
   };
 }
 
@@ -50,6 +55,8 @@ export function draftReceipt(cart: Cart, qrPayload: string | null): ReceiptData 
     paymentMethod: 'transfer',
     cancelled: false,
     qrPayload,
+    customerName: null,
+    debt: null,
   };
 }
 
@@ -70,5 +77,31 @@ export function sampleReceipt(): ReceiptData {
     paymentMethod: 'cash',
     cancelled: false,
     qrPayload: null,
+    customerName: null,
+    debt: null,
+  };
+}
+
+/** Biên nhận thu nợ: khách giữ làm bằng đã trả. */
+export interface DebtReceiptData {
+  kind: 'debt-payment';
+  customerName: string;
+  amount: number;
+  method: CollectMethod;
+  /** Còn nợ sau lần thu này; âm = tiệm nợ lại khách. */
+  balanceAfter: number;
+  createdAt: string;
+}
+
+export type PrintData = ReceiptData | DebtReceiptData;
+
+export function debtReceiptFromPayment(r: CustomerPaymentResult): DebtReceiptData {
+  return {
+    kind: 'debt-payment',
+    customerName: r.customer.name,
+    amount: -r.transaction.amount,
+    method: r.transaction.method ?? 'cash',
+    balanceAfter: r.transaction.balanceAfter,
+    createdAt: r.transaction.createdAt,
   };
 }

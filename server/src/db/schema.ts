@@ -56,6 +56,7 @@ export const customers = sqliteTable('customers', {
   phone: text('phone'),
   debt: integer('debt').notNull().default(0), // cache, tính từ debt_transactions
   note: text('note'),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
 });
 
 export const suppliers = sqliteTable('suppliers', {
@@ -95,6 +96,8 @@ export const debtTransactions = sqliteTable(
     orderId: integer('order_id').references(() => orders.id),
     amount: integer('amount').notNull(), // + nợ thêm, - trả nợ
     note: text('note'),
+    kind: text('kind', { enum: ['opening', 'order', 'order_cancel', 'payment', 'manual'] }).notNull().default('manual'),
+    method: text('method', { enum: ['cash', 'transfer'] }), // chỉ dòng thu nợ
     createdAt: createdAt(),
   },
   (t) => [index('debt_tx_customer_idx').on(t.customerId, t.createdAt)],

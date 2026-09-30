@@ -37,7 +37,7 @@ describe('API đơn hàng và cài đặt', () => {
 
     const today = await call('GET', '/api/orders');
     expect(today.json.orders.map((o: { id: number }) => o.id)).toEqual([created.json.id]);
-    expect(today.json.summary).toEqual({ count: 1, total: 12000, cash: 12000, transfer: 0 });
+    expect(today.json.summary).toEqual({ count: 1, total: 12000, cash: 12000, transfer: 0, debt: 0, debtCollected: { cash: 0, transfer: 0 } });
 
     expect((await call('GET', `/api/orders/${created.json.id}`)).json.items).toHaveLength(2);
     expect((await call('GET', `/api/products/${p.json.id}`)).json.stock).toBe(8);

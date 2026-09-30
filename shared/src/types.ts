@@ -74,6 +74,9 @@ export interface OrderSummary {
   payable: number;
   paid: number;
   paymentMethod: PaymentMethod;
+  /** Chỉ đơn ghi nợ có khách; tên lấy theo tên hiện tại của khách. */
+  customerId: number | null;
+  customerName: string | null;
   status: 'done' | 'cancelled';
   itemCount: number;
   createdAt: string;
@@ -82,13 +85,20 @@ export interface OrderSummary {
 
 export interface OrderDetail extends OrderSummary {
   items: OrderItem[];
+  /** Đơn ghi nợ: số nợ của đơn và tổng nợ của khách ngay sau đơn; đơn khác: null. */
+  debt: OrderDebt | null;
 }
 
 export interface DaySummary {
   count: number;
   total: number;
+  /** Đơn tiền mặt + phần khách trả trước của đơn ghi nợ. */
   cash: number;
   transfer: number;
+  /** Số ghi nợ mới trong ngày; total = cash + transfer + debt. */
+  debt: number;
+  /** Thu nợ trong ngày theo hình thức (không tính vào total). */
+  debtCollected: { cash: number; transfer: number };
 }
 
 export interface OrderList {
@@ -197,4 +207,49 @@ export interface StockMovement {
   createdAt: string;
   /** Mã chứng từ liên quan: HD-…, PN-…, KK-… hoặc null. */
   refCode: string | null;
+}
+
+export type DebtTxKind = 'opening' | 'order' | 'order_cancel' | 'payment' | 'manual';
+export type CollectMethod = 'cash' | 'transfer';
+
+export interface Customer {
+  id: number;
+  name: string;
+  phone: string | null;
+  note: string | null;
+  /** Khách đang nợ tiệm (cache của debt_transactions); âm = tiệm nợ lại khách. */
+  debt: number;
+  isActive: boolean;
+}
+
+export interface CustomerList {
+  customers: Customer[];
+  /** Σ nợ dương của mọi khách đang theo dõi, không phụ thuộc ô tìm. */
+  totalDebt: number;
+}
+
+export interface CustomerTransaction {
+  id: number;
+  customerId: number;
+  kind: DebtTxKind;
+  /** + nợ thêm, − thu nợ / hủy đơn. */
+  amount: number;
+  method: CollectMethod | null;
+  note: string | null;
+  orderId: number | null;
+  orderCode: string | null;
+  createdAt: string;
+  /** Số nợ sau giao dịch này. */
+  balanceAfter: number;
+}
+
+export interface CustomerPaymentResult {
+  customer: Customer;
+  transaction: CustomerTransaction;
+}
+
+/** Nợ của một đơn ghi nợ tại lúc bán. Nợ cũ = balanceAfter − amount. */
+export interface OrderDebt {
+  amount: number;
+  balanceAfter: number;
 }
