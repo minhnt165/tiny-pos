@@ -28,7 +28,9 @@ export function SelectField({ id, label, value, onChange, options, emptyLabel, p
   return (
     <Field data-invalid={invalid}>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <Select value={value || (emptyLabel ? NONE : '')} onValueChange={(v) => onChange(v === NONE ? '' : v)}>
+      {/* Select ẩn của Radix bắn change '' khi value đổi lúc option chưa đăng ký (vào lại trang, dữ liệu có sẵn
+          trong cache); không SelectItem nào có value '' nên bỏ qua, tránh xóa lựa chọn đã lưu */}
+      <Select value={value || (emptyLabel ? NONE : '')} onValueChange={(v) => v !== '' && onChange(v === NONE ? '' : v)}>
         <SelectTrigger id={id} aria-invalid={invalid} className="h-11 w-full bg-card text-base data-[size=default]:h-11">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
