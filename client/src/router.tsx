@@ -1,4 +1,4 @@
-import { FolderOpen, Package, PackageOpen, ReceiptText, ScanBarcode, Settings, ShoppingCart, Truck, type LucideIcon } from 'lucide-react';
+import { ClipboardList, FolderOpen, Package, PackageOpen, ReceiptText, ScanBarcode, Settings, ShoppingCart, Truck, type LucideIcon } from 'lucide-react';
 import { Navigate, Route, Routes } from 'react-router';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { CategoriesPage } from './pages/categories/CategoriesPage';
@@ -8,6 +8,7 @@ import { OrdersPage } from './pages/orders/OrdersPage';
 import { ProductListPage } from './pages/products/ProductListPage';
 import { QuickAddPage } from './pages/quick-add/QuickAddPage';
 import { SettingsPage } from './pages/settings/SettingsPage';
+import { StocktakePage } from './pages/stocktake/StocktakePage';
 import { SuppliersPage } from './pages/suppliers/SuppliersPage';
 import { SellPage } from './pages/sell/SellPage';
 
@@ -24,6 +25,7 @@ export const NAV: NavItem[] = [
   { to: '/sell', label: 'Bán hàng', icon: ShoppingCart, mobile: true },
   { to: '/orders', label: 'Hóa đơn', icon: ReceiptText, mobile: true },
   { to: '/imports', label: 'Nhập hàng', icon: PackageOpen },
+  { to: '/stocktake', label: 'Kiểm kê', icon: ClipboardList, mobile: true },
   { to: '/products', label: 'Sản phẩm', icon: Package, mobile: true },
   { to: '/categories', label: 'Danh mục', icon: FolderOpen },
   { to: '/suppliers', label: 'Nhà cung cấp', icon: Truck },
@@ -39,6 +41,7 @@ export function AppRoutes() {
       <Route path="/orders" element={<OrdersPage />} />
       <Route path="/imports" element={<ImportsPage />} />
       <Route path="/imports/new" element={<ImportFormPage />} />
+      <Route path="/stocktake" element={<StocktakePage />} />
       <Route path="/products" element={<ProductListPage />} />
       <Route path="/categories" element={<CategoriesPage />} />
       <Route path="/suppliers" element={<SuppliersPage />} />
