@@ -50,7 +50,7 @@ Tạo shortcut Chrome ở quầy (giai đoạn 5 sẽ có script): `chrome.exe -
 | `npm run typecheck` | Kiểm tra kiểu TypeScript cả 3 workspace |
 | `npm test` | Chạy vitest (`shared`, `server`) |
 | `npm run db:generate` | Sinh migration mới sau khi sửa `server/src/db/schema.ts` |
-| `npm run seed` | Nạp dữ liệu mẫu (10 danh mục, ~80 mặt hàng, thùng/lốc, hàng cân, hàng sắp hết) vào `data/grocery.db`; chạy lại không tạo trùng. Dữ liệu ở `server/src/seed/seed-data.ts` |
+| `npm run seed` | Nạp dữ liệu mẫu (10 danh mục, ~80 mặt hàng, thùng/lốc, hàng cân, hàng sắp hết; 5 nhà cung cấp, 10 phiếu nhập 12 ngày gần đây có nợ/trả một phần/1 phiếu hủy) vào `data/grocery.db`; chạy lại không tạo trùng. Dữ liệu ở `server/src/seed/seed-data.ts` |
 
 ## Cấu trúc
 

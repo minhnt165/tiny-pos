@@ -136,6 +136,137 @@ export const SEED_PRODUCTS: SeedProduct[] = [
   p('Nước ngọt Mirinda cam (hết bán)', 'Đồ uống', 'lon', 8000, 9500, 0, { inactive: true, minStock: 0 }),
 ];
 
+export interface SeedSupplier {
+  name: string;
+  phone: string | null;
+  note: string | null;
+}
+
+export const SEED_SUPPLIERS: SeedSupplier[] = [
+  { name: 'Đại lý nước giải khát Hòa Phát', phone: '0912345678', note: 'Giao thứ 2 và thứ 5' },
+  { name: 'Nhà phân phối Vinamilk Bắc Giang', phone: '0983111222', note: 'Sữa, sữa chua, trứng' },
+  { name: 'Tổng kho bánh kẹo Minh Anh', phone: '0977654321', note: null },
+  { name: 'Công ty Hóa phẩm Thành Công', phone: '0904777888', note: 'Chiết khấu 3% khi trả đủ' },
+  { name: 'Chợ đầu mối Lạng Giang', phone: null, note: 'Rau củ, thịt – trả tiền mặt' },
+];
+
+export interface SeedImportItem {
+  /** Tên sản phẩm trong SEED_PRODUCTS */
+  product: string;
+  /** Tên đơn vị quy đổi (Thùng, Lốc…); bỏ trống = đơn vị gốc */
+  unit?: string;
+  qty: number;
+  /** Giá nhập theo đơn vị của dòng */
+  unitCost: number;
+}
+
+export interface SeedImport {
+  daysAgo: number;
+  /** Giờ trong ngày (giờ máy chạy seed) */
+  hour: number;
+  /** Tên trong SEED_SUPPLIERS; null = không ghi NCC (phải trả đủ) */
+  supplier: string | null;
+  /** 'all' = trả đủ */
+  paid: number | 'all';
+  /** Ghi chú khác nhau giữa các phiếu: seed dùng để nhận ra phiếu đã nạp */
+  note: string;
+  /** Hủy phiếu sau khi nhập (giờ hủy = giờ nhập + 2 tiếng) */
+  cancelled?: boolean;
+  items: SeedImportItem[];
+}
+
+/** Phiếu nhập mẫu, theo thứ tự thời gian (giá vốn lấy theo lần nhập sau cùng). */
+export const SEED_IMPORTS: SeedImport[] = [
+  {
+    daysAgo: 12, hour: 8, supplier: 'Đại lý nước giải khát Hòa Phát', paid: 'all', note: 'Nhập hàng đầu kỳ',
+    items: [
+      { product: 'Bia Tiger lon 330ml', unit: 'Thùng', qty: 2, unitCost: 372000 },
+      { product: 'Coca-Cola lon 330ml', unit: 'Thùng', qty: 2, unitCost: 204000 },
+      { product: 'Nước suối Aquafina 500ml', unit: 'Thùng', qty: 3, unitCost: 91200 },
+    ],
+  },
+  {
+    daysAgo: 10, hour: 9, supplier: 'Nhà phân phối Vinamilk Bắc Giang', paid: 0, note: 'Sữa giao định kỳ, ghi nợ',
+    items: [
+      { product: 'Sữa tươi Vinamilk 1L', qty: 12, unitCost: 27000 },
+      { product: 'Sữa chua Vinamilk có đường', unit: 'Lốc', qty: 10, unitCost: 22000 },
+      { product: 'Sữa tươi TH true MILK 180ml', unit: 'Lốc', qty: 6, unitCost: 28800 },
+    ],
+  },
+  {
+    daysAgo: 8, hour: 15, supplier: 'Tổng kho bánh kẹo Minh Anh', paid: 300000, note: 'Bánh kẹo, trả trước một phần',
+    items: [
+      { product: 'Bánh Oreo 133g', qty: 24, unitCost: 9500 },
+      { product: 'Bánh Chocopie hộp 12', qty: 10, unitCost: 42000 },
+      { product: 'Snack Oishi tôm cay', unit: 'Lốc', qty: 5, unitCost: 42000 },
+      { product: 'Bánh gạo One One 150g', qty: 12, unitCost: 13000 },
+    ],
+  },
+  {
+    daysAgo: 7, hour: 6, supplier: 'Chợ đầu mối Lạng Giang', paid: 'all', note: 'Đi chợ sáng',
+    items: [
+      { product: 'Thịt heo ba rọi', qty: 5, unitCost: 118000 },
+      { product: 'Cà chua', qty: 4, unitCost: 17000 },
+      { product: 'Hành tím', qty: 2, unitCost: 34000 },
+    ],
+  },
+  {
+    daysAgo: 6, hour: 10, supplier: null, paid: 'all', note: 'Mua lẻ, không lấy hóa đơn',
+    items: [{ product: 'Muối I-ốt 1kg', qty: 10, unitCost: 5000 }],
+  },
+  {
+    daysAgo: 5, hour: 14, supplier: 'Công ty Hóa phẩm Thành Công', paid: 1000000, note: 'Hóa phẩm tháng này',
+    items: [
+      { product: 'Bột giặt OMO 3kg', qty: 6, unitCost: 125000 },
+      { product: 'Nước giặt Ariel 3.2kg', qty: 6, unitCost: 172000 },
+      { product: 'Nước rửa chén Sunlight 750g', qty: 12, unitCost: 24000 },
+      { product: 'Kem đánh răng P/S 180g', qty: 12, unitCost: 28000 },
+    ],
+  },
+  {
+    daysAgo: 4, hour: 9, supplier: 'Đại lý nước giải khát Hòa Phát', paid: 0, note: 'Nhập nhầm, đã trả lại hàng', cancelled: true,
+    items: [{ product: 'Pepsi lon 330ml', unit: 'Thùng', qty: 2, unitCost: 199200 }],
+  },
+  {
+    daysAgo: 3, hour: 8, supplier: 'Đại lý nước giải khát Hòa Phát', paid: 0, note: 'Bia nước ngọt, giá bia tăng',
+    items: [
+      { product: 'Bia Tiger lon 330ml', unit: 'Thùng', qty: 3, unitCost: 379200 },
+      { product: 'Bia Heineken lon 330ml', qty: 24, unitCost: 18500 },
+      { product: 'Sting dâu 330ml', qty: 24, unitCost: 9000 },
+      { product: 'Red Bull 250ml', qty: 24, unitCost: 11500 },
+    ],
+  },
+  {
+    daysAgo: 2, hour: 16, supplier: 'Tổng kho bánh kẹo Minh Anh', paid: 'all', note: 'Mì gói',
+    items: [
+      { product: 'Mì Hảo Hảo tôm chua cay', unit: 'Thùng', qty: 3, unitCost: 114000 },
+      { product: 'Mì Omachi sườn hầm', unit: 'Thùng', qty: 2, unitCost: 195000 },
+    ],
+  },
+  {
+    daysAgo: 1, hour: 9, supplier: 'Nhà phân phối Vinamilk Bắc Giang', paid: 200000, note: 'Sữa đặc, trứng',
+    items: [
+      { product: 'Sữa đặc Ông Thọ 380g', qty: 12, unitCost: 22000 },
+      { product: 'Trứng gà (vỉ 10)', qty: 10, unitCost: 28000 },
+    ],
+  },
+];
+
+export interface SeedSupplierPayment {
+  daysAgo: number;
+  hour: number;
+  supplier: string;
+  amount: number;
+  /** Ghi chú khác nhau giữa các lần trả: seed dùng để nhận ra lần đã nạp */
+  note: string;
+}
+
+/** Trả nợ NCC, xen giữa các phiếu nhập (số trả không vượt số đang nợ lúc đó). */
+export const SEED_SUPPLIER_PAYMENTS: SeedSupplierPayment[] = [
+  { daysAgo: 5, hour: 17, supplier: 'Nhà phân phối Vinamilk Bắc Giang', amount: 500000, note: 'Trả nợ tiền mặt' },
+  { daysAgo: 1, hour: 18, supplier: 'Tổng kho bánh kẹo Minh Anh', amount: 400000, note: 'Chuyển khoản trả nợ' },
+];
+
 /** Sinh mã EAN-13 hợp lệ, cố định theo chỉ số để chạy lại vẫn ra cùng mã. */
 export function ean13(index: number): string {
   const body = `893${String(1000000 + index * 7919).padStart(9, '0')}`.slice(0, 12);
