@@ -1,4 +1,5 @@
-import { Ban, MoreHorizontal, Pencil, RotateCcw } from 'lucide-react';
+import { useState } from 'react';
+import { Ban, History, MoreHorizontal, Pencil, RotateCcw } from 'lucide-react';
 import { formatMoney, type Product } from '@tiny-pos/shared';
 import { ProductAvatar } from '@/components/ProductAvatar';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+import { StockHistoryDialog } from './StockHistoryDialog';
 
 interface Props {
   products: Product[];
@@ -26,25 +28,33 @@ export function StockCell({ p }: { p: Product }) {
 
 /** Menu thao tác của một sản phẩm (Sửa / Ngừng bán / Bán lại). */
 export function ProductMenu({ p, onEdit, onToggle }: { p: Product; onEdit: () => void; onToggle: () => void }) {
+  const [history, setHistory] = useState(false);
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-lg" aria-label="Thao tác" title="Thao tác" onClick={(e) => e.stopPropagation()}>
-          <MoreHorizontal />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-44" onClick={(e) => e.stopPropagation()}>
-        <DropdownMenuItem onSelect={onEdit}>
-          <Pencil />
-          Sửa sản phẩm
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem variant={p.isActive ? 'destructive' : 'default'} onSelect={onToggle}>
-          {p.isActive ? <Ban /> : <RotateCcw />}
-          {p.isActive ? 'Ngừng bán' : 'Bán lại'}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon-lg" aria-label="Thao tác" title="Thao tác" onClick={(e) => e.stopPropagation()}>
+            <MoreHorizontal />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-44" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuItem onSelect={onEdit}>
+            <Pencil />
+            Sửa sản phẩm
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setHistory(true)}>
+            <History />
+            Lịch sử tồn
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem variant={p.isActive ? 'destructive' : 'default'} onSelect={onToggle}>
+            {p.isActive ? <Ban /> : <RotateCcw />}
+            {p.isActive ? 'Ngừng bán' : 'Bán lại'}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <StockHistoryDialog product={history ? p : null} onClose={() => setHistory(false)} />
+    </>
   );
 }
 
