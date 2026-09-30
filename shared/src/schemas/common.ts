@@ -39,4 +39,11 @@ export const FIELD_LABELS: Record<string, string> = {
   bankAccount: 'Số tài khoản',
   bankAccountName: 'Tên chủ tài khoản',
   autoPrint: 'Tự in',
+  unitCost: 'Giá nhập',
+  counted: 'Số đếm',
+  supplierId: 'Nhà cung cấp',
+  amount: 'Số tiền',
+  phone: 'Số điện thoại',
+  note: 'Ghi chú',
+  limit: 'Giới hạn',
 };

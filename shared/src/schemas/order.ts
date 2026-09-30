@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const optionalId = z
+export const optionalId = z
   .number()
   .int()
   .positive()
@@ -8,7 +8,7 @@ const optionalId = z
   .transform((v) => v ?? null);
 
 /** Trần cho giá/giảm giá/tiền khách đưa: chặn số vô lý do gõ nhầm hoặc máy quét bắn vào ô tiền. */
-const MAX_MONEY = 1_000_000_000;
+export const MAX_MONEY = 1_000_000_000;
 
 /** Một dòng giỏ: có productId là hàng trong kho, không có là món ngoài (chỉ tên + giá). */
 export const orderItemInputSchema = z.object({
