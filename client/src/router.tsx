@@ -1,4 +1,4 @@
-import { FolderOpen, Package, ReceiptText, ScanBarcode, Settings, ShoppingCart, type LucideIcon } from 'lucide-react';
+import { FolderOpen, Package, ReceiptText, ScanBarcode, Settings, ShoppingCart, Truck, type LucideIcon } from 'lucide-react';
 import { Navigate, Route, Routes } from 'react-router';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { CategoriesPage } from './pages/categories/CategoriesPage';
@@ -6,6 +6,7 @@ import { OrdersPage } from './pages/orders/OrdersPage';
 import { ProductListPage } from './pages/products/ProductListPage';
 import { QuickAddPage } from './pages/quick-add/QuickAddPage';
 import { SettingsPage } from './pages/settings/SettingsPage';
+import { SuppliersPage } from './pages/suppliers/SuppliersPage';
 import { SellPage } from './pages/sell/SellPage';
 
 export interface NavItem {
@@ -22,6 +23,7 @@ export const NAV: NavItem[] = [
   { to: '/orders', label: 'Hóa đơn', icon: ReceiptText, mobile: true },
   { to: '/products', label: 'Sản phẩm', icon: Package, mobile: true },
   { to: '/categories', label: 'Danh mục', icon: FolderOpen },
+  { to: '/suppliers', label: 'Nhà cung cấp', icon: Truck },
   { to: '/quick-add', label: 'Nhập nhanh', icon: ScanBarcode },
   { to: '/settings', label: 'Cài đặt', icon: Settings },
 ];
@@ -34,6 +36,7 @@ export function AppRoutes() {
       <Route path="/orders" element={<OrdersPage />} />
       <Route path="/products" element={<ProductListPage />} />
       <Route path="/categories" element={<CategoriesPage />} />
+      <Route path="/suppliers" element={<SuppliersPage />} />
       <Route path="/quick-add" element={<QuickAddPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="*" element={<PlaceholderPage title="Không tìm thấy trang" />} />
