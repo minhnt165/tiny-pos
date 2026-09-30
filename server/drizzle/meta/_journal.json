@@ -15,6 +15,13 @@
       "when": 1790695250586,
       "tag": "0001_thick_roland_deschain",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790732415048,
+      "tag": "0002_spicy_serpent_society",
+      "breakpoints": true
     }
   ]
 }

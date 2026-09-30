@@ -58,6 +58,16 @@ export const customers = sqliteTable('customers', {
   note: text('note'),
 });
 
+export const suppliers = sqliteTable('suppliers', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  phone: text('phone'),
+  note: text('note'),
+  debt: integer('debt').notNull().default(0), // cache, tính từ supplier_transactions
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  createdAt: createdAt(),
+});
+
 export const orders = sqliteTable(
   'orders',
   {
@@ -109,13 +119,22 @@ export const orderItems = sqliteTable(
   (t) => [index('order_items_order_idx').on(t.orderId)],
 );
 
-export const imports = sqliteTable('imports', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  supplierName: text('supplier_name'),
-  total: integer('total').notNull().default(0),
-  note: text('note'),
-  createdAt: createdAt(),
-});
+export const imports = sqliteTable(
+  'imports',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    code: text('code').notNull().unique(), // PN-20260929-0001
+    supplierId: integer('supplier_id').references(() => suppliers.id),
+    supplierName: text('supplier_name'), // snapshot tên NCC lúc nhập
+    total: integer('total').notNull().default(0),
+    paid: integer('paid').notNull().default(0),
+    note: text('note'),
+    status: text('status', { enum: ['done', 'cancelled'] }).notNull().default('done'),
+    createdAt: createdAt(),
+    cancelledAt: text('cancelled_at'),
+  },
+  (t) => [index('imports_created_idx').on(t.createdAt)],
+);
 
 export const importItems = sqliteTable('import_items', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -125,9 +144,29 @@ export const importItems = sqliteTable('import_items', {
   productId: integer('product_id')
     .notNull()
     .references(() => products.id),
-  qty: real('qty').notNull(),
-  costPrice: integer('cost_price').notNull(),
+  productName: text('product_name').notNull().default(''),
+  unitName: text('unit_name').notNull().default(''),
+  factor: real('factor').notNull().default(1), // hệ số đơn vị đã chọn
+  qty: real('qty').notNull(), // theo đơn vị đã chọn
+  unitCost: integer('unit_cost').notNull().default(0), // giá nhập 1 đơn vị đã chọn
+  costPrice: integer('cost_price').notNull(), // giá vốn 1 đơn vị gốc
+  amount: integer('amount').notNull().default(0),
 });
+
+export const supplierTransactions = sqliteTable(
+  'supplier_transactions',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    supplierId: integer('supplier_id')
+      .notNull()
+      .references(() => suppliers.id),
+    importId: integer('import_id').references(() => imports.id),
+    amount: integer('amount').notNull(), // + nợ thêm, - trả nợ / hủy phiếu
+    note: text('note'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('supplier_tx_supplier_idx').on(t.supplierId, t.createdAt)],
+);
 
 export const stockMovements = sqliteTable(
   'stock_movements',
@@ -149,3 +188,29 @@ export const settings = sqliteTable('settings', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),
 });
+
+export const stocktakes = sqliteTable('stocktakes', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  code: text('code').notNull().unique(), // KK-20260929-01
+  status: text('status', { enum: ['open', 'done', 'cancelled'] }).notNull().default('open'),
+  note: text('note'),
+  createdAt: createdAt(),
+  finishedAt: text('finished_at'),
+});
+
+export const stocktakeItems = sqliteTable(
+  'stocktake_items',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    stocktakeId: integer('stocktake_id')
+      .notNull()
+      .references(() => stocktakes.id, { onDelete: 'cascade' }),
+    productId: integer('product_id')
+      .notNull()
+      .references(() => products.id),
+    counted: real('counted').notNull(), // theo đơn vị gốc
+    expected: real('expected').notNull(), // tồn máy lúc đếm
+    countedAt: text('counted_at').notNull(),
+  },
+  (t) => [uniqueIndex('stocktake_items_uq').on(t.stocktakeId, t.productId)],
+);
