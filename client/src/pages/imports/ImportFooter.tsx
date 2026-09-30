@@ -17,7 +17,8 @@ interface Props {
 }
 
 export function ImportFooter({ totals, hasSupplier, paidAuto, onPaid, onSave, saving, empty }: Props) {
-  const over = totals.paid > totals.total;
+  const paid = hasSupplier ? totals.paid : totals.total;
+  const over = paid > totals.total;
   return (
     <Card className="gap-0 py-0">
       <CardContent className="flex flex-wrap items-end justify-between gap-4 p-5">
@@ -34,7 +35,7 @@ export function ImportFooter({ totals, hasSupplier, paidAuto, onPaid, onSave, sa
               </Button>
             )}
           </div>
-          <CommitInput aria-label="Đã trả" money disabled={!hasSupplier} value={totals.paid} onCommit={(v) => onPaid(v)} className="w-40" />
+          <CommitInput aria-label="Đã trả" money disabled={!hasSupplier} value={paid} onCommit={(v) => onPaid(v)} className="w-40" />
           <div className={over ? 'text-sm text-destructive' : 'text-sm text-muted-foreground'}>
             {over ? 'Số đã trả lớn hơn tổng tiền' : hasSupplier ? `Ghi nợ: ${formatMoney(totals.debt)}` : 'Không ghi NCC thì trả đủ'}
           </div>
