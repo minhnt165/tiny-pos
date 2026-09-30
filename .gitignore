@@ -6,3 +6,4 @@ data/
 .npmrc
 .certs/
 .playwright-mcp/
+.vite/
