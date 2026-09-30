@@ -39,7 +39,7 @@ export function StocktakeHistory() {
                 <TableCell className="hidden px-4 py-3 sm:table-cell">{new Date(s.createdAt).toLocaleDateString('vi-VN')}</TableCell>
                 <TableCell className="hidden px-4 py-3 text-right tabular-nums sm:table-cell">{s.itemCount}</TableCell>
                 <TableCell className="px-4 py-3 text-right tabular-nums">{s.diffCount}</TableCell>
-                <TableCell className={cn('px-4 py-3 text-right tabular-nums', s.diffValue < 0 && 'text-destructive')}>{s.status === 'cancelled' ? '—' : formatMoney(s.diffValue)}</TableCell>
+                <TableCell className={cn('px-4 py-3 text-right tabular-nums', s.status !== 'cancelled' && s.diffValue < 0 && 'text-destructive')}>{s.status === 'cancelled' ? '—' : formatMoney(s.diffValue)}</TableCell>
                 <TableCell className="hidden px-4 py-3 sm:table-cell">{s.status === 'done' ? <Badge>Đã chốt</Badge> : <Badge variant="secondary">Đã hủy</Badge>}</TableCell>
               </TableRow>
             ))}

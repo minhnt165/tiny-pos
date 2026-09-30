@@ -11,7 +11,8 @@ export function StocktakePage() {
   const { data: current, isLoading, isError, error, refetch } = useCurrentStocktake();
   if (isLoading) return <Skeleton className="h-40 w-full" />;
   // Lỗi tải khác với "chưa có phiên": không cho bắt đầu phiên mới khi chưa biết đã có phiên mở hay chưa
-  if (isError)
+  // Lỗi khi tải lại nền mà đã có dữ liệu thì giữ màn đang đếm
+  if (isError && current === undefined)
     return (
       <EmptyState
         icon={ClipboardList}

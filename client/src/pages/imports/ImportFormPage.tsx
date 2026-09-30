@@ -60,7 +60,10 @@ export function ImportFormPage() {
         navigate('/imports');
       },
       // Lỗi: giữ nguyên phiếu nháp để sửa rồi lưu lại
-      onError: (err) => toast.error(err.message),
+      onError: (err) => {
+        toast.error(err.message);
+        scan.focus();
+      },
     });
   };
 
