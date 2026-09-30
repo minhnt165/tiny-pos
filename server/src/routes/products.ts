@@ -1,14 +1,17 @@
 import express, { Router } from 'express';
 import {
+  movementListQuerySchema,
   productInputSchema,
   productListQuerySchema,
   productUnitInputSchema,
+  type MovementListQuery,
   type ProductListQuery,
 } from '@tiny-pos/shared';
 import type { Db } from '../db/connection.js';
 import { intParam, validateBody, validateQuery } from '../middleware/validate.js';
 import { exportProductsCsv, importProductsCsv } from '../services/product-csv.js';
 import { createUnit, deleteUnit, updateUnit } from '../services/product-units.js';
+import { listMovements } from '../services/movements.js';
 import {
   createProduct,
   findProductByBarcode,
@@ -37,6 +40,9 @@ export function productsRouter(db: Db): Router {
     res.json(listProducts(db, res.locals['query'] as ProductListQuery)),
   );
   r.get('/:id', (req, res) => res.json(getProduct(db, intParam(req, 'id'))));
+  r.get('/:id/movements', validateQuery(movementListQuerySchema), (req, res) =>
+    res.json(listMovements(db, intParam(req, 'id'), (res.locals['query'] as MovementListQuery).limit)),
+  );
   r.post('/', validateBody(productInputSchema), (req, res) => res.status(201).json(createProduct(db, req.body)));
   r.put('/:id', validateBody(productInputSchema), (req, res) =>
     res.json(updateProduct(db, intParam(req, 'id'), req.body)),
