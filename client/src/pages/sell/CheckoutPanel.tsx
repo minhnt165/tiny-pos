@@ -10,6 +10,8 @@ import { groupThousands, moneyChange } from '@/lib/money-input';
 
 interface Props {
   totals: Totals;
+  /** Số dòng trong giỏ. */
+  lineCount: number;
   empty: boolean;
   canHold: boolean;
   onDiscount: (v: number) => void;
@@ -24,10 +26,12 @@ function TodaySummary() {
   const s = data?.summary;
   if (!s) return null;
   return (
-    <div className="rounded-xl bg-muted/60 px-4 py-3 text-sm">
-      <div className="font-medium">Hôm nay: {s.count} đơn</div>
-      <div className="text-muted-foreground">
-        Tiền mặt {formatMoney(s.cash)} · Chuyển khoản {formatMoney(s.transfer)}
+    <div className="mt-auto border-t pt-3 text-sm text-muted-foreground">
+      <div className="font-medium text-foreground">
+        Hôm nay: {s.count} đơn · {formatMoney(s.total)}
+      </div>
+      <div>
+        Tiền mặt {formatMoney(s.cash)} · CK {formatMoney(s.transfer)}
         {s.debt > 0 && ` · Ghi nợ ${formatMoney(s.debt)}`}
       </div>
     </div>
@@ -35,17 +39,17 @@ function TodaySummary() {
 }
 
 /** Cột phải: tổng tiền, giảm giá, nút Thanh toán lớn và các thao tác phụ. */
-export function CheckoutPanel({ totals, empty, canHold, onDiscount, onCheckout, onHold, onCustom, onClear }: Props) {
+export function CheckoutPanel({ totals, lineCount, empty, canHold, onDiscount, onCheckout, onHold, onCustom, onClear }: Props) {
   const [discount, setDiscount] = useState('');
   useEffect(() => setDiscount(totals.discount ? groupThousands(String(totals.discount)) : ''), [totals.discount]);
   const bad = totals.payable < 0;
 
   return (
     <>
-      <Card className="gap-0 py-0 lg:sticky lg:top-20">
-        <CardContent className="space-y-4 p-5">
+      <Card className="gap-0 py-0 lg:h-full">
+        <CardContent className="flex h-full flex-col gap-3 p-4">
           <div className="flex items-baseline justify-between text-muted-foreground">
-            <span>Tổng tiền</span>
+            <span>{`Tổng tiền (${lineCount} món)`}</span>
             <span className="text-lg tabular-nums">{formatMoney(totals.total)}</span>
           </div>
           <div className="flex items-center justify-between gap-3">
@@ -66,11 +70,11 @@ export function CheckoutPanel({ totals, empty, canHold, onDiscount, onCheckout, 
             />
           </div>
           {bad && <p className="text-sm text-destructive">Giảm giá lớn hơn tổng tiền</p>}
-          <div className="border-t pt-4">
-            <div className="text-sm text-muted-foreground">Phải trả</div>
-            <div className="font-heading text-4xl font-semibold tracking-tight text-primary tabular-nums">{formatMoney(Math.max(0, totals.payable))}</div>
+          <div className="border-t pt-3">
+            <div className="text-sm text-muted-foreground">Khách phải trả</div>
+            <div className="font-heading text-4xl font-bold tracking-tight tabular-nums">{formatMoney(Math.max(0, totals.payable))}</div>
           </div>
-          <Button className="h-14 w-full text-lg" disabled={empty || bad} onClick={onCheckout}>
+          <Button className="h-12 w-full text-base" disabled={empty || bad} onClick={onCheckout}>
             <CreditCard data-icon="inline-start" />
             Thanh toán <Kbd className="ml-1">F9</Kbd>
           </Button>
@@ -79,7 +83,7 @@ export function CheckoutPanel({ totals, empty, canHold, onDiscount, onCheckout, 
               <PauseCircle /> Cất chờ
             </Button>
             <Button variant="outline" className="h-11 flex-col gap-0 text-xs" onClick={onCustom}>
-              <PackagePlus /> Món ngoài (F4)
+              <PackagePlus /> Món ngoài
             </Button>
             <Button variant="outline" className="h-11 flex-col gap-0 text-xs text-destructive" disabled={empty} onClick={onClear}>
               <Trash2 /> Xóa giỏ
@@ -93,7 +97,7 @@ export function CheckoutPanel({ totals, empty, canHold, onDiscount, onCheckout, 
       <div className="fixed inset-x-0 bottom-[calc(68px+env(safe-area-inset-bottom))] z-30 flex items-center gap-3 border-t bg-card/95 px-4 py-2 backdrop-blur md:hidden">
         <div className="min-w-0 flex-1">
           <div className="text-xs text-muted-foreground">Phải trả</div>
-          <div className="font-heading text-2xl font-semibold text-primary tabular-nums">{formatMoney(Math.max(0, totals.payable))}</div>
+          <div className="font-heading text-2xl font-bold tabular-nums">{formatMoney(Math.max(0, totals.payable))}</div>
         </div>
         <Button className="h-12 px-6 text-base" disabled={empty || bad} onClick={onCheckout}>
           Thanh toán

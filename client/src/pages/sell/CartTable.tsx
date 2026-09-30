@@ -20,17 +20,19 @@ export function CartTable({ cart, shortages, dispatch, onEditWeight, onDone }: P
     <Table>
       <TableHeader>
         <TableRow className="bg-muted/40 hover:bg-muted/40">
-          <TableHead className="px-4">Món</TableHead>
+          <TableHead className="hidden w-10 pl-4 sm:table-cell">#</TableHead>
+          <TableHead className="px-4 sm:pl-2">Sản phẩm</TableHead>
+          <TableHead className="px-2 text-right">Đơn giá</TableHead>
           <TableHead className="px-2">Số lượng</TableHead>
-          <TableHead className="px-2">Đơn giá</TableHead>
           <TableHead className="px-4 text-right">Thành tiền</TableHead>
           <TableHead className="w-12" />
         </TableRow>
       </TableHeader>
       <TableBody>
-        {cart.lines.map((l) => (
+        {cart.lines.map((l, i) => (
           <CartLine
             key={l.key}
+            index={i}
             line={l}
             shortStock={l.productId !== null ? shortages.get(l.productId) : undefined}
             onQty={(qty) => dispatch({ type: 'update', key: l.key, patch: { qty } })}

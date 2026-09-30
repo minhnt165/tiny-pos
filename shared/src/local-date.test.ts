@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { localDate, localDayRange, shiftDate } from './local-date.js';
+import { formatDateVn, localDate, localDayRange, shiftDate } from './local-date.js';
 
 const VN = 420;
 
@@ -23,5 +23,16 @@ describe('shiftDate', () => {
   it('lùi/tiến qua tháng', () => {
     expect(shiftDate('2026-09-30', 1)).toBe('2026-10-01');
     expect(shiftDate('2026-03-01', -1)).toBe('2026-02-28');
+  });
+});
+
+describe('formatDateVn', () => {
+  it('YYYY-MM-DD thành dd/mm/yyyy', () => {
+    expect(formatDateVn('2026-09-30')).toBe('30/09/2026');
+    expect(formatDateVn('2026-01-05')).toBe('05/01/2026');
+  });
+  it('chuỗi khác dạng thì trả nguyên', () => {
+    expect(formatDateVn('')).toBe('');
+    expect(formatDateVn('30/09/2026')).toBe('30/09/2026');
   });
 });

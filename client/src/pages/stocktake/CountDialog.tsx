@@ -47,7 +47,7 @@ export function CountDialog({ target, saving, onClose, onSave }: Props) {
 
   return (
     <Dialog open={target !== null} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <ClipboardCheck className="size-5 text-primary" />
@@ -70,7 +70,7 @@ export function CountDialog({ target, saving, onClose, onSave }: Props) {
             onFocus={(e) => e.target.select()}
           />
           {diff !== null && (
-            <p className={cn('text-base font-medium', diff > 0 ? 'text-emerald-600' : diff < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+            <p className={cn('text-base font-medium', diff > 0 ? 'text-success' : diff < 0 ? 'text-destructive' : 'text-muted-foreground')}>
               {diff === 0 ? 'Khớp tồn máy' : `Chênh lệch ${diff > 0 ? '+' : ''}${formatQty(diff)} ${target?.unit}`}
             </p>
           )}

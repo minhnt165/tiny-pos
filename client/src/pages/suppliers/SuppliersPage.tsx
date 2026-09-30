@@ -3,9 +3,10 @@ import { Plus, Truck } from 'lucide-react';
 import { formatMoney } from '@tiny-pos/shared';
 import { useSuppliers } from '@/api/suppliers';
 import { EmptyState } from '@/components/EmptyState';
-import { PageHeader } from '@/components/PageHeader';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { PageTitle } from '@/components/layout/PageTitle';
+import { ListPanel } from '@/components/ListPanel';
+import { Stat, StatStrip } from '@/components/StatStrip';
+import { TableSkeleton } from '@/components/TableSkeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { SupplierDetailDialog } from './SupplierDetailDialog';
@@ -19,19 +20,20 @@ export function SuppliersPage() {
 
   return (
     <>
-      <PageHeader
+      <PageTitle
         title="Nhà cung cấp"
-        description={`Tổng đang nợ ${formatMoney(totalDebt)}`}
-        icon={Truck}
-        actions={
-          <Button className="h-11 px-5 text-base" onClick={() => setAdding(true)}>
-            <Plus data-icon="inline-start" />
-            Thêm nhà cung cấp
-          </Button>
-        }
+        count={`${suppliers.length} nhà cung cấp`}
+        actions={[{ label: 'Thêm nhà cung cấp', icon: Plus, onClick: () => setAdding(true), primary: true }]}
       />
-      <Card className="gap-0 overflow-hidden py-0">
-        {!isLoading && !suppliers.length ? (
+      <StatStrip cols={3}>
+        <Stat label="Tổng đang nợ" value={formatMoney(totalDebt)} tone={totalDebt ? 'danger' : 'default'} />
+        <Stat label="Nhà cung cấp" value={String(suppliers.length)} />
+        <Stat label="Đang nợ" value={String(suppliers.filter((x) => x.debt > 0).length)} hint="Số nhà cung cấp tiệm còn nợ" />
+      </StatStrip>
+      <ListPanel>
+        {isLoading ? (
+          <TableSkeleton />
+        ) : !suppliers.length ? (
           <EmptyState icon={Truck} title="Chưa có nhà cung cấp" description="Thêm nhà cung cấp để ghi nợ khi nhập hàng." />
         ) : (
           <Table>
@@ -55,7 +57,7 @@ export function SuppliersPage() {
             </TableBody>
           </Table>
         )}
-      </Card>
+      </ListPanel>
       <SupplierFormDialog open={adding} onClose={() => setAdding(false)} onSaved={() => setAdding(false)} />
       <SupplierDetailDialog id={openId} onClose={() => setOpenId(null)} />
     </>

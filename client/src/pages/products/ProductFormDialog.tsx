@@ -76,7 +76,8 @@ export function ProductFormDialog({ open, product, initialBarcode, onClose, onSa
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent
-        className="max-h-[95vh] gap-0 overflow-y-auto p-0 sm:max-w-3xl"
+        size="xl"
+        className="gap-0 p-0"
         onPointerDownOutside={(e) => e.preventDefault()}
         onOpenAutoFocus={(e) => {
           e.preventDefault();

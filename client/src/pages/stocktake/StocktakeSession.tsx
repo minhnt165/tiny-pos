@@ -7,10 +7,10 @@ import { fetchProduct, lookupBarcode } from '@/api/products';
 import { useCancelStocktake, useCountItem, useFinishStocktake, useRemoveCountItem } from '@/api/stocktakes';
 import { useConfirm, type ConfirmOptions } from '@/components/ConfirmDialog';
 import { EmptyState } from '@/components/EmptyState';
-import { PageHeader } from '@/components/PageHeader';
+import { PageTitle } from '@/components/layout/PageTitle';
+import { ListPanel } from '@/components/ListPanel';
 import { ProductSearch } from '@/components/ProductSearch';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { useScanInput } from '@/hooks/useScanInput';
 import { CountDialog, type CountTarget } from './CountDialog';
@@ -92,30 +92,28 @@ export function StocktakeSession({ session }: { session: StocktakeDetail }) {
   const items = onlyDiff ? session.items.filter((i) => Math.abs(i.diff) > 1e-9) : session.items;
 
   return (
-    <div className="space-y-4">
-      <PageHeader
+    <div className="space-y-3">
+      <PageTitle
         title="Kiểm kê"
-        description={`${session.code} · ${session.itemCount} món đã đếm · ${session.diffCount} món lệch${session.note ? ` · ${session.note}` : ''}`}
-        icon={ClipboardList}
-        actions={
-          <>
-            <Button variant="outline" className="h-11 text-base text-destructive" disabled={cancel.isPending} onClick={() => void onCancel()}>
-              <X data-icon="inline-start" />
-              Hủy phiên
-            </Button>
-            <Button className="h-11 text-base" disabled={!session.itemCount || finish.isPending} onClick={() => void onFinish()}>
-              <CheckCheck data-icon="inline-start" />
-              Chốt kiểm kê
-            </Button>
-          </>
-        }
+        count={session.code}
+        actions={[
+          { label: 'Hủy phiên', icon: X, onClick: () => void onCancel(), danger: true, disabled: cancel.isPending },
+          { label: 'Chốt kiểm kê', icon: CheckCheck, onClick: () => void onFinish(), primary: true, disabled: !session.itemCount || finish.isPending },
+        ]}
       />
+      {/* Tiến độ để trong thân trang (không chỉ trên topbar) để điện thoại luôn đọc đủ */}
+      <p className="text-sm text-muted-foreground">
+        {session.itemCount} món đã đếm · {session.diffCount} món lệch{session.note ? ` · Ghi chú: ${session.note}` : ''}
+      </p>
       <ProductSearch inputRef={scan.ref} includeInactive onScan={(c) => void onScan(c)} onPick={(p) => openFor(p)} />
-      <label className="flex min-h-11 items-center gap-3">
-        <Switch checked={onlyDiff} onCheckedChange={setOnlyDiff} />
-        <span>Chỉ món lệch</span>
-      </label>
-      <Card className="gap-0 overflow-hidden py-0">
+      <ListPanel
+        toolbar={
+          <label className="flex min-h-11 items-center gap-3 md:min-h-10">
+            <Switch checked={onlyDiff} onCheckedChange={setOnlyDiff} />
+            <span>Chỉ món lệch</span>
+          </label>
+        }
+      >
         {items.length ? (
           <StocktakeItemsTable
             items={items}
@@ -125,7 +123,7 @@ export function StocktakeSession({ session }: { session: StocktakeDetail }) {
         ) : (
           <EmptyState icon={ClipboardList} title={onlyDiff ? 'Không có món lệch' : 'Chưa đếm món nào'} description="Quét mã hoặc gõ tên để đếm." />
         )}
-      </Card>
+      </ListPanel>
       <CountDialog target={target} saving={count.isPending} onClose={() => setTarget(null)} onSave={save} />
     </div>
   );

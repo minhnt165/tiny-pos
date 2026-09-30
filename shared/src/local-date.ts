@@ -21,3 +21,9 @@ export function shiftDate(date: string, days: number): string {
 export function currentTzOffset(at: Date = new Date()): number {
   return -at.getTimezoneOffset();
 }
+
+/** "YYYY-MM-DD" → "dd/mm/yyyy" để hiển thị; chuỗi khác dạng trả nguyên. */
+export function formatDateVn(date: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : date;
+}

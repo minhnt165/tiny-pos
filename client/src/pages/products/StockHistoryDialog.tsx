@@ -29,7 +29,7 @@ export function StockHistoryDialog({ product, onClose }: { product: Product | nu
   return (
     <span className="contents" onClick={(e) => e.stopPropagation()}>
       <Dialog open={product !== null} onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-h-[95vh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle className="pr-8 text-xl">Lịch sử tồn – {product?.name}</DialogTitle>
             <DialogDescription className="text-base">
@@ -51,7 +51,7 @@ export function StockHistoryDialog({ product, onClose }: { product: Product | nu
                 {data.map((m) => (
                   <TableRow key={m.id}>
                     <TableCell className="px-2 py-2 tabular-nums">{when(m.createdAt)}</TableCell>
-                    <TableCell className={cn('px-2 py-2 text-right font-semibold tabular-nums', m.qty > 0 ? 'text-emerald-600' : 'text-destructive')}>
+                    <TableCell className={cn('px-2 py-2 text-right font-semibold tabular-nums', m.qty > 0 ? 'text-success' : 'text-destructive')}>
                       {m.qty > 0 ? '+' : ''}
                       {formatQty(m.qty)}
                     </TableCell>

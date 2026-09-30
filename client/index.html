@@ -3,8 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0b2f25" />
+    <meta name="theme-color" content="#2563eb" />
     <title>Tạp hóa</title>
+    <!-- Áp tùy chỉnh giao diện trước khi vẽ để không nháy (xem src/lib/ui-prefs.ts) -->
+    <script>
+      try {
+        var p = JSON.parse(localStorage.getItem('tiny-pos:ui') || 'null');
+        ['accent', 'font', 'density', 'radius'].forEach(function (k) {
+          if (p && typeof p[k] === 'string') document.documentElement.dataset[k] = p[k];
+        });
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

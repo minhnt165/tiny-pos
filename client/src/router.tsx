@@ -1,4 +1,4 @@
-import { ClipboardList, FolderOpen, Package, PackageOpen, ReceiptText, ScanBarcode, Settings, ShoppingCart, Truck, Users, type LucideIcon } from 'lucide-react';
+import { ClipboardList, FolderOpen, Package, PackageOpen, ReceiptText, Settings, ShoppingCart, Truck, Users, type LucideIcon } from 'lucide-react';
 import { Navigate, Route, Routes } from 'react-router';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { CategoriesPage } from './pages/categories/CategoriesPage';
@@ -13,27 +13,41 @@ import { StocktakePage } from './pages/stocktake/StocktakePage';
 import { SuppliersPage } from './pages/suppliers/SuppliersPage';
 import { SellPage } from './pages/sell/SellPage';
 
+export type NavGroup = 'sell' | 'stock' | 'other';
+
+export const NAV_GROUPS: { key: NavGroup; label: string }[] = [
+  { key: 'sell', label: 'Bán hàng' },
+  { key: 'stock', label: 'Kho hàng' },
+  { key: 'other', label: 'Khác' },
+];
+
 export interface NavItem {
   to: string;
   label: string;
   icon: LucideIcon;
-  disabled?: boolean;
-  /** Hiện trên thanh dưới điện thoại (tối đa 4 mục, còn lại vào nút "Thêm"). */
-  mobile?: boolean;
+  group: NavGroup;
+  /** Vị trí trên thanh dưới điện thoại (1–4); không có thì vào nút "Thêm". */
+  mobile?: number;
 }
 
+/** Nhập nhanh không có trong menu: mở từ nút trên trang Sản phẩm (route vẫn giữ). */
 export const NAV: NavItem[] = [
-  { to: '/sell', label: 'Bán hàng', icon: ShoppingCart, mobile: true },
-  { to: '/orders', label: 'Hóa đơn', icon: ReceiptText, mobile: true },
-  { to: '/imports', label: 'Nhập hàng', icon: PackageOpen },
-  { to: '/stocktake', label: 'Kiểm kê', icon: ClipboardList, mobile: true },
-  { to: '/products', label: 'Sản phẩm', icon: Package, mobile: true },
-  { to: '/categories', label: 'Danh mục', icon: FolderOpen },
-  { to: '/suppliers', label: 'Nhà cung cấp', icon: Truck },
-  { to: '/customers', label: 'Khách hàng', icon: Users },
-  { to: '/quick-add', label: 'Nhập nhanh', icon: ScanBarcode },
-  { to: '/settings', label: 'Cài đặt', icon: Settings },
+  { to: '/sell', label: 'Bán hàng', icon: ShoppingCart, group: 'sell', mobile: 1 },
+  { to: '/orders', label: 'Hóa đơn', icon: ReceiptText, group: 'sell', mobile: 2 },
+  { to: '/customers', label: 'Khách hàng', icon: Users, group: 'sell' },
+  { to: '/products', label: 'Sản phẩm', icon: Package, group: 'stock', mobile: 4 },
+  { to: '/imports', label: 'Nhập hàng', icon: PackageOpen, group: 'stock' },
+  { to: '/stocktake', label: 'Kiểm kê', icon: ClipboardList, group: 'stock', mobile: 3 },
+  { to: '/categories', label: 'Danh mục', icon: FolderOpen, group: 'stock' },
+  { to: '/suppliers', label: 'Nhà cung cấp', icon: Truck, group: 'other' },
+  { to: '/settings', label: 'Cài đặt', icon: Settings, group: 'other' },
 ];
+
+/** Mục menu đang mở; Nhập nhanh thuộc Sản phẩm. */
+export function activeNav(pathname: string): NavItem | undefined {
+  const path = pathname === '/quick-add' ? '/products' : pathname;
+  return NAV.find((n) => path.startsWith(n.to));
+}
 
 export function AppRoutes() {
   return (

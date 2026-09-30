@@ -29,7 +29,7 @@ export function CsvDialog({ open, onClose }: { open: boolean; onClose: () => voi
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && close()}>
-      <DialogContent className="gap-0 p-0 sm:max-w-xl">
+      <DialogContent size="lg" className="gap-0 p-0">
         <DialogHeader className="border-b px-6 py-4">
           <DialogTitle className="text-xl">Nhập / Xuất CSV</DialogTitle>
           <DialogDescription>Làm việc với Excel</DialogDescription>
@@ -82,7 +82,7 @@ export function CsvDialog({ open, onClose }: { open: boolean; onClose: () => voi
               />
             </label>
             {result && (
-              <div className={cn('mt-3 rounded-xl p-3 text-sm', result.errors.length ? 'bg-amber-50 text-amber-900' : 'bg-accent text-accent-foreground')}>
+              <div className={cn('mt-3 rounded-xl p-3 text-sm', result.errors.length ? 'bg-warning/10 text-foreground' : 'bg-accent text-accent-foreground')}>
                 <p className="flex items-center gap-2 font-medium">
                   {result.errors.length ? <TriangleAlert className="size-5" /> : <CircleCheck className="size-5" />}
                   Đã tạo <b>{result.created}</b>, cập nhật <b>{result.updated}</b>, lỗi <b>{result.errors.length}</b>.

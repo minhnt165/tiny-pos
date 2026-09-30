@@ -1,5 +1,6 @@
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 export interface SelectOption {
   value: string;
@@ -49,5 +50,36 @@ export function SelectField({ id, label, value, onChange, options, emptyLabel, p
       </Select>
       {error ? <FieldError>{error}</FieldError> : hint && <FieldDescription>{hint}</FieldDescription>}
     </Field>
+  );
+}
+
+interface ToolbarSelectProps {
+  value: string;
+  onChange: (value: string) => void;
+  options: SelectOption[];
+  /** Nhãn khi không lọc (value = ''), ví dụ "Tất cả danh mục". */
+  emptyLabel: string;
+  'aria-label': string;
+  className?: string;
+}
+
+/** Ô chọn gọn trong thanh công cụ danh sách (không có nhãn phía trên). */
+export function ToolbarSelect({ value, onChange, options, emptyLabel, className, 'aria-label': ariaLabel }: ToolbarSelectProps) {
+  return (
+    <Select value={value || NONE} onValueChange={(v) => v !== '' && onChange(v === NONE ? '' : v)}>
+      <SelectTrigger aria-label={ariaLabel} className={cn('h-11 min-w-44 bg-card text-base data-[size=default]:h-11 md:h-10 md:data-[size=default]:h-10', className)}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent position="popper" sideOffset={4}>
+        <SelectItem value={NONE} className="py-2 text-base">
+          {emptyLabel}
+        </SelectItem>
+        {options.map((o) => (
+          <SelectItem key={o.value} value={o.value} className="py-2 text-base">
+            {o.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

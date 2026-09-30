@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { formatMoney } from '@tiny-pos/shared';
+import { currentTzOffset, formatDateVn, formatMoney, localDate } from '@tiny-pos/shared';
 import { useStocktakes } from '@/api/stocktakes';
+import { ListPanel } from '@/components/ListPanel';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { StocktakeDetailDialog } from './StocktakeDetailDialog';
@@ -13,8 +13,8 @@ export function StocktakeHistory() {
   if (!data.length) return null;
   return (
     <>
-      <h2 className="mt-8 mb-3 font-heading text-lg font-semibold">Các lần kiểm kê trước</h2>
-      <Card className="gap-0 overflow-hidden py-0">
+      <h2 className="mt-(--gap) mb-2 text-sm font-semibold text-muted-foreground">Các lần kiểm kê trước</h2>
+      <ListPanel>
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/40 hover:bg-muted/40">
@@ -32,11 +32,11 @@ export function StocktakeHistory() {
                 <TableCell className="px-4 py-3">
                   <div className="font-mono">{s.code}</div>
                   <div className="text-sm text-muted-foreground sm:hidden">
-                    {new Date(s.createdAt).toLocaleDateString('vi-VN')}
+                    {formatDateVn(localDate(new Date(s.createdAt), currentTzOffset()))}
                     {s.status === 'cancelled' && ' · Đã hủy'}
                   </div>
                 </TableCell>
-                <TableCell className="hidden px-4 py-3 sm:table-cell">{new Date(s.createdAt).toLocaleDateString('vi-VN')}</TableCell>
+                <TableCell className="hidden px-4 py-3 sm:table-cell">{formatDateVn(localDate(new Date(s.createdAt), currentTzOffset()))}</TableCell>
                 <TableCell className="hidden px-4 py-3 text-right tabular-nums sm:table-cell">{s.itemCount}</TableCell>
                 <TableCell className="px-4 py-3 text-right tabular-nums">{s.diffCount}</TableCell>
                 <TableCell className={cn('px-4 py-3 text-right tabular-nums', s.status !== 'cancelled' && s.diffValue < 0 && 'text-destructive')}>{s.status === 'cancelled' ? '—' : formatMoney(s.diffValue)}</TableCell>
@@ -45,7 +45,7 @@ export function StocktakeHistory() {
             ))}
           </TableBody>
         </Table>
-      </Card>
+      </ListPanel>
       <StocktakeDetailDialog id={openId} onClose={() => setOpenId(null)} />
     </>
   );

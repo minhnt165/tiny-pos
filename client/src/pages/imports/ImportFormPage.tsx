@@ -1,15 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, PackagePlus } from 'lucide-react';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { toImportInput, type Product, type ProductWithUnits } from '@tiny-pos/shared';
 import { ApiError } from '@/api/client';
 import { useCreateImport } from '@/api/imports';
 import { fetchProduct, lookupBarcode } from '@/api/products';
-import { PageHeader } from '@/components/PageHeader';
+import { PageTitle } from '@/components/layout/PageTitle';
+import { ListPanel } from '@/components/ListPanel';
 import { ProductSearch } from '@/components/ProductSearch';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useScanInput } from '@/hooks/useScanInput';
 import { ProductFormDialog } from '../products/ProductFormDialog';
@@ -87,20 +85,9 @@ export function ImportFormPage() {
   });
 
   return (
-    <div className="space-y-4 pb-4">
-      <PageHeader
-        title="Tạo phiếu nhập"
-        description="Quét mã hàng về; mã lạ sẽ mở form thêm sản phẩm"
-        icon={PackagePlus}
-        actions={
-          <Button variant="outline" className="h-11 text-base" asChild>
-            <Link to="/imports">
-              <ArrowLeft data-icon="inline-start" />
-              Danh sách phiếu
-            </Link>
-          </Button>
-        }
-      />
+    <div className="space-y-3 pb-4">
+      <PageTitle title="Tạo phiếu nhập" back="/imports" />
+      <p className="text-sm text-muted-foreground">Quét mã hàng về; mã lạ sẽ mở form thêm sản phẩm.</p>
       <div className="flex flex-wrap items-center gap-3">
         <SupplierPicker value={draft.supplierId} onChange={setSupplier} />
         <Input
@@ -112,9 +99,9 @@ export function ImportFormPage() {
         />
       </div>
       <ProductSearch inputRef={scan.ref} includeInactive onScan={(c) => void onScan(c)} onPick={(p) => void onPick(p)} />
-      <Card className="gap-0 overflow-hidden py-0">
+      <ListPanel>
         <ImportLinesTable lines={draft.lines} dispatch={dispatch} onDone={scan.focus} />
-      </Card>
+      </ListPanel>
       <ImportFooter
         totals={totals}
         hasSupplier={draft.supplierId !== null}

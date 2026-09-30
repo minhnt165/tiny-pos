@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { Plus, Search, Users, Wallet } from 'lucide-react';
+import { Plus, Search, Users } from 'lucide-react';
 import { formatMoney, stripDiacritics } from '@tiny-pos/shared';
 import { useCustomers } from '@/api/customers';
 import { EmptyState } from '@/components/EmptyState';
-import { PageHeader } from '@/components/PageHeader';
-import { StatCard } from '@/components/StatCard';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
+import { PageTitle } from '@/components/layout/PageTitle';
+import { ListPanel } from '@/components/ListPanel';
+import { SearchInput } from '@/components/SearchInput';
+import { Stat, StatStrip } from '@/components/StatStrip';
+import { TableSkeleton } from '@/components/TableSkeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { CustomerDetailDialog } from './CustomerDetailDialog';
@@ -21,32 +21,21 @@ export function CustomersPage() {
   // Lọc giống server: tên không phân biệt hoa/thường và dấu tiếng Việt, hoặc SĐT
   const fold = (s: string) => stripDiacritics(s).toLowerCase();
   const t = fold(q.trim());
-  const customers = (data?.customers ?? []).filter((c) => !t || fold(c.name).includes(t) || (c.phone?.includes(t) ?? false));
+  const all = data?.customers ?? [];
+  const customers = all.filter((c) => !t || fold(c.name).includes(t) || (c.phone?.includes(t) ?? false));
 
   return (
     <>
-      <PageHeader
-        title="Khách hàng"
-        description="Sổ nợ khách mua chịu"
-        icon={Users}
-        actions={
-          <Button className="h-11 px-5 text-base" onClick={() => setAdding(true)}>
-            <Plus data-icon="inline-start" />
-            Thêm khách
-          </Button>
-        }
-      />
-      <div className="mb-6 grid gap-3 sm:grid-cols-2">
-        <StatCard icon={Wallet} label="Tổng nợ phải thu" value={formatMoney(data?.totalDebt ?? 0)} tone="danger" />
-        <InputGroup className="h-11 self-center">
-          <InputGroupAddon>
-            <Search />
-          </InputGroupAddon>
-          <InputGroupInput type="search" placeholder="Tìm tên hoặc số điện thoại…" className="text-base" value={q} onChange={(e) => setQ(e.target.value)} />
-        </InputGroup>
-      </div>
-      <Card className="gap-0 overflow-hidden py-0">
-        {!isLoading && !customers.length ? (
+      <PageTitle title="Khách hàng" count={`${all.length} khách`} actions={[{ label: 'Thêm khách', icon: Plus, onClick: () => setAdding(true), primary: true }]} />
+      <StatStrip cols={3}>
+        <Stat label="Tổng nợ phải thu" value={formatMoney(data?.totalDebt ?? 0)} tone={data?.totalDebt ? 'danger' : 'default'} />
+        <Stat label="Khách hàng" value={String(all.length)} />
+        <Stat label="Đang nợ" value={String(all.filter((c) => c.debt > 0).length)} hint="Số khách còn nợ tiệm" />
+      </StatStrip>
+      <ListPanel toolbar={<SearchInput value={q} onChange={setQ} placeholder="Tìm tên hoặc số điện thoại…" className="md:max-w-sm" />}>
+        {isLoading ? (
+          <TableSkeleton />
+        ) : !customers.length ? (
           t ? (
             <EmptyState icon={Search} title="Không tìm thấy" description={`Không có khách nào khớp "${q.trim()}".`} />
           ) : (
@@ -74,7 +63,7 @@ export function CustomersPage() {
             </TableBody>
           </Table>
         )}
-      </Card>
+      </ListPanel>
       <CustomerFormDialog open={adding} onClose={() => setAdding(false)} onSaved={() => setAdding(false)} />
       <CustomerDetailDialog id={openId} onClose={() => setOpenId(null)} />
     </>

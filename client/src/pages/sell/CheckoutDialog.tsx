@@ -72,7 +72,7 @@ export function CheckoutDialog({ open, cart, payable, onClose, onDone }: Props) 
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && !create.isPending && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle className="text-xl">Thanh toán</DialogTitle>
           <DialogDescription className="text-base">

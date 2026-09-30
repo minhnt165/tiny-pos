@@ -53,7 +53,7 @@ export function WeighDialog({ target, onClose, onConfirm }: Props) {
 
   return (
     <Dialog open={target !== null} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <Scale className="size-5 text-primary" />

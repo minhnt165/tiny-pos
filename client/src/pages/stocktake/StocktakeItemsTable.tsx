@@ -12,7 +12,7 @@ interface Props {
 
 export function DiffText({ diff, unit }: { diff: number; unit: string }) {
   return (
-    <span className={cn('font-semibold tabular-nums', diff > 0 ? 'text-emerald-600' : diff < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+    <span className={cn('font-semibold tabular-nums', diff > 0 ? 'text-success' : diff < 0 ? 'text-destructive' : 'text-muted-foreground')}>
       {diff > 0 ? '+' : ''}
       {formatQty(diff)} {unit}
     </span>

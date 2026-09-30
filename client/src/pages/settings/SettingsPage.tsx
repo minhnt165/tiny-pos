@@ -1,9 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Check, Printer, Settings as SettingsIcon } from 'lucide-react';
+import { Check, Info, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { BANKS, SETTINGS_DEFAULTS, stripDiacritics, type Settings } from '@tiny-pos/shared';
 import { useSaveSettings, useSettings } from '@/api/settings';
-import { PageHeader } from '@/components/PageHeader';
+import { PageTitle } from '@/components/layout/PageTitle';
 import { usePrint } from '@/components/receipt/PrintProvider';
 import { sampleReceipt } from '@/components/receipt/receipt-data';
 import { SelectField } from '@/components/SelectField';
@@ -11,6 +11,8 @@ import { SectionTitle, TextField } from '@/components/TextField';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
+import { APP_VERSION, BUILD_DATE } from '@/lib/version';
+import { AppearanceCard } from './AppearanceCard';
 
 type TextKey = 'storeName' | 'storeAddress' | 'storePhone' | 'receiptFooter';
 const bankOptions = BANKS.map((b) => ({ value: b.bin, label: `${b.shortName} – ${b.name}` }));
@@ -35,18 +37,9 @@ export function SettingsPage() {
   };
 
   return (
-    <form onSubmit={submit} className="mx-auto max-w-3xl space-y-5">
-      <PageHeader
-        title="Cài đặt"
-        description="Thông tin in trên hóa đơn và tài khoản nhận chuyển khoản"
-        icon={SettingsIcon}
-        actions={
-          <Button type="submit" className="h-11 px-5 text-base" disabled={save.isPending}>
-            <Check data-icon="inline-start" />
-            Lưu
-          </Button>
-        }
-      />
+    <form id="settings-form" onSubmit={submit} className="space-y-(--gap)">
+      <PageTitle title="Cài đặt" actions={[{ label: 'Lưu', icon: Check, form: 'settings-form', primary: true, disabled: save.isPending }]} />
+      <AppearanceCard />
       <Card>
         <CardContent className="space-y-4">
           <SectionTitle>Cửa hàng</SectionTitle>
@@ -91,6 +84,16 @@ export function SettingsPage() {
             In thử
           </Button>
           <p className="text-sm text-muted-foreground">In thử dùng thông tin đã lưu. Máy quầy mở Chrome với --kiosk-printing để in không cần hỏi.</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="space-y-2">
+          <SectionTitle>Thông tin phần mềm</SectionTitle>
+          <div className="flex items-center gap-2 text-sm">
+            <Info className="size-4 text-muted-foreground" />
+            Phiên bản <span className="font-semibold tabular-nums">{APP_VERSION}</span>
+            <span className="text-muted-foreground">· build ngày {BUILD_DATE}</span>
+          </div>
         </CardContent>
       </Card>
     </form>

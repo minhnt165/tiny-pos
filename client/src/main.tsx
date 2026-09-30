@@ -7,14 +7,18 @@ import { ConfirmProvider } from '@/components/ConfirmDialog';
 import { PrintProvider } from '@/components/receipt/PrintProvider';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { applyUiPrefs, readUiPrefs } from '@/lib/ui-prefs';
 import App from './App';
 import './index.css';
+
+// Chuẩn hóa data-* (script trong index.html chỉ chép thô từ localStorage)
+applyUiPrefs(readUiPrefs());
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 5_000 } } });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <ConfirmProvider>

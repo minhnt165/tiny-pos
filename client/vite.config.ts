@@ -1,10 +1,18 @@
 import path from 'node:path';
+import { readFileSync } from 'node:fs';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// Version duy nhất của app nằm ở package.json gốc; chèn vào client lúc build
+const { version } = JSON.parse(readFileSync(path.resolve(import.meta.dirname, '../package.json'), 'utf8')) as { version: string };
+
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(version),
+    __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -16,7 +24,7 @@ export default defineConfig({
         lang: 'vi',
         start_url: '/',
         display: 'standalone',
-        theme_color: '#16a34a',
+        theme_color: '#2563eb',
         background_color: '#ffffff',
         icons: [{ src: 'icon.svg', sizes: 'any', type: 'image/svg+xml' }],
       },

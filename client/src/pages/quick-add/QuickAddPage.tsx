@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { formatMoney, type BarcodeLookup, type ProductWithUnits } from '@tiny-pos/shared';
 import { ApiError } from '@/api/client';
 import { lookupBarcode, useProduct } from '@/api/products';
+import { PageTitle } from '@/components/layout/PageTitle';
 import { ProductAvatar } from '@/components/ProductAvatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -70,35 +71,25 @@ export function QuickAddPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <section className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-emerald-900 p-6 text-white shadow-xl shadow-emerald-900/20 md:p-8">
-        <div className="pointer-events-none absolute -top-16 -right-16 size-64 rounded-full bg-white/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-20 -left-10 size-56 rounded-full bg-emerald-300/20 blur-3xl" />
-        <div className="relative">
-          <div className="mb-2 flex items-center gap-2 text-sm text-emerald-100">
-            <span className={cn('size-2 rounded-full', dialogOpen ? 'bg-amber-300' : 'animate-pulse bg-emerald-300')} />
-            {dialogOpen ? 'Đang nhập thông tin sản phẩm' : 'Sẵn sàng quét'}
-          </div>
-          <h1 className="font-heading text-3xl font-semibold tracking-tight">Nhập nhanh</h1>
-          <p className="mt-1 text-emerald-100/90">Quét mã: có rồi thì hiện thông tin, chưa có thì mở form thêm mới.</p>
-          <div className="mt-5 flex items-center gap-3 rounded-2xl bg-white p-2 text-foreground shadow-lg">
-            <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-              <ScanBarcode className="size-7" />
-            </span>
-            <input
-              ref={scan.ref}
-              onKeyDown={scan.onKeyDown}
-              placeholder="Quét mã vạch tại đây…"
-              className="min-h-12 w-full bg-transparent text-2xl font-medium outline-none placeholder:text-muted-foreground/60"
-              autoComplete="off"
-            />
-          </div>
-        </div>
-      </section>
+      <PageTitle title="Nhập nhanh" back="/products" />
+      <p className="mb-3 text-sm text-muted-foreground">Quét mã: có rồi thì hiện thông tin, chưa có thì mở form thêm mới.</p>
+      <div className="mb-(--gap) flex items-center gap-3 rounded-lg border-2 border-primary/60 bg-card px-3 py-2 focus-within:border-primary">
+        <ScanBarcode className="size-6 shrink-0 text-primary" />
+        <input
+          ref={scan.ref}
+          onKeyDown={scan.onKeyDown}
+          placeholder="Quét mã vạch tại đây…"
+          className="min-h-11 w-full bg-transparent text-xl font-medium outline-none placeholder:text-muted-foreground/60"
+          autoComplete="off"
+          aria-label="Quét mã vạch"
+        />
+        <span className="shrink-0 text-xs text-muted-foreground">{dialogOpen ? 'Đang nhập thông tin' : 'Sẵn sàng quét'}</span>
+      </div>
 
       {found && (
-        <Card className="mb-5 animate-in gap-0 py-0 fade-in-0 slide-in-from-bottom-2">
+        <Card className="mb-(--gap) animate-in gap-0 py-0 fade-in-0 slide-in-from-bottom-2">
           <div className="flex items-start gap-4 p-5">
-            <ProductAvatar name={found.product.name} className="size-14 rounded-2xl text-lg" />
+            <ProductAvatar name={found.product.name} className="size-14 text-lg" />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="font-heading text-xl font-semibold">{found.product.name}</h2>

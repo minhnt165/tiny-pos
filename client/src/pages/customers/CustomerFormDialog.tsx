@@ -51,7 +51,7 @@ export function CustomerFormDialog({ open, customer, onClose, onSaved }: Props) 
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <UserRound className="size-5 text-primary" />

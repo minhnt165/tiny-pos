@@ -25,6 +25,8 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -48,69 +50,133 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Bảng màu: xanh lá emerald làm màu chính, sidebar xanh đậm. Đổi ở đây là đổi toàn app. */
+/* Màu nhấn: 5 sắc độ, token bên dưới đọc qua --a-*. --a-600 là nền nút chính (chữ trắng ≥ 4.5:1 cả sáng lẫn tối). Đổi bằng data-accent trên <html> (Cài đặt → Giao diện). */
 :root {
-  --background: #f4f7f5;
-  --foreground: oklch(0.16 0.01 160);
+  --a-50: #eff6ff;
+  --a-300: #93c5fd;
+  --a-500: #3b82f6;
+  --a-600: #2563eb;
+  --a-700: #1d4ed8;
+}
+[data-accent='green'] {
+  --a-50: #ecfdf5;
+  --a-300: #6ee7b7;
+  --a-500: #10b981;
+  --a-600: #047857;
+  --a-700: #065f46;
+}
+[data-accent='violet'] {
+  --a-50: #f5f3ff;
+  --a-300: #c4b5fd;
+  --a-500: #8b5cf6;
+  --a-600: #7c3aed;
+  --a-700: #6d28d9;
+}
+[data-accent='orange'] {
+  --a-50: #fff7ed;
+  --a-300: #fdba74;
+  --a-500: #f97316;
+  --a-600: #c2410c;
+  --a-700: #9a3412;
+}
+[data-accent='rose'] {
+  --a-50: #fff1f2;
+  --a-300: #fda4af;
+  --a-500: #f43f5e;
+  --a-600: #e11d48;
+  --a-700: #be123c;
+}
+[data-accent='slate'] {
+  --a-50: #f1f5f9;
+  --a-300: #cbd5e1;
+  --a-500: #64748b;
+  --a-600: #334155;
+  --a-700: #1e293b;
+}
+
+/* Bảng màu: nền trắng, trung tính slate, phẳng. Trang chỉ dùng token, không viết mã màu. */
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
   --card: #ffffff;
-  --card-foreground: oklch(0.16 0.01 160);
+  --card-foreground: #0f172a;
   --popover: #ffffff;
-  --popover-foreground: oklch(0.16 0.01 160);
-  --primary: #059669;
+  --popover-foreground: #0f172a;
+  --primary: var(--a-600);
   --primary-foreground: #ffffff;
-  --secondary: oklch(0.96 0.005 160);
-  --secondary-foreground: oklch(0.25 0.01 160);
-  --muted: oklch(0.96 0.005 160);
-  --muted-foreground: oklch(0.5 0.015 160);
-  --accent: #ecfdf5;
-  --accent-foreground: #065f46;
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.9 0.006 160);
-  --input: oklch(0.86 0.008 160);
-  --ring: #10b981;
-  --chart-1: #10b981;
-  --chart-2: #0ea5e9;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #1e293b;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: var(--a-50);
+  --accent-foreground: var(--a-700);
+  --destructive: #dc2626;
+  --success: #15803d;
+  --warning: #b45309;
+  --border: #e2e8f0;
+  --input: #cbd5e1;
+  --ring: var(--a-500);
+  --chart-1: #2563eb;
+  --chart-2: #10b981;
   --chart-3: #f59e0b;
   --chart-4: #8b5cf6;
   --chart-5: #ef4444;
-  --radius: 0.75rem;
-  --sidebar: #0b2f25;
-  --sidebar-foreground: #e6f4ee;
-  --sidebar-primary: #10b981;
+  --radius: 0.5rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #334155;
+  --sidebar-primary: var(--a-600);
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgb(255 255 255 / 0.08);
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: rgb(255 255 255 / 0.1);
-  --sidebar-ring: #10b981;
+  --sidebar-accent: var(--a-50);
+  --sidebar-accent-foreground: var(--a-700);
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: var(--a-500);
+  /* Mật độ (data-density): đệm dọc ô bảng, đệm trang, khoảng giữa các khối */
+  --row-py: 0.5rem;
+  --page-p: 1.25rem;
+  --gap: 1rem;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: #34d399;
-  --primary-foreground: #022c22;
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: #34d399;
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: #34d399;
-  --sidebar-primary-foreground: #022c22;
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: #34d399;
+  --background: #0b1120;
+  --foreground: #e2e8f0;
+  --card: #111827;
+  --card-foreground: #e2e8f0;
+  --popover: #111827;
+  --popover-foreground: #e2e8f0;
+  --primary: var(--a-600);
+  --primary-foreground: #ffffff;
+  --secondary: #1e293b;
+  --secondary-foreground: #e2e8f0;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: color-mix(in oklab, var(--a-500) 18%, transparent);
+  --accent-foreground: var(--a-300);
+  --destructive: #f87171;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --border: rgb(255 255 255 / 0.1);
+  --input: rgb(255 255 255 / 0.15);
+  --ring: var(--a-500);
+  --sidebar: #0f172a;
+  --sidebar-foreground: #cbd5e1;
+  --sidebar-primary: var(--a-600);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: color-mix(in oklab, var(--a-500) 18%, transparent);
+  --sidebar-accent-foreground: var(--a-300);
+  --sidebar-border: rgb(255 255 255 / 0.08);
+  --sidebar-ring: var(--a-500);
+}
+
+[data-density='comfy'] {
+  --row-py: 0.75rem;
+  --page-p: 2rem;
+  --gap: 1.5rem;
+}
+[data-radius='none'] {
+  --radius: 0.25rem;
+}
+[data-radius='lg'] {
+  --radius: 0.875rem;
 }
 
 @layer base {
@@ -118,9 +184,18 @@
     @apply border-border outline-ring/50;
   }
   html {
-    /* Chữ to cho người lớn tuổi: mọi kích thước rem đều phóng theo */
-    font-size: 18px;
+    /* Cỡ chữ gốc theo data-font (Cài đặt → Giao diện): mọi kích thước rem phóng theo */
+    font-size: 16px;
     @apply font-sans;
+  }
+  html[data-font='sm'] {
+    font-size: 14px;
+  }
+  html[data-font='lg'] {
+    font-size: 18px;
+  }
+  html[data-font='xl'] {
+    font-size: 20px;
   }
   body {
     @apply bg-background text-foreground antialiased;
@@ -131,22 +206,9 @@
   }
 }
 
-@layer components {
-  /* Nút chính có gradient + bóng màu, thẻ có bóng mềm: cảm giác 'nổi' hơn mặc định của shadcn */
-  [data-slot='button'][data-variant='default'] {
-    background-image: linear-gradient(to bottom, #10b981, #059669);
-    box-shadow:
-      0 1px 2px rgb(5 150 105 / 0.3),
-      0 6px 14px -6px rgb(5 150 105 / 0.55);
-  }
-  [data-slot='button'][data-variant='default']:hover {
-    background-image: linear-gradient(to bottom, #0ea371, #047857);
-  }
-  [data-slot='card'] {
-    box-shadow:
-      0 1px 2px rgb(0 0 0 / 0.03),
-      0 12px 32px -16px rgb(6 78 59 / 0.2);
-  }
+/* Mật độ bảng: để ngoài @layer để thắng class py-* đặt riêng ở từng ô */
+[data-slot='table-cell'] {
+  padding-block: var(--row-py);
 }
 
 @media (min-width: 768px) {

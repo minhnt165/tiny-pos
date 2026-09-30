@@ -35,7 +35,7 @@ export function CustomItemDialog({ open, onClose, onConfirm }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <PackagePlus className="size-5 text-primary" />

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowDown, ArrowUp, FolderOpen, FolderX, Info, Layers, MoreHorizontal, Package, PackageOpen, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, FolderOpen, Info, MoreHorizontal, Package, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import type { Category } from '@tiny-pos/shared';
@@ -7,14 +7,14 @@ import { useCategories, useDeleteCategory, useSaveCategory } from '@/api/categor
 import { useProducts } from '@/api/products';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { EmptyState } from '@/components/EmptyState';
-import { PageHeader } from '@/components/PageHeader';
+import { PageTitle } from '@/components/layout/PageTitle';
+import { ListPanel } from '@/components/ListPanel';
 import { ProductAvatar } from '@/components/ProductAvatar';
-import { StatCard } from '@/components/StatCard';
+import { SearchInput } from '@/components/SearchInput';
+import { Stat, StatStrip } from '@/components/StatStrip';
+import { TableSkeleton } from '@/components/TableSkeleton';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
-import { Skeleton } from '@/components/ui/skeleton';
 import { CategoryFormDialog } from './CategoryFormDialog';
 
 export function CategoriesPage() {
@@ -62,64 +62,51 @@ export function CategoriesPage() {
   const openRename = (c: Category) => setDialog({ category: c });
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <PageHeader
-        icon={FolderOpen}
-        title="Danh mục"
-        description="Gom hàng theo nhóm để lọc nhanh và bấm chọn khi bán."
-        actions={
-          <Button className="h-11 px-5 text-base" onClick={openCreate}>
-            <Plus data-icon="inline-start" />
-            Thêm danh mục
-          </Button>
-        }
-      />
+    <div>
+      <PageTitle title="Danh mục" count={`${categories.length} danh mục`} actions={[{ label: 'Thêm danh mục', icon: Plus, onClick: openCreate, primary: true }]} />
 
-      <div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <StatCard icon={Layers} label="Danh mục" value={String(categories.length)} hint="Nhóm hàng để lọc nhanh" />
-        <StatCard
-          icon={Package}
-          label="Hàng đã phân loại"
-          value={String(products.length - uncategorized)}
-          hint={`/ ${products.length} mặt hàng đang bán`}
-          tone="info"
-        />
-        <StatCard
-          icon={PackageOpen}
+      <StatStrip cols={4}>
+        <Stat label="Danh mục" value={String(categories.length)} hint="Nhóm hàng để lọc nhanh" />
+        <Stat label="Hàng đã phân loại" value={String(products.length - uncategorized)} hint={`/ ${products.length} mặt hàng đang bán`} />
+        <Stat
           label="Chưa có danh mục"
           value={String(uncategorized)}
           hint={uncategorized ? 'Nên xếp vào nhóm để dễ tìm' : 'Mọi hàng đã có nhóm'}
-          tone={uncategorized ? 'warn' : 'default'}
+          tone={uncategorized ? 'warning' : 'default'}
         />
-        <StatCard
-          icon={FolderX}
+        <Stat
           label="Danh mục trống"
           value={String(empty.length)}
           hint={empty.length ? empty.slice(0, 2).map((c) => c.name).join(', ') : 'Danh mục nào cũng có'}
           tone={empty.length ? 'danger' : 'default'}
         />
-      </div>
+      </StatStrip>
 
-      <Card className="gap-0 py-0">
-        <div className="flex flex-col gap-3 border-b px-4 py-4 md:flex-row md:items-center md:justify-between">
-          <InputGroup className="h-11 bg-card md:max-w-sm">
-            <InputGroupAddon>
-              <Search />
-            </InputGroupAddon>
-            <InputGroupInput className="h-11 text-base" placeholder="Tìm danh mục…" value={q} onChange={(e) => setQ(e.target.value)} />
-          </InputGroup>
-          <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Info className="size-4 shrink-0" />
-            Thứ tự ở đây là thứ tự nút danh mục ở màn bán hàng.
-          </p>
-        </div>
-
+      <ListPanel
+        toolbar={
+          <>
+            <SearchInput value={q} onChange={setQ} placeholder="Tìm danh mục…" className="md:max-w-sm" />
+            <p className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Info className="size-4 shrink-0" />
+              Thứ tự ở đây là thứ tự nút danh mục ở màn bán hàng.
+            </p>
+          </>
+        }
+        footer={
+          !isLoading &&
+          categories.length > 0 && (
+            <div className="flex items-center justify-between gap-3 border-t px-4 py-3 text-sm text-muted-foreground">
+              <span>
+                {term ? `${shown.length} / ` : ''}
+                {categories.length} danh mục
+              </span>
+              {uncategorized > 0 && <span>{uncategorized} mặt hàng chưa có danh mục</span>}
+            </div>
+          )
+        }
+      >
         {isLoading ? (
-          <div className="space-y-3 p-4">
-            {[0, 1, 2].map((i) => (
-              <Skeleton key={i} className="h-14 w-full rounded-xl" />
-            ))}
-          </div>
+          <TableSkeleton />
         ) : shown.length === 0 ? (
           <EmptyState
             icon={term ? Search : FolderOpen}
@@ -139,7 +126,7 @@ export function CategoriesPage() {
             {shown.map((c) => {
               const i = categories.indexOf(c);
               return (
-                <li key={c.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40">
+                <li key={c.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/40">
                   <span className="w-6 shrink-0 text-center text-sm font-medium text-muted-foreground tabular-nums">{i + 1}</span>
                   <ProductAvatar name={c.name} />
                   <button type="button" className="min-w-0 flex-1 text-left" title="Bấm để đổi tên" onClick={() => openRename(c)}>
@@ -204,17 +191,7 @@ export function CategoriesPage() {
             })}
           </ul>
         )}
-
-        {!isLoading && categories.length > 0 && (
-          <div className="flex items-center justify-between gap-3 border-t px-4 py-3 text-sm text-muted-foreground">
-            <span>
-              {term ? `${shown.length} / ` : ''}
-              {categories.length} danh mục
-            </span>
-            {uncategorized > 0 && <span>{uncategorized} mặt hàng chưa có danh mục</span>}
-          </div>
-        )}
-      </Card>
+      </ListPanel>
 
       <CategoryFormDialog open={dialog !== null} category={dialog?.category ?? null} categories={categories} onClose={() => setDialog(null)} />
     </div>

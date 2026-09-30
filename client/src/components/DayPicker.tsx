@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { currentTzOffset, localDate, shiftDate } from '@tiny-pos/shared';
+import { DateField } from '@/components/DateField';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 
 export const today = () => localDate(new Date(), currentTzOffset());
 
@@ -9,16 +9,17 @@ export const today = () => localDate(new Date(), currentTzOffset());
 export function DayPicker({ value, onChange }: { value: string; onChange: (d: string) => void }) {
   const isToday = value === today();
   return (
-    <div className="flex items-center gap-2">
-      <Button variant="outline" size="icon-lg" className="size-11" aria-label="Ngày trước" onClick={() => onChange(shiftDate(value, -1))}>
+    // Điện thoại: ô ngày giãn theo chỗ trống (không co nhỏ hơn chữ), nút "Hôm nay" xuống hàng riêng
+    <div className="flex w-full flex-wrap items-center gap-1 sm:w-auto">
+      <Button variant="outline" size="icon-lg" className="size-11 md:size-10" aria-label="Ngày trước" onClick={() => onChange(shiftDate(value, -1))}>
         <ChevronLeft />
       </Button>
-      <Input type="date" value={value} max={today()} onChange={(e) => e.target.value && onChange(e.target.value)} className="h-11 w-44 text-base" />
-      <Button variant="outline" size="icon-lg" className="size-11" aria-label="Ngày sau" disabled={isToday} onClick={() => onChange(shiftDate(value, 1))}>
+      <DateField value={value} max={today()} onChange={onChange} aria-label="Chọn ngày" className="flex-1 sm:w-40 sm:flex-none" />
+      <Button variant="outline" size="icon-lg" className="size-11 md:size-10" aria-label="Ngày sau" disabled={isToday} onClick={() => onChange(shiftDate(value, 1))}>
         <ChevronRight />
       </Button>
       {!isToday && (
-        <Button variant="ghost" className="h-11" onClick={() => onChange(today())}>
+        <Button variant="ghost" className="h-11 basis-full sm:basis-auto md:h-10" onClick={() => onChange(today())}>
           Hôm nay
         </Button>
       )}

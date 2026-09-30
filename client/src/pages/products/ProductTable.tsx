@@ -84,7 +84,7 @@ export function ProductTable({ products, onEdit, onToggle }: Props) {
                   <div className="flex flex-wrap items-center gap-2 font-medium">
                     <span className="truncate">{p.name}</span>
                     {!p.isActive && <Badge variant="secondary">Ngừng bán</Badge>}
-                    {p.isWeighed && <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">Hàng cân</Badge>}
+                    {p.isWeighed && <Badge className="bg-warning/15 text-warning">Hàng cân</Badge>}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     {p.categoryName ?? 'Không danh mục'} · {p.unit}

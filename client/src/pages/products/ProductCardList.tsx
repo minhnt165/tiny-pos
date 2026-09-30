@@ -29,7 +29,7 @@ export function ProductCardList({ products, onEdit, onToggle }: Props) {
             <div className="text-sm text-muted-foreground">
               {p.barcode ?? 'Không mã'} · {p.categoryName ?? 'Không danh mục'}
             </div>
-            <div className="mt-1 flex items-center justify-between">
+            <div className="mt-1 flex items-center justify-between gap-2">
               <span className="font-semibold text-primary tabular-nums">{formatMoney(p.sellPrice)}</span>
               <StockCell p={p} />
             </div>

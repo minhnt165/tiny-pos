@@ -60,7 +60,7 @@ mới, changelog, git tag.
   version gói nội bộ, không hiển thị).
 - `client/vite.config.ts` đọc version từ `../package.json` và `define`:
   `__APP_VERSION__` (chuỗi version), `__BUILD_DATE__` (ISO lúc build hoặc lúc chạy dev).
-  Khai báo kiểu trong `client/src/vite-env.d.ts` (tạo nếu chưa có).
+  Khai báo kiểu trong `client/src/globals.d.ts`.
 - `client/src/lib/version.ts`: `APP_VERSION`, `BUILD_DATE` (định dạng `dd/mm/yyyy`).
 - Hiện ở: chân sidebar `Phiên bản 0.5.0`; Cài đặt → thẻ *Thông tin phần mềm*: phiên bản,
   ngày build. Điện thoại chỉ có trong Cài đặt.
@@ -99,8 +99,8 @@ mới, changelog, git tag.
   (`.dark[data-accent=x]`). `blue` là giá trị trong `:root`.
 - Cỡ chữ: `html[data-font=sm] { font-size: 14px }` … `xl` 20px. Mọi kích thước dùng
   `rem` nên phóng theo.
-- Bo góc: `--radius` = `0.25rem` / `0.5rem` / `0.75rem`.
-- Mật độ: biến `--row-py` (đệm dọc ô bảng), `--panel-p` (đệm khung), `--gap` (khoảng giữa
+- Bo góc: `--radius` = `0.25rem` / `0.5rem` / `0.875rem`.
+- Mật độ: biến `--row-py` (đệm dọc ô bảng), `--page-p` (đệm trang), `--gap` (khoảng giữa
   khối); `compact` nhỏ hơn `comfy` khoảng 1/3. Chỉ component khung và `ui/table` đọc các
   biến này.
 
@@ -145,12 +145,12 @@ Máy tính (`md` trở lên):
   Chân: `Phiên bản x.y.z`. Không có nút thu gọn.
 - Topbar cao 48px, dính trên cùng: tiêu đề trang, số đếm (chữ phụ), khoảng trống, ngày
   (`Thứ Tư, 30/09/2026`), nút sáng/tối, rồi các nút hành động của trang.
-- Vùng nội dung: đệm theo `--panel-p`, rộng tối đa `max-w-7xl`; màn Bán hàng dùng hết
+- Vùng nội dung: đệm theo `--page-p`, rộng tối đa `max-w-7xl`; màn Bán hàng dùng hết
   chiều rộng và chiều cao còn lại.
 
 Điện thoại:
 
-- Header trên: tiêu đề trang (+ số đếm), bên phải tối đa 2 nút hành động dạng icon,
+- Header trên: tiêu đề trang (+ số đếm), bên phải nút hành động chính dạng icon, các nút
   còn lại gom vào menu `⋯` (`DropdownMenu`).
 - Thanh dưới giữ nguyên hành vi: 4 mục + *Thêm* (`MobileMoreMenu`), cao cố định 68px +
   safe-area (thanh thanh toán màn Bán hàng vẫn bám ngay trên).
@@ -161,35 +161,51 @@ Máy tính (`md` trở lên):
 ### `PageTitle` (thay `PageHeader`)
 
 ```tsx
-<PageTitle title="Sản phẩm" count="78 mặt hàng" actions={<>…</>} />
+<PageTitle
+  title="Sản phẩm"
+  count="78 mặt hàng"
+  actions={[
+    { label: 'Nhập / Xuất CSV', icon: FileSpreadsheet, onClick: openCsv },
+    { label: 'Thêm sản phẩm', icon: Plus, onClick: create, primary: true },
+  ]}
+/>
 ```
 
-Trang gọi `PageTitle` ở đầu JSX; component đưa nội dung vào topbar qua context
-`PageTitleContext` (do `AppShell` cung cấp) và không vẽ gì tại chỗ. Tiêu đề tab trình
-duyệt đổi theo: `Sản phẩm · Tạp hóa Tâm Ly`. Trang con (ví dụ `/imports/new`) có
-`back` (đường dẫn) để hiện nút ← trước tiêu đề. `PageHeader.tsx` bị xóa.
+- `PageAction`: `label`, `icon` (lucide), một trong `onClick` / `to` (link) / `form`
+  (nút submit cho form có id đó), `primary` (tối đa 1 nút, màu nhấn), `danger`, `disabled`.
+- Trang gọi `PageTitle` ở đầu JSX; component vẽ vào ô tiêu đề của topbar bằng
+  `createPortal` (ô do `AppShell` cung cấp qua context), tại chỗ không vẽ gì.
+- Máy tính: mọi nút hiện đủ chữ. Điện thoại: nút `primary` thành nút icon 44px, các nút
+  còn lại vào menu `⋯`.
+- Tiêu đề tab trình duyệt đổi theo: `Sản phẩm · Tạp hóa Tâm Ly`.
+- Trang con (ví dụ `/imports/new`) có `back` (đường dẫn) để hiện nút ← trước tiêu đề.
+- `PageHeader.tsx` bị xóa.
+- Điều khiển không phải nút (ô ngày, công tắc) đặt trong toolbar của `ListPanel`, không
+  lên topbar, để điện thoại 390px vẫn đủ chỗ.
 
 ### Component trang dùng chung (`components/`)
 
 - `StatStrip` + `Stat`: một hàng ô số liệu, mỗi ô: nhãn (chữ phụ), giá trị (đậm,
   `tabular-nums`), gợi ý tùy chọn; `tone` = `default | warning | danger | success` chỉ đổi
   màu giá trị. Không icon. Giá trị dài tự thu nhỏ chữ (`text-[clamp(...)]`) thay vì cắt.
-  Điện thoại: lưới 2 cột. Thay `StatCard` (xóa file).
+  Số cột theo bề ngang khung tính bằng rem (container query): 1 cột khi hẹp (điện thoại chữ Lớn/Rất lớn), 2 cột từ 20rem, đủ `cols` khi rộng (6 ô cần khung ≥ 72rem, máy 1366px hiện 3×2). Giá trị không xuống dòng giữa số. Thay `StatCard` (xóa file).
 - `ListPanel`: khung viền gồm `toolbar` (slot), nội dung (bảng/thẻ) và `footer` (phân
   trang/tổng). Toolbar: ô tìm bên trái, bộ chọn bên phải, xuống dòng trên điện thoại.
   Đợt 2 gắn bộ lọc vào slot này.
 - `DateField`: nút mở Popover chứa `Calendar` (shadcn, `npx shadcn@latest add calendar`,
   locale `vi` của `react-day-picker`, `weekStartsOn: 1`), hiển thị `dd/mm/yyyy`, giá trị
   vào/ra vẫn là chuỗi `YYYY-MM-DD` như hiện tại; hỗ trợ `max`. `DayPicker` dùng
-  `DateField` thay `Input type="date"`.
-- `EmptyState`: gọn lại (icon nhỏ, không ô nền to), có biến thể `inline` trong bảng.
+  `DateField` thay `Input type="date"`. Đổi `YYYY-MM-DD` → `dd/mm/yyyy` bằng hàm thuần
+  `formatDateVn` trong `shared/src/local-date.ts` (có test).
+- `EmptyState`: gọn lại (icon nhỏ, không ô nền to).
 - `TableSkeleton`: vài dòng `Skeleton` theo số cột, dùng khi đang tải.
 - `ui/table`: ô dùng `--row-py`; hàng tiêu đề chữ nhỏ màu chữ phụ; hàng có hover.
 
 ### Dialog
 
-- 3 cỡ qua prop/class thống nhất: `sm` (xác nhận), `md` (form, mặc định), `lg` (chi tiết
-  chứng từ).
+- Cỡ qua prop `size` của `DialogContent`: `sm` (form ngắn, xác nhận), `md` (mặc định,
+  chi tiết chứng từ), `lg` (bảng rộng: lịch sử tồn, kiểm kê, CSV), `xl` (form sản phẩm).
+  Thân dialog cao tối đa 90% màn hình, dài thì cuộn.
 - Footer: *Hủy* (outline) bên trái, hành động chính bên phải; điện thoại hai nút giãn
   ngang, hành động chính ở trên.
 - Tiêu đề + mô tả cùng kiểu cho mọi dialog; nội dung dài thì cuộn trong thân dialog.
@@ -201,9 +217,9 @@ Giữ nguyên hook, API, phím tắt, luồng; chỉ đổi JSX/class và chuy�
 | Màn | Thay đổi chính |
 |---|---|
 | Bán hàng | Xem mục 9 |
-| Hóa đơn | `PageTitle` + `DayPicker` mới trên topbar; `StatStrip` 6 ô; bảng trong `ListPanel` |
-| Nhập hàng (danh sách) | Như Hóa đơn; nút *Tạo phiếu* trên topbar |
-| Tạo phiếu nhập | `back` về danh sách; ô NCC + ghi chú + ô quét một hàng; footer tổng/đã trả/lưu dính đáy |
+| Hóa đơn | `PageTitle`; `StatStrip` 6 ô; `DayPicker` mới trong toolbar `ListPanel`, bảng bên dưới |
+| Nhập hàng (danh sách) | Như Hóa đơn; nút *Tạo phiếu nhập* trên topbar |
+| Tạo phiếu nhập | `back` về danh sách; ô NCC + ghi chú một hàng, ô quét hàng dưới; footer tổng/đã trả/lưu dính đáy |
 | Kiểm kê | `PageTitle`; phiên đang mở và lịch sử trong `ListPanel` |
 | Sản phẩm | `StatStrip` 4 ô; chip danh mục thành ô chọn *Danh mục*; nút *Nhập nhanh*, *Nhập / Xuất CSV*, *Thêm sản phẩm* trên topbar; thẻ trên điện thoại giữ |
 | Danh mục, Nhà cung cấp, Khách hàng | `PageTitle` + `StatStrip` (nếu có tổng nợ) + `ListPanel` |

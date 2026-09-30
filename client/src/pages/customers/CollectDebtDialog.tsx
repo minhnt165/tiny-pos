@@ -53,7 +53,7 @@ export function CollectDebtDialog({ customer, open, onClose }: { customer: Custo
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && !collect.isPending && onClose()}>
-      <DialogContent className="max-h-[95vh] overflow-y-auto sm:max-w-md">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <HandCoins className="size-5 text-primary" />
@@ -65,8 +65,8 @@ export function CollectDebtDialog({ customer, open, onClose }: { customer: Custo
         </DialogHeader>
         {result ? (
           <div className="space-y-4">
-            <div className="flex items-center gap-3 rounded-xl bg-emerald-50 px-4 py-3 dark:bg-emerald-500/10">
-              <CircleCheck className="size-7 shrink-0 text-emerald-600" />
+            <div className="flex items-center gap-3 rounded-lg bg-success/10 px-4 py-3">
+              <CircleCheck className="size-7 shrink-0 text-success" />
               <div>
                 <div className="font-heading text-2xl font-semibold tabular-nums">Đã thu {formatMoney(-result.transaction.amount)}</div>
                 <div className="text-muted-foreground">

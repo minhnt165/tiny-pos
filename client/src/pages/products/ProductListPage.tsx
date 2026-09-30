@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileSpreadsheet, Package, Plus, Search } from 'lucide-react';
+import { FileSpreadsheet, Package, Plus, ScanBarcode, Search } from 'lucide-react';
 import { useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 import type { Product } from '@tiny-pos/shared';
@@ -7,11 +7,11 @@ import { useCategories } from '@/api/categories';
 import { useProduct, useProducts, useSetProductActive } from '@/api/products';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { EmptyState } from '@/components/EmptyState';
-import { PageHeader } from '@/components/PageHeader';
+import { PageTitle } from '@/components/layout/PageTitle';
+import { ListPanel } from '@/components/ListPanel';
 import { Pager } from '@/components/Pager';
+import { TableSkeleton } from '@/components/TableSkeleton';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { CsvDialog } from './CsvDialog';
 import { ProductCardList } from './ProductCardList';
 import { ProductFormDialog } from './ProductFormDialog';
@@ -76,45 +76,37 @@ export function ProductListPage() {
 
   return (
     <div>
-      <PageHeader
-        icon={Package}
+      <PageTitle
         title="Sản phẩm"
-        description="Danh sách hàng hóa, giá bán và tồn kho của tiệm."
-        actions={
-          <>
-            <Button variant="outline" className="h-11 px-4 text-base" onClick={() => setCsvOpen(true)}>
-              <FileSpreadsheet data-icon="inline-start" />
-              Nhập / Xuất CSV
-            </Button>
-            <Button className="h-11 px-5 text-base" onClick={() => setCreating(true)}>
-              <Plus data-icon="inline-start" />
-              Thêm sản phẩm
-            </Button>
-          </>
-        }
+        count={`${all.length} mặt hàng`}
+        actions={[
+          { label: 'Nhập nhanh', icon: ScanBarcode, to: '/quick-add' },
+          { label: 'Nhập / Xuất CSV', icon: FileSpreadsheet, onClick: () => setCsvOpen(true) },
+          { label: 'Thêm sản phẩm', icon: Plus, onClick: () => setCreating(true), primary: true },
+        ]}
       />
 
       <ProductStats products={all} categoryCount={categories.length} />
 
-      <Card className="gap-0 py-0">
-        <ProductToolbar
-          q={q}
-          setQ={resetPage(setQ)}
-          categoryId={categoryId}
-          setCategoryId={resetPage((v: string) => {
-            setCategoryId(v);
-            if (searchParams.has('categoryId')) setSearchParams({}, { replace: true });
-          })}
-          includeInactive={includeInactive}
-          setIncludeInactive={resetPage(setIncludeInactive)}
-          categories={categories}
-        />
+      <ListPanel
+        toolbar={
+          <ProductToolbar
+            q={q}
+            setQ={resetPage(setQ)}
+            categoryId={categoryId}
+            setCategoryId={resetPage((v: string) => {
+              setCategoryId(v);
+              if (searchParams.has('categoryId')) setSearchParams({}, { replace: true });
+            })}
+            includeInactive={includeInactive}
+            setIncludeInactive={resetPage(setIncludeInactive)}
+            categories={categories}
+          />
+        }
+        footer={products.length > 0 && <Pager page={currentPage} pageSize={PAGE_SIZE} total={products.length} onPageChange={setPage} noun="mặt hàng" />}
+      >
         {isLoading ? (
-          <div className="space-y-3 p-4">
-            {[0, 1, 2].map((i) => (
-              <Skeleton key={i} className="h-14 w-full rounded-xl" />
-            ))}
-          </div>
+          <TableSkeleton />
         ) : products.length === 0 ? (
           <EmptyState
             icon={filtered ? Search : Package}
@@ -137,10 +129,9 @@ export function ProductListPage() {
             <div className="md:hidden">
               <ProductCardList products={pageItems} onEdit={edit} onToggle={toggle} />
             </div>
-            <Pager page={currentPage} pageSize={PAGE_SIZE} total={products.length} onPageChange={setPage} noun="mặt hàng" />
           </>
         )}
-      </Card>
+      </ListPanel>
 
       <ProductFormDialog
         open={creating || (editingId !== null && !!editing)}

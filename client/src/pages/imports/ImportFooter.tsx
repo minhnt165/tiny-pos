@@ -20,11 +20,11 @@ export function ImportFooter({ totals, hasSupplier, paidAuto, onPaid, onSave, sa
   const paid = hasSupplier ? totals.paid : totals.total;
   const over = paid > totals.total;
   return (
-    <Card className="gap-0 py-0">
-      <CardContent className="flex flex-wrap items-end justify-between gap-4 p-5">
+    <Card className="sticky bottom-[calc(76px+env(safe-area-inset-bottom))] z-20 gap-0 py-0 md:bottom-4">
+      <CardContent className="flex flex-wrap items-end justify-between gap-4 p-4">
         <div>
           <div className="text-sm text-muted-foreground">Tổng tiền nhập</div>
-          <div className="font-heading text-3xl font-semibold text-primary tabular-nums">{formatMoney(totals.total)}</div>
+          <div className="font-heading text-3xl font-semibold tabular-nums">{formatMoney(totals.total)}</div>
         </div>
         <div className="space-y-1">
           <div className="flex items-center gap-2">

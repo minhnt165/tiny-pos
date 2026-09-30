@@ -61,7 +61,7 @@ export function CategoryFormDialog({ open, category, categories, onClose }: Prop
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="gap-0 p-0 sm:max-w-md">
+      <DialogContent size="sm" className="gap-0 p-0">
         <DialogHeader className="border-b bg-muted/30 px-6 py-4">
           <DialogTitle className="text-xl">{category ? 'Đổi tên danh mục' : 'Thêm danh mục'}</DialogTitle>
           <DialogDescription>{category ? category.name : 'Ví dụ: Đồ uống, Bánh kẹo, Gia vị'}</DialogDescription>

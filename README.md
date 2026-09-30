@@ -111,3 +111,11 @@ In không hỏi: tạo shortcut `chrome.exe --app=http://localhost:3000 --kiosk-
 7. **Hủy đơn ghi nợ**: *Hóa đơn* → mở đơn ghi nợ → *Hủy đơn* → nợ khách trừ lại 30.000; sổ có dòng "Hủy đơn".
 8. **Tổng kết ngày**: trang *Hóa đơn* có thẻ Ghi nợ và Thu nợ (TM/CK); tiền mặt trong két = thẻ Tiền mặt + thu nợ tiền mặt.
 9. **Xóa khách**: khách còn nợ thì không có nút *Xóa*; thu hết nợ → *Xóa* được.
+
+## Kiểm thử thủ công – Giao diện 0.5.0
+
+1. Mở máy tính: sidebar trắng có tên cửa hàng, 3 nhóm menu, chân ghi *Phiên bản 0.5.0*. Tiêu đề và nút của trang nằm trên thanh trên cùng.
+2. *Cài đặt → Giao diện (trên máy này)*: đổi màu nhấn, cỡ chữ, mật độ, bo góc, chế độ sáng/tối → thấy đổi ngay; tải lại trang vẫn giữ, không nháy. *Khôi phục mặc định* về xanh dương, chữ Vừa.
+3. *Hóa đơn*: ô ngày hiện `dd/mm/yyyy`, bấm mở lịch tiếng Việt.
+4. *Bán hàng*: quét 2 món, *Cất chờ* → có tab *Chờ 1*; bấm tab mở lại đúng giỏ. F2/F4/F9 như cũ. In thử hóa đơn vẫn khổ 80mm.
+5. Điện thoại: thanh dưới 4 mục + *Thêm*; nút chính của trang là nút icon trên header, các nút khác trong ⋯; không trang nào cuộn ngang, kể cả cỡ chữ *Rất lớn*.

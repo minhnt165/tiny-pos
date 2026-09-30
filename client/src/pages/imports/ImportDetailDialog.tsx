@@ -27,7 +27,7 @@ export function ImportDetailDialog({ id, onClose }: { id: number | null; onClose
 
   return (
     <Dialog open={id !== null} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[95vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-mono text-xl">
             {r?.code ?? 'Phiếu nhập'}

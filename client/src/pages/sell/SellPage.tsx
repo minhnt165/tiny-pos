@@ -7,7 +7,8 @@ import { useSettings } from '@/api/settings';
 import { useConfirm, type ConfirmOptions } from '@/components/ConfirmDialog';
 import { usePrint } from '@/components/receipt/PrintProvider';
 import { receiptFromOrder } from '@/components/receipt/receipt-data';
-import { Card } from '@/components/ui/card';
+import { PageTitle } from '@/components/layout/PageTitle';
+import { Kbd } from '@/components/ui/kbd';
 import { useScanInput } from '@/hooks/useScanInput';
 import { CartTable } from './CartTable';
 import { CheckoutDialog } from './CheckoutDialog';
@@ -21,6 +22,13 @@ import { useHeldCarts } from './useHeldCarts';
 import { WeighDialog, type WeighTarget } from './WeighDialog';
 
 const noop = () => {};
+
+const SHORTCUTS = [
+  ['F2', 'Quét'],
+  ['F4', 'Món ngoài'],
+  ['F9', 'Thanh toán'],
+  ['Esc', 'Đóng hộp thoại'],
+] as const;
 
 export function SellPage() {
   const { cart, dispatch, totals, shortages } = useCart();
@@ -119,17 +127,28 @@ export function SellPage() {
   }, [paused, cart.lines.length, totals.payable, scan.focus]);
 
   return (
-    <div className="grid gap-5 pb-20 lg:grid-cols-[1fr_22rem] md:pb-0">
-      <div className="min-w-0 space-y-4">
+    // Máy tính: hết chiều cao dưới topbar 3rem (+ đệm main 2rem); giỏ cuộn bên trong, cột phải cố định
+    <div className="grid gap-3 pb-20 md:pb-0 lg:h-[calc(100dvh-5rem)] lg:grid-cols-[1fr_20rem]">
+      <PageTitle title="Bán hàng" />
+      <div className="flex min-h-0 min-w-0 flex-col gap-3">
         <ProductSearch inputRef={scan.ref} onScan={(c) => void onScan(c)} onPick={(p) => addProduct(p, null)} />
-        <HeldCarts held={heldCarts.held} onOpen={openHeld} onDrop={(id) => void dropHeld(id)} />
+        <HeldCarts held={heldCarts.held} currentCount={cart.lines.length} onOpen={openHeld} onDrop={(id) => void dropHeld(id)} />
         {lastOrder && <SaleResult order={lastOrder} onReprint={() => void print(receiptFromOrder(lastOrder))} />}
-        <Card className="gap-0 overflow-hidden py-0">
+        <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border bg-card">
           <CartTable cart={cart} shortages={shortages} dispatch={dispatch} onEditWeight={editWeight} onDone={scan.focus} />
-        </Card>
+        </div>
+        <div className="hidden flex-wrap gap-4 text-xs text-muted-foreground lg:flex">
+          {SHORTCUTS.map(([k, label]) => (
+            <span key={k} className="flex items-center gap-1.5">
+              <Kbd>{k}</Kbd>
+              {label}
+            </span>
+          ))}
+        </div>
       </div>
       <CheckoutPanel
         totals={totals}
+        lineCount={cart.lines.length}
         empty={!cart.lines.length}
         canHold={!heldCarts.full}
         onDiscount={(d) => dispatch({ type: 'setDiscount', discount: d })}

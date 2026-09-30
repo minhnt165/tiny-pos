@@ -37,7 +37,7 @@ export function SupplierDetailDialog({ id, onClose }: { id: number | null; onClo
   return (
     <>
       <Dialog open={s !== null} onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-h-[95vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-xl">{s?.name}</DialogTitle>
             <DialogDescription className="text-base">{[s?.phone, s?.note].filter(Boolean).join(' · ') || 'Chưa có số điện thoại'}</DialogDescription>
@@ -59,7 +59,7 @@ export function SupplierDetailDialog({ id, onClose }: { id: number | null; onClo
                       <div className="text-sm text-muted-foreground">{when(t.createdAt)}</div>
                     </div>
                     <div className="text-right tabular-nums">
-                      <div className={cn('font-semibold', t.amount > 0 ? 'text-destructive' : 'text-emerald-600')}>
+                      <div className={cn('font-semibold', t.amount > 0 ? 'text-destructive' : 'text-success')}>
                         {t.amount > 0 ? '+' : '−'}
                         {formatMoney(Math.abs(t.amount))}
                       </div>

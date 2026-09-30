@@ -8,7 +8,7 @@ export function StocktakeDetailDialog({ id, onClose }: { id: number | null; onCl
   const { data: s } = useStocktake(id);
   return (
     <Dialog open={id !== null} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[95vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-mono text-xl">
             {s?.code ?? 'Kiểm kê'}

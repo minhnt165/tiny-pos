@@ -40,7 +40,7 @@ export function OrderDetailDialog({ id, onClose }: { id: number | null; onClose:
 
   return (
     <Dialog open={id !== null} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-h-[95vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-mono text-xl">
             {o?.code ?? 'Hóa đơn'}

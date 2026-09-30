@@ -66,8 +66,8 @@ export function ProductSearch({ inputRef, onScan, onPick, includeInactive }: Pro
 
   return (
     <div className="relative">
-      <div className="flex items-center gap-3 rounded-2xl border bg-card p-2 shadow-sm focus-within:ring-3 focus-within:ring-ring/40">
-        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+      <div className="flex items-center gap-3 rounded-lg border-2 border-primary/60 bg-card px-3 py-1 focus-within:border-primary">
+        <span className="grid size-9 shrink-0 place-items-center text-primary">
           <ScanBarcode className="size-6" />
         </span>
         <input
@@ -76,13 +76,13 @@ export function ProductSearch({ inputRef, onScan, onPick, includeInactive }: Pro
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={onKeyDown}
           placeholder="Quét mã hoặc gõ tên sản phẩm… (F2)"
-          className="min-h-11 w-full bg-transparent text-xl font-medium outline-none placeholder:text-muted-foreground/60"
+          className="min-h-11 w-full bg-transparent text-lg font-medium outline-none placeholder:text-muted-foreground/60"
           autoComplete="off"
           aria-label="Quét mã hoặc tìm sản phẩm"
         />
       </div>
       {items.length > 0 && (
-        <ul className="absolute inset-x-0 top-full z-30 mt-2 overflow-hidden rounded-2xl border bg-popover shadow-xl" role="listbox">
+        <ul className="absolute inset-x-0 top-full z-30 mt-2 overflow-hidden rounded-lg border bg-popover shadow-lg" role="listbox">
           {items.map((p, i) => (
             <li
               key={p.id}
