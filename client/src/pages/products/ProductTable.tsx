@@ -30,31 +30,29 @@ export function StockCell({ p }: { p: Product }) {
 export function ProductMenu({ p, onEdit, onToggle }: { p: Product; onEdit: () => void; onToggle: () => void }) {
   const [history, setHistory] = useState(false);
   return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon-lg" aria-label="Thao tác" title="Thao tác" onClick={(e) => e.stopPropagation()}>
-            <MoreHorizontal />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-44" onClick={(e) => e.stopPropagation()}>
-          <DropdownMenuItem onSelect={onEdit}>
-            <Pencil />
-            Sửa sản phẩm
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => setHistory(true)}>
-            <History />
-            Lịch sử tồn
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem variant={p.isActive ? 'destructive' : 'default'} onSelect={onToggle}>
-            {p.isActive ? <Ban /> : <RotateCcw />}
-            {p.isActive ? 'Ngừng bán' : 'Bán lại'}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon-lg" aria-label="Thao tác" title="Thao tác" onClick={(e) => e.stopPropagation()}>
+          <MoreHorizontal />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-44" onClick={(e) => e.stopPropagation()}>
+        <DropdownMenuItem onSelect={onEdit}>
+          <Pencil />
+          Sửa sản phẩm
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => setHistory(true)}>
+          <History />
+          Lịch sử tồn
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem variant={p.isActive ? 'destructive' : 'default'} onSelect={onToggle}>
+          {p.isActive ? <Ban /> : <RotateCcw />}
+          {p.isActive ? 'Ngừng bán' : 'Bán lại'}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
       <StockHistoryDialog product={history ? p : null} onClose={() => setHistory(false)} />
-    </>
+    </DropdownMenu>
   );
 }
 
