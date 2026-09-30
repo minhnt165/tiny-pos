@@ -21,7 +21,7 @@ Nếu mạng công ty chặn registry, tạo `.npmrc` trỏ `registry=https://re
 npm run dev
 ```
 
-- Giao diện: `http://localhost:5173` (Vite, tự reload). Trên điện thoại: `http://<IP máy>:5173`.
+- Giao diện: `http://localhost:5180` (Vite, tự reload). Trên điện thoại: `http://<IP máy>:5180`.
 - API: `http://localhost:3000/api`. Vite proxy `/api` sang cổng 3000.
 - CSDL: `data/grocery.db` (tự tạo, chạy migration lúc khởi động).
 
@@ -67,7 +67,7 @@ Tạo shortcut Chrome ở quầy (giai đoạn 5 sẽ có script): `chrome.exe -
 4. **Nhập sai**: sửa giá bán thành chữ "abc" → toast đỏ có chữ "Giá bán".
 5. **Nhập nhanh**: vào *Nhập nhanh*, gõ mã lạ + Enter → form mở với mã điền sẵn, con trỏ ở ô Tên; gõ tên, Enter → toast xanh, form đóng, ô quét lại có focus. Quét lại mã đó → thẻ thông tin. Quét mã thùng → ghi rõ "Mã của Thùng (= 24 …)". Khi form đang mở, gõ mã + Enter không mở tra cứu mới.
 6. **CSV**: *Nhập / Xuất CSV* → *Tải file CSV*, mở bằng Excel thấy tiếng Việt đúng. Sửa giá, thêm 1 dòng mới, để trống Tên ở 1 dòng, lưu CSV rồi nhập lại → báo số tạo / cập nhật / lỗi theo dòng; tồn của hàng cũ không đổi.
-7. **Điện thoại**: mở `http://<IP máy>:5173` (dev) hoặc `:3000` (prod), menu chuyển thành thanh dưới.
+7. **Điện thoại**: mở `http://<IP máy>:5180` (dev) hoặc `:3000` (prod), menu chuyển thành thanh dưới.
 
 ## Kiểm thử thủ công Giai đoạn 2
 
