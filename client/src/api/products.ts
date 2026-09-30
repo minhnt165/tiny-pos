@@ -38,8 +38,6 @@ export const useProduct = (id: number | null) =>
 
 export const lookupBarcode = (code: string) => api<BarcodeLookup>(`/products/by-barcode/${encodeURIComponent(code)}`);
 
-export const CSV_EXPORT_URL = '/api/products/csv';
-
 function useInvalidateProducts() {
   const qc = useQueryClient();
   return () => {
@@ -90,10 +88,10 @@ export function useDeleteUnit() {
   });
 }
 
-export function useImportCsv() {
+export function useImportProducts() {
   const invalidate = useInvalidateProducts();
   return useMutation({
-    mutationFn: (text: string) => api<CsvImportResult>('/products/csv', { text }),
+    mutationFn: (file: Blob) => api<CsvImportResult>('/products/import', { body: file }),
     onSuccess: invalidate,
   });
 }

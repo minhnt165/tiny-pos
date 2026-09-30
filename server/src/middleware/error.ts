@@ -23,6 +23,11 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   if (code === 'SQLITE_CONSTRAINT_UNIQUE') return void res.status(409).json({ error: 'Mã vạch đã tồn tại' });
   if (code === 'SQLITE_CONSTRAINT_FOREIGNKEY')
     return void res.status(409).json({ error: 'Dữ liệu đang được sử dụng, không thể xóa' });
+  // body-parser: thân request vượt `limit` (byte), ví dụ file nhập > 10 MB
+  if ((err as { type?: string } | null)?.type === 'entity.too.large') {
+    const mb = Math.round(((err as { limit?: number }).limit ?? 0) / 1024 / 1024);
+    return void res.status(413).json({ error: `Dữ liệu gửi lên quá lớn (tối đa ${mb} MB)` });
+  }
   if (err instanceof SyntaxError && 'body' in err) return void res.status(400).json({ error: 'JSON không hợp lệ' });
   console.error(err);
   res.status(500).json({ error: 'Lỗi hệ thống' });

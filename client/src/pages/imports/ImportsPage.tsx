@@ -16,6 +16,7 @@ import { TableSkeleton } from '@/components/TableSkeleton';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useUrlFilters } from '@/hooks/useUrlFilters';
+import { useExportAction } from '@/hooks/useExportAction';
 import { today as todayOf } from '@/lib/today';
 import { ImportDetailDialog } from './ImportDetailDialog';
 import { ImportTable } from './ImportTable';
@@ -26,6 +27,7 @@ const STATUS_OPTIONS = DOC_STATUSES.map((s) => ({ value: s, label: STATUS_LABEL[
 export function ImportsPage() {
   const [openId, setOpenId] = useState<number | null>(null);
   const { filters: f, set, clear } = useUrlFilters(importListFields);
+  const exportAction = useExportAction('/imports/export.xlsx');
   const today = todayOf();
   const picked = resolveRange(f, today);
   // Khoảng sai trên URL (sửa tay) thì về hôm nay, không báo lỗi
@@ -56,7 +58,7 @@ export function ImportsPage() {
       <PageTitle
         title="Nhập hàng"
         count={data ? `${data.total} phiếu` : undefined}
-        actions={[{ label: 'Tạo phiếu nhập', icon: PackagePlus, to: '/imports/new', primary: true }]}
+        actions={[exportAction, { label: 'Tạo phiếu nhập', icon: PackagePlus, to: '/imports/new', primary: true }]}
       />
       <StatStrip cols={3}>
         <Stat label="Số phiếu" value={String(s?.count ?? 0)} hint="Không tính phiếu đã hủy" />

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileSpreadsheet, Package, Plus, ScanBarcode, Search } from 'lucide-react';
+import { Package, Plus, ScanBarcode, Search, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { filterProducts, productViewFields, sortProducts, type Product } from '@tiny-pos/shared';
 import { useCategories } from '@/api/categories';
@@ -12,7 +12,8 @@ import { Pager } from '@/components/Pager';
 import { TableSkeleton } from '@/components/TableSkeleton';
 import { Button } from '@/components/ui/button';
 import { useUrlFilters } from '@/hooks/useUrlFilters';
-import { CsvDialog } from './CsvDialog';
+import { useExportAction } from '@/hooks/useExportAction';
+import { ImportDialog } from './ImportDialog';
 import { ProductCardList } from './ProductCardList';
 import { ProductFormDialog } from './ProductFormDialog';
 import { ProductStats } from './ProductStats';
@@ -26,7 +27,8 @@ export function ProductListPage() {
   const { filters: view, set, clear } = useUrlFilters(productViewFields);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [creating, setCreating] = useState(false);
-  const [csvOpen, setCsvOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const exportAction = useExportAction('/products/export.xlsx');
 
   // Tải hết một lần (kể cả ngừng bán) rồi lọc/sắp xếp trên trình duyệt
   const { data: everything = [], isLoading } = useProducts({ includeInactive: true });
@@ -69,7 +71,8 @@ export function ProductListPage() {
         count={`${all.length} mặt hàng`}
         actions={[
           { label: 'Nhập nhanh', icon: ScanBarcode, to: '/quick-add' },
-          { label: 'Nhập / Xuất CSV', icon: FileSpreadsheet, onClick: () => setCsvOpen(true) },
+          { label: 'Nhập từ Excel', icon: Upload, onClick: () => setImportOpen(true) },
+          exportAction,
           { label: 'Thêm sản phẩm', icon: Plus, onClick: () => setCreating(true), primary: true },
         ]}
       />
@@ -120,7 +123,7 @@ export function ProductListPage() {
         onClose={close}
         onSaved={close}
       />
-      <CsvDialog open={csvOpen} onClose={() => setCsvOpen(false)} />
+      <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} />
     </div>
   );
 }

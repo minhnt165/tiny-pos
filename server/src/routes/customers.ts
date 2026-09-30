@@ -5,7 +5,9 @@ import {
   customerInputSchema,
   customerPaymentSchema,
   partyListQuerySchema,
+  partyViewQuerySchema,
   type PartyListQuery,
+  type PartyView,
 } from '@tiny-pos/shared';
 import type { Db } from '../db/connection.js';
 import { intParam, validateBody, validateQuery } from '../middleware/validate.js';
@@ -18,6 +20,8 @@ import {
   listCustomers,
   updateCustomer,
 } from '../services/customers.js';
+import { exportCustomersXlsx } from '../services/exports.js';
+import { sendXlsx } from './send-xlsx.js';
 
 export function customersRouter(db: Db): Router {
   const r = Router();
@@ -25,6 +29,9 @@ export function customersRouter(db: Db): Router {
     const { q, includeInactive } = res.locals['query'] as PartyListQuery;
     res.json(listCustomers(db, q, includeInactive));
   });
+  r.get('/export.xlsx', validateQuery(partyViewQuerySchema), async (_req, res) =>
+    sendXlsx(res, await exportCustomersXlsx(db, res.locals['query'] as PartyView)),
+  );
   r.post('/', validateBody(customerCreateSchema), (req, res) => res.status(201).json(createCustomer(db, req.body)));
   r.put('/:id', validateBody(customerInputSchema), (req, res) => res.json(updateCustomer(db, intParam(req, 'id'), req.body)));
   r.delete('/:id', (req, res) => {

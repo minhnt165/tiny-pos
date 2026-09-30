@@ -1,25 +1,24 @@
 import { useState, type DragEvent } from 'react';
-import { CircleCheck, Download, FileSpreadsheet, TriangleAlert, Upload } from 'lucide-react';
+import { CircleCheck, FileSpreadsheet, TriangleAlert, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import type { CsvImportResult } from '@tiny-pos/shared';
-import { CSV_EXPORT_URL, useImportCsv } from '@/api/products';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { useImportProducts } from '@/api/products';
+import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
-export function CsvDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const importCsv = useImportCsv();
+export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const importProducts = useImportProducts();
   const [result, setResult] = useState<CsvImportResult | null>(null);
 
-  const onFile = async (file: File | undefined) => {
+  const onFile = (file: File | undefined) => {
     if (!file) return;
-    const text = await file.text();
-    importCsv.mutate(text, { onSuccess: setResult, onError: (e) => toast.error(e.message) });
+    importProducts.mutate(file, { onSuccess: setResult, onError: (e) => toast.error(e.message) });
   };
 
   const onDrop = (e: DragEvent) => {
     e.preventDefault();
-    void onFile(e.dataTransfer.files[0]);
+    onFile(e.dataTransfer.files[0]);
   };
 
   const close = () => {
@@ -31,34 +30,23 @@ export function CsvDialog({ open, onClose }: { open: boolean; onClose: () => voi
     <Dialog open={open} onOpenChange={(o) => !o && close()}>
       <DialogContent size="lg" className="gap-0 p-0">
         <DialogHeader className="border-b px-6 py-4">
-          <DialogTitle className="text-xl">Nhập / Xuất CSV</DialogTitle>
-          <DialogDescription>Làm việc với Excel</DialogDescription>
+          <DialogTitle className="text-xl">Nhập sản phẩm từ Excel</DialogTitle>
+          <DialogDescription>File .xlsx hoặc .csv, dòng đầu là tiêu đề cột</DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 px-6 py-5">
-          <div className="flex gap-4 rounded-xl border p-4">
-            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-              <Download className="size-5" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <h3 className="font-medium">Xuất danh sách</h3>
-              <p className="text-sm text-muted-foreground">Tải toàn bộ sản phẩm đang bán ra file CSV, mở được bằng Excel.</p>
-              <a href={CSV_EXPORT_URL} download className={cn(buttonVariants({ variant: 'outline' }), 'mt-3 h-10 px-4 text-base')}>
-                <Download data-icon="inline-start" />
-                Tải file CSV
-              </a>
-            </div>
-          </div>
-
+        <div className="px-6 py-5">
           <div className="rounded-xl border p-4">
             <div className="flex gap-4">
               <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
                 <Upload className="size-5" />
               </span>
-              <div className="min-w-0 flex-1">
-                <h3 className="font-medium">Nhập từ file</h3>
+              <div className="min-w-0 flex-1 space-y-1">
+                <h3 className="font-medium">Chọn file</h3>
                 <p className="text-sm text-muted-foreground">
-                  Cột: Mã vạch, Tên, Đơn vị, Giá nhập, Giá bán, Tồn, Hàng cân, Danh mục, Tồn tối thiểu. Trùng mã vạch thì cập
-                  nhật (không đổi tồn), chưa có thì tạo mới.
+                  Cột: Mã vạch, Tên, Đơn vị, Giá nhập, Giá bán, Tồn, Hàng cân, Danh mục, Tồn tối thiểu. Trùng mã vạch thì cập nhật
+                  (không đổi tồn), hàng không có mã vạch thì khớp theo tên, chưa có thì tạo mới.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Muốn sửa hàng loạt: bấm <b>Xuất Excel</b>, sửa trong Excel rồi nhập lại file đó.
                 </p>
               </div>
             </div>
@@ -68,15 +56,15 @@ export function CsvDialog({ open, onClose }: { open: boolean; onClose: () => voi
               className="mt-4 flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors hover:border-primary/50 hover:bg-accent/60"
             >
               <FileSpreadsheet className="size-8 text-muted-foreground" />
-              <span className="font-medium">{importCsv.isPending ? 'Đang nhập…' : 'Chọn file CSV…'}</span>
+              <span className="font-medium">{importProducts.isPending ? 'Đang nhập…' : 'Chọn file Excel hoặc CSV…'}</span>
               <span className="text-xs text-muted-foreground">hoặc kéo thả file vào đây</span>
               <input
                 type="file"
-                accept=".csv,text/csv"
+                accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
                 className="sr-only"
-                disabled={importCsv.isPending}
+                disabled={importProducts.isPending}
                 onChange={(e) => {
-                  void onFile(e.target.files?.[0]);
+                  onFile(e.target.files?.[0]);
                   e.target.value = '';
                 }}
               />

@@ -11,7 +11,7 @@ import {
 import type { Db } from '../db/connection.js';
 import { productUnits, stockMovements } from '../db/schema.js';
 import { createTestDb } from '../db/test-db.js';
-import { cancelImport, createImport, getImport, listImports } from './imports.js';
+import { cancelImport, createImport, getImport, listImports, listImportsForExport } from './imports.js';
 import { createOrder } from './orders.js';
 import { createUnit, deleteUnit } from './product-units.js';
 import { createProduct, getProduct, setProductActive } from './products.js';
@@ -163,5 +163,41 @@ describe('listImports / getImport', () => {
     const r = list({ date: '2026-09-29', supplierId: 'none' });
     expect(r).toMatchObject({ total: 1, page: 1, pageSize: 50 });
     expect(r.summary).toEqual(list({ date: '2026-09-29' }).summary);
+  });
+});
+
+describe('listImportsForExport', () => {
+  const exportList = (q: Record<string, unknown>, maxRows?: number) =>
+    listImportsForExport(db, importListQuerySchema.parse({ date: '2026-09-29', ...q }), { tzOffsetMin: VN }, maxRows);
+
+  it('cùng bộ lọc với listImports, không cắt 50 phiếu, kèm món', () => {
+    const s = supplier();
+    const milk = product({ name: 'Sữa đặc' });
+    const other = product({ name: 'Mì gói' });
+    for (let i = 0; i < 55; i++) imp({ paid: 1000, items: [{ productId: other.id, qty: 1, unitCost: 1000 }] });
+    const owe = imp({
+      supplierId: s.id,
+      paid: 0,
+      items: [
+        { productId: milk.id, qty: 2, unitCost: 1000 },
+        { productId: other.id, qty: 1, unitCost: 500 },
+      ],
+    });
+    const all = exportList({});
+    expect([all.from, all.to]).toEqual(['2026-09-29', '2026-09-29']);
+    expect(all.imports).toHaveLength(56);
+    expect(all.imports[0]).toMatchObject({ id: owe.id, itemCount: 2, supplierName: 'Đại lý Hùng', total: 2500 });
+    expect(all.imports[0]?.items.map((it) => it.productName)).toEqual(['Sữa đặc', 'Mì gói']);
+    const ids = (q: Record<string, unknown>) => exportList(q).imports.map((i) => i.id);
+    expect(ids({ unpaid: '1' })).toEqual([owe.id]);
+    expect(ids({ supplierId: 'none' })).toHaveLength(55);
+    expect(ids({ supplierId: String(s.id) })).toEqual([owe.id]);
+    expect(ids({ q: 'sua dac' })).toEqual([owe.id]);
+  });
+
+  it('quá giới hạn thì báo lỗi', () => {
+    const p = product({ name: 'A' });
+    for (let i = 0; i < 3; i++) imp({ paid: 1000, items: [{ productId: p.id, qty: 1, unitCost: 1000 }] });
+    expect(() => exportList({}, 2)).toThrow('Quá nhiều phiếu nhập, hãy chọn khoảng ngày ngắn hơn');
   });
 });

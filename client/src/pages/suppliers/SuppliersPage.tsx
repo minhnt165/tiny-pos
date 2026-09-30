@@ -12,12 +12,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useUrlFilters } from '@/hooks/useUrlFilters';
+import { useExportAction } from '@/hooks/useExportAction';
 import { cn } from '@/lib/utils';
 import { SupplierDetailDialog } from './SupplierDetailDialog';
 import { SupplierFormDialog } from './SupplierFormDialog';
 
 export function SuppliersPage() {
   const { filters: view, set, clear } = useUrlFilters(partyViewFields);
+  const exportAction = useExportAction('/suppliers/export.xlsx');
   const { data: raw = [], isLoading } = useSuppliers(view.includeInactive);
   const [adding, setAdding] = useState(false);
   const [openId, setOpenId] = useState<number | null>(null);
@@ -32,7 +34,7 @@ export function SuppliersPage() {
       <PageTitle
         title="Nhà cung cấp"
         count={`${activeList.length} nhà cung cấp`}
-        actions={[{ label: 'Thêm nhà cung cấp', icon: Plus, onClick: () => setAdding(true), primary: true }]}
+        actions={[exportAction, { label: 'Thêm nhà cung cấp', icon: Plus, onClick: () => setAdding(true), primary: true }]}
       />
       <StatStrip cols={3}>
         <Stat label="Tổng đang nợ" value={formatMoney(totalDebt)} tone={totalDebt ? 'danger' : 'default'} />

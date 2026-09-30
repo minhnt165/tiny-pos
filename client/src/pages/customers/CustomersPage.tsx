@@ -12,12 +12,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useUrlFilters } from '@/hooks/useUrlFilters';
+import { useExportAction } from '@/hooks/useExportAction';
 import { cn } from '@/lib/utils';
 import { CustomerDetailDialog } from './CustomerDetailDialog';
 import { CustomerFormDialog } from './CustomerFormDialog';
 
 export function CustomersPage() {
   const { filters: view, set, clear } = useUrlFilters(partyViewFields);
+  const exportAction = useExportAction('/customers/export.xlsx');
   const { data, isLoading } = useCustomers(view.includeInactive);
   const [adding, setAdding] = useState(false);
   const [openId, setOpenId] = useState<number | null>(null);
@@ -28,7 +30,7 @@ export function CustomersPage() {
 
   return (
     <>
-      <PageTitle title="Khách hàng" count={`${all.length} khách`} actions={[{ label: 'Thêm khách', icon: Plus, onClick: () => setAdding(true), primary: true }]} />
+      <PageTitle title="Khách hàng" count={`${all.length} khách`} actions={[exportAction, { label: 'Thêm khách', icon: Plus, onClick: () => setAdding(true), primary: true }]} />
       <StatStrip cols={3}>
         <Stat label="Tổng nợ phải thu" value={formatMoney(data?.totalDebt ?? 0)} tone={data?.totalDebt ? 'danger' : 'default'} />
         <Stat label="Khách hàng" value={String(all.length)} />

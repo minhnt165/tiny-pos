@@ -70,13 +70,40 @@ describe('API', () => {
     expect((await call('POST', '/api/products', '{bad json', 'application/json')).status).toBe(400);
   });
 
-  it('xuất và nhập CSV', async () => {
-    const exp = await call('GET', '/api/products/csv');
-    expect(exp.headers.get('content-type')).toContain('text/csv');
-    expect(exp.headers.get('content-disposition')).toContain('san-pham-');
-    // fetch().text() tự bỏ BOM; BOM đã được kiểm ở product-csv.test.ts
-    expect(exp.text.startsWith('Mã vạch,Tên,')).toBe(true);
-    const imp = await call('POST', '/api/products/csv', 'Tên,Giá bán\nKẹo,5000\n', 'text/csv');
-    expect(imp.json).toEqual({ created: 1, updated: 0, errors: [] });
+  it('xuất Excel theo bộ lọc, nhập sản phẩm từ CSV và .xlsx', async () => {
+    const XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    const paths = [
+      '/api/products/export.xlsx?stock=low&page=3',
+      '/api/orders/export.xlsx?pay=cash',
+      '/api/imports/export.xlsx?unpaid=1',
+      '/api/customers/export.xlsx?debtOnly=1',
+      '/api/suppliers/export.xlsx',
+    ];
+    for (const path of paths) {
+      const res = await fetch(base + path);
+      expect(res.status, path).toBe(200);
+      expect(res.headers.get('content-type'), path).toBe(XLSX);
+      expect(res.headers.get('content-disposition'), path).toMatch(/^attachment; filename="[a-z-]+-\d{8}(-\d{8})?\.xlsx"$/);
+    }
+    const csv = await call('POST', '/api/products/import', 'Tên,Giá bán\nKẹo,5000\n', 'text/csv');
+    expect(csv.json).toEqual({ created: 1, updated: 0, errors: [] });
+    const file = Buffer.from(await (await fetch(base + '/api/products/export.xlsx')).arrayBuffer());
+    const again = await fetch(base + '/api/products/import', { method: 'POST', headers: { 'content-type': 'application/octet-stream' }, body: file });
+    expect(await again.json()).toMatchObject({ created: 0, errors: [] });
+    expect((await call('GET', '/api/products/csv')).status).toBe(400);
+  });
+
+  it('xuất Excel: bộ lọc sai → 400 tiếng Việt; nhập file .xls cũ → 400; file quá 10 MB → 413', async () => {
+    const bad = await call('GET', '/api/orders/export.xlsx?from=2026-09-30&to=2026-09-01');
+    expect(bad).toMatchObject({ status: 400, json: { error: 'Ngày bắt đầu phải trước ngày kết thúc' } });
+    const xls = await fetch(base + '/api/products/import', { method: 'POST', body: Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1]) });
+    expect(xls.status).toBe(400);
+    const big = await fetch(base + '/api/products/import', {
+      method: 'POST',
+      headers: { 'content-type': 'application/octet-stream' },
+      body: Buffer.alloc(11 * 1024 * 1024),
+    });
+    expect(big.status).toBe(413);
+    expect(await big.json()).toEqual({ error: 'Dữ liệu gửi lên quá lớn (tối đa 10 MB)' });
   });
 });

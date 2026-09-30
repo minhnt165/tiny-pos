@@ -26,7 +26,7 @@ npm workspaces, TypeScript ESM:
 - `client/` – React 19 + Vite 7 + Tailwind v4 + TanStack Query 5 + react-router 7, PWA. UI bằng shadcn/ui (style `radix-nova`, gói `radix-ui`) + icon lucide-react. Version ở `package.json` gốc (Vite chèn `__APP_VERSION__`); tùy chọn giao diện theo máy ở `lib/ui-prefs.ts` (`data-*` trên `<html>`).
 - `docs/superpowers/specs|plans/` – spec và kế hoạch từng giai đoạn. Đọc spec của giai đoạn liên quan trước khi sửa hành vi nghiệp vụ.
 
-Đã xong: Giai đoạn 1 (sản phẩm, danh mục, đơn vị quy đổi, CSV), 2 (bán hàng, hóa đơn 80mm, VietQR, cài đặt), 3 (nhập hàng, nhà cung cấp + công nợ, kiểm kê, lịch sử tồn), 4 (khách hàng, công nợ khách), làm mới giao diện 0.5.0 (sidebar nhóm menu, tùy chỉnh giao diện theo máy, version), bộ lọc nâng cao 0.6.0 (khoảng ngày, lọc chứng từ ở server, lọc sản phẩm/khách/NCC ở trình duyệt, lưu trên URL).
+Đã xong: Giai đoạn 1 (sản phẩm, danh mục, đơn vị quy đổi, CSV), 2 (bán hàng, hóa đơn 80mm, VietQR, cài đặt), 3 (nhập hàng, nhà cung cấp + công nợ, kiểm kê, lịch sử tồn), 4 (khách hàng, công nợ khách), làm mới giao diện 0.5.0 (sidebar nhóm menu, tùy chỉnh giao diện theo máy, version), bộ lọc nâng cao 0.6.0 (khoảng ngày, lọc chứng từ ở server, lọc sản phẩm/khách/NCC ở trình duyệt, lưu trên URL), Excel 0.7.0 (xuất `.xlsx` 5 danh sách theo bộ lọc, nhập sản phẩm từ `.xlsx`/`.csv`, `exceljs` chỉ ở server).
 
 ## Bất biến nghiệp vụ (không được phá)
 

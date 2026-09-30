@@ -4,12 +4,14 @@ import {
   lineAmount,
   localDate,
   localDayRange,
+  MAX_EXPORT_ROWS,
   PAGE_SIZE,
   resolveRange,
   stripDiacritics,
   type OrderDebt,
   type OrderDetail,
   type OrderInput,
+  type OrderItem,
   type OrderList,
   type OrderListQuery,
   type OrderSummary,
@@ -88,6 +90,19 @@ function toSummary(o: OrderRow, itemCount: number, customerName: string | null):
   };
 }
 
+/** Cột của một món hàng, dùng chung cho getOrder và file xuất. */
+const orderItemColumns = {
+  id: orderItems.id,
+  productId: orderItems.productId,
+  productName: orderItems.productName,
+  unit: orderItems.unit,
+  qty: orderItems.qty,
+  price: orderItems.price,
+  costPrice: orderItems.costPrice,
+  factor: orderItems.factor,
+  amount: orderItems.amount,
+};
+
 /** Nợ của đơn ghi nợ tại lúc bán: lấy dòng sổ `order` của đơn và số dư của khách ngay sau dòng đó. */
 function orderDebt(db: DbOrTx, o: OrderRow): OrderDebt | null {
   if (o.paymentMethod !== 'debt') return null;
@@ -109,17 +124,7 @@ export function getOrder(db: DbOrTx, id: number): OrderDetail {
   if (!r) throw new NotFoundError('Không tìm thấy hóa đơn');
   const o = r.order;
   const items = db
-    .select({
-      id: orderItems.id,
-      productId: orderItems.productId,
-      productName: orderItems.productName,
-      unit: orderItems.unit,
-      qty: orderItems.qty,
-      price: orderItems.price,
-      costPrice: orderItems.costPrice,
-      factor: orderItems.factor,
-      amount: orderItems.amount,
-    })
+    .select(orderItemColumns)
     .from(orderItems)
     .where(eq(orderItems.orderId, id))
     .orderBy(asc(orderItems.id))
@@ -181,7 +186,8 @@ export function likeTerm(q: string | undefined): string | undefined {
   return `%${stripDiacritics(q).toLowerCase().replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 }
 
-export function listOrders(db: Db, query: OrderListQuery, clock?: Clock): OrderList {
+/** Điều kiện lọc hóa đơn dùng chung cho danh sách (phân trang) và file xuất. */
+function orderFilter(query: OrderListQuery, clock?: Clock) {
   const { now, tz } = resolveClock(clock);
   const { from, to } = resolveRange(query, localDate(now, tz));
   const start = localDayRange(from, tz).start;
@@ -198,6 +204,11 @@ export function listOrders(db: Db, query: OrderListQuery, clock?: Clock): OrderL
       ? sql`(vn_fold(orders.code) like ${term} escape '\\' or exists (select 1 from order_items where order_items.order_id = orders.id and vn_fold(order_items.product_name) like ${term} escape '\\'))`
       : undefined,
   );
+  return { from, to, start, end, inRange, where };
+}
+
+export function listOrders(db: Db, query: OrderListQuery, clock?: Clock): OrderList {
+  const { start, end, inRange, where } = orderFilter(query, clock);
   const page = query.page ?? 1;
   const total = db.select({ n: count() }).from(orders).where(where).get()?.n ?? 0;
   const list = db
@@ -239,6 +250,49 @@ export function listOrders(db: Db, query: OrderListQuery, clock?: Clock): OrderL
     total,
     page,
     pageSize: PAGE_SIZE,
+  };
+}
+
+/** Mọi hóa đơn khớp bộ lọc (không phân trang), mới nhất trước, kèm món; quá `maxRows` thì báo lỗi thay vì dựng file khổng lồ. */
+export function listOrdersForExport(
+  db: Db,
+  query: OrderListQuery,
+  clock?: Clock,
+  maxRows = MAX_EXPORT_ROWS,
+): { from: string; to: string; orders: OrderDetail[] } {
+  const { from, to, where } = orderFilter(query, clock);
+  const n = db.select({ n: count() }).from(orders).where(where).get()?.n ?? 0;
+  if (n > maxRows) throw new BadRequestError('Quá nhiều hóa đơn, hãy chọn khoảng ngày ngắn hơn');
+  const rows = db
+    .select({ order: orders, customerName: customers.name })
+    .from(orders)
+    .leftJoin(customers, eq(orders.customerId, customers.id))
+    .where(where)
+    .orderBy(desc(orders.id))
+    .all();
+  const itemsOf = new Map<number, OrderItem[]>();
+  const ids = rows.map((r) => r.order.id);
+  // Lấy món theo lô: SQLite giới hạn số tham số trong một câu lệnh
+  for (let i = 0; i < ids.length; i += 500) {
+    const batch = db
+      .select({ orderId: orderItems.orderId, ...orderItemColumns })
+      .from(orderItems)
+      .where(inArray(orderItems.orderId, ids.slice(i, i + 500)))
+      .orderBy(asc(orderItems.id))
+      .all();
+    for (const { orderId, ...it } of batch) {
+      const list = itemsOf.get(orderId);
+      if (list) list.push(it);
+      else itemsOf.set(orderId, [it]);
+    }
+  }
+  return {
+    from,
+    to,
+    orders: rows.map((r) => {
+      const items = itemsOf.get(r.order.id) ?? [];
+      return { ...toSummary(r.order, items.length, r.customerName), items, debt: null };
+    }),
   };
 }
 

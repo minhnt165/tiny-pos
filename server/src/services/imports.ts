@@ -4,10 +4,12 @@ import {
   importLineAmount,
   localDate,
   localDayRange,
+  MAX_EXPORT_ROWS,
   PAGE_SIZE,
   resolveRange,
   type ImportDetail,
   type ImportInput,
+  type ImportItem,
   type ImportList,
   type ImportListQuery,
   type ImportSummary,
@@ -102,21 +104,24 @@ function toSummary(r: ImportRow, itemCount: number): ImportSummary {
   };
 }
 
+/** Cột của một món nhập, dùng chung cho getImport và file xuất. */
+const importItemColumns = {
+  id: importItems.id,
+  productId: importItems.productId,
+  productName: importItems.productName,
+  unitName: importItems.unitName,
+  factor: importItems.factor,
+  qty: importItems.qty,
+  unitCost: importItems.unitCost,
+  costPrice: importItems.costPrice,
+  amount: importItems.amount,
+};
+
 export function getImport(db: DbOrTx, id: number): ImportDetail {
   const r = db.select().from(imports).where(eq(imports.id, id)).get();
   if (!r) throw new NotFoundError('Không tìm thấy phiếu nhập');
   const items = db
-    .select({
-      id: importItems.id,
-      productId: importItems.productId,
-      productName: importItems.productName,
-      unitName: importItems.unitName,
-      factor: importItems.factor,
-      qty: importItems.qty,
-      unitCost: importItems.unitCost,
-      costPrice: importItems.costPrice,
-      amount: importItems.amount,
-    })
+    .select(importItemColumns)
     .from(importItems)
     .where(eq(importItems.importId, id))
     .orderBy(asc(importItems.id))
@@ -172,7 +177,8 @@ export function createImport(db: Db, input: ImportInput, clock?: Clock): ImportD
 // Viết tên bảng cứng: drizzle bỏ tiền tố bảng khi render cột trong subquery
 const itemCount = sql<number>`(select count(*) from import_items where import_items.import_id = imports.id)`;
 
-export function listImports(db: Db, query: ImportListQuery, clock?: Clock): ImportList {
+/** Điều kiện lọc phiếu nhập dùng chung cho danh sách (phân trang) và file xuất. */
+function importFilter(query: ImportListQuery, clock?: Clock) {
   const { now, tz } = resolveClock(clock);
   const { from, to } = resolveRange(query, localDate(now, tz));
   const start = localDayRange(from, tz).start;
@@ -189,6 +195,11 @@ export function listImports(db: Db, query: ImportListQuery, clock?: Clock): Impo
       ? sql`(vn_fold(imports.code) like ${term} escape '\\' or exists (select 1 from import_items where import_items.import_id = imports.id and vn_fold(import_items.product_name) like ${term} escape '\\'))`
       : undefined,
   );
+  return { from, to, inRange, where };
+}
+
+export function listImports(db: Db, query: ImportListQuery, clock?: Clock): ImportList {
+  const { inRange, where } = importFilter(query, clock);
   const page = query.page ?? 1;
   const total = db.select({ n: count() }).from(imports).where(where).get()?.n ?? 0;
   const list = db
@@ -216,6 +227,43 @@ export function listImports(db: Db, query: ImportListQuery, clock?: Clock): Impo
     total,
     page,
     pageSize: PAGE_SIZE,
+  };
+}
+
+/** Mọi phiếu nhập khớp bộ lọc (không phân trang), mới nhất trước, kèm món; quá `maxRows` thì báo lỗi. */
+export function listImportsForExport(
+  db: Db,
+  query: ImportListQuery,
+  clock?: Clock,
+  maxRows = MAX_EXPORT_ROWS,
+): { from: string; to: string; imports: ImportDetail[] } {
+  const { from, to, where } = importFilter(query, clock);
+  const n = db.select({ n: count() }).from(imports).where(where).get()?.n ?? 0;
+  if (n > maxRows) throw new BadRequestError('Quá nhiều phiếu nhập, hãy chọn khoảng ngày ngắn hơn');
+  const rows = db.select().from(imports).where(where).orderBy(desc(imports.id)).all();
+  const itemsOf = new Map<number, ImportItem[]>();
+  const ids = rows.map((r) => r.id);
+  // Lấy món theo lô: SQLite giới hạn số tham số trong một câu lệnh
+  for (let i = 0; i < ids.length; i += 500) {
+    const batch = db
+      .select({ importId: importItems.importId, ...importItemColumns })
+      .from(importItems)
+      .where(inArray(importItems.importId, ids.slice(i, i + 500)))
+      .orderBy(asc(importItems.id))
+      .all();
+    for (const { importId, ...it } of batch) {
+      const list = itemsOf.get(importId);
+      if (list) list.push(it);
+      else itemsOf.set(importId, [it]);
+    }
+  }
+  return {
+    from,
+    to,
+    imports: rows.map((r) => {
+      const items = itemsOf.get(r.id) ?? [];
+      return { ...toSummary(r, items.length), items };
+    }),
   };
 }
 

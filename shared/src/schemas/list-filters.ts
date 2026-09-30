@@ -3,6 +3,8 @@ import { z } from 'zod';
 /** Giới hạn chung của danh sách chứng từ. */
 export const MAX_RANGE_DAYS = 366;
 export const PAGE_SIZE = 50;
+/** Số chứng từ tối đa trong một file xuất Excel. */
+export const MAX_EXPORT_ROWS = 20_000;
 export const PAY_METHODS = ['cash', 'transfer', 'debt'] as const;
 export const DOC_STATUSES = ['done', 'cancelled'] as const;
 export type PayMethod = (typeof PAY_METHODS)[number];
@@ -119,7 +121,10 @@ export const productViewFields = {
   page,
 };
 export type ProductView = z.output<z.ZodObject<typeof productViewFields>>;
+/** Query của route xuất Excel sản phẩm: cùng khóa URL với trang (page bị bỏ qua). */
+export const productViewQuerySchema = z.object(productViewFields);
 
 export const PARTY_SORTS = ['name', 'debt-desc', 'recent'] as const;
 export const partyViewFields = { q: search, debtOnly: flag, includeInactive: flag, sort: z.enum(PARTY_SORTS).default('name') };
 export type PartyView = z.output<z.ZodObject<typeof partyViewFields>>;
+export const partyViewQuerySchema = z.object(partyViewFields);

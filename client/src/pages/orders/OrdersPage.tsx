@@ -15,6 +15,7 @@ import { Stat, StatStrip } from '@/components/StatStrip';
 import { TableSkeleton } from '@/components/TableSkeleton';
 import { Button } from '@/components/ui/button';
 import { useUrlFilters } from '@/hooks/useUrlFilters';
+import { useExportAction } from '@/hooks/useExportAction';
 import { today as todayOf } from '@/lib/today';
 import { OrderDetailDialog } from './OrderDetailDialog';
 import { METHOD_LABEL, OrderTable } from './OrderTable';
@@ -26,6 +27,7 @@ const STATUS_OPTIONS = DOC_STATUSES.map((s) => ({ value: s, label: STATUS_LABEL[
 export function OrdersPage() {
   const [openId, setOpenId] = useState<number | null>(null);
   const { filters: f, set, clear } = useUrlFilters(orderListFields);
+  const exportAction = useExportAction('/orders/export.xlsx');
   const today = todayOf();
   const picked = resolveRange(f, today);
   // Khoảng sai trên URL (sửa tay) thì về hôm nay, không báo lỗi
@@ -56,7 +58,7 @@ export function OrdersPage() {
 
   return (
     <>
-      <PageTitle title="Hóa đơn" count={data ? `${data.total} đơn` : undefined} />
+      <PageTitle title="Hóa đơn" count={data ? `${data.total} đơn` : undefined} actions={[exportAction]} />
       <StatStrip cols={6}>
         <Stat label="Số đơn" value={String(s?.count ?? 0)} hint="Không tính đơn đã hủy" />
         <Stat label="Doanh thu" value={formatMoney(s?.total ?? 0)} />

@@ -47,6 +47,7 @@ cũ, `.xlsm`/macro, cột lãi, dòng tổng trong sheet, báo cáo theo thời 
 | Cột lãi | Không có | Giảm giá tính cho cả đơn, lãi từng dòng không đúng |
 | Dòng tổng | Không có | Chứng từ đã hủy nằm trong file; bôi đen cột, Excel tự hiện tổng |
 | Giới hạn | 20.000 chứng từ mỗi file | Tránh treo máy khi lọc rộng; khoảng ngày đã ≤ 366 ngày |
+| Hàng không mã vạch khi nhập | Khớp theo tên (chỉ trong số hàng không mã vạch) | Người dùng chọn; giữ 9 cột; xuất → nhập lại không tạo trùng |
 
 ## 4. Nội dung file
 
@@ -78,8 +79,9 @@ Tên file theo ngày địa phương (`YYYYMMDD`), chỉ ký tự ASCII:
 Chi tiết từng cột:
 
 - Sản phẩm: đúng 9 cột của `PRODUCT_CSV_HEADERS`, cùng thứ tự, để file xuất nhập lại được.
-- Hóa đơn: Tiền hàng = `total`, Giảm giá = `discount`, Phải trả = `payable`, Đã trả = `paid`;
-  Còn nợ = `payable − paid` với đơn `debt`, trống với đơn khác. Khách = `customerName` (trống nếu
+- Hóa đơn: Tiền hàng = `total`, Giảm giá = `discount`, Phải trả = `payable`; Đã trả = `paid` với đơn
+  `debt` (tiền trả trước), `payable` với đơn tiền mặt/chuyển khoản (`paid` của đơn tiền mặt là tiền
+  khách đưa, gồm cả tiền thối lại); Còn nợ = `payable − paid` với đơn `debt`, trống với đơn khác. Khách = `customerName` (trống nếu
   không có).
 - Chi tiết hóa đơn: SL = `qty` theo đơn vị bán (`unit`), Đơn giá = `price`, Thành tiền = `amount`,
   Giá vốn = `costPrice` của dòng (giá vốn 1 đơn vị bán, ghi lúc bán). Món ngoài danh mục có giá vốn 0.
@@ -105,20 +107,23 @@ Chi tiết từng cột:
   - `readFirstSheet(buf): Promise<XlsxCell[][]>` với `XlsxCell = string | number | boolean | null`:
     đọc sheet đầu tiên; `table[i]` là dòng Excel `i + 1` (dòng bị bỏ trong file thành mảng rỗng) để
     số dòng báo lỗi khớp Excel; ô công thức lấy `result`, rich text ghép các đoạn, hyperlink lấy
-    `text`, ô ngày thành chuỗi ISO, ô lỗi (`#N/A`) thành `null`. File không đọc được →
+    `text`, ô ngày thành chuỗi ISO, ô lỗi giữ mã lỗi (`'#N/A'`), công thức chưa có kết quả thành `'#N/A'`
+    (không phải ô trống: ô tiền trống sẽ thành 0). `parseProductTable` gặp mã lỗi Excel ở bất kỳ cột nào
+    thì báo lỗi dòng `Ô Giá bán bị lỗi #N/A trong Excel`. File không đọc được →
     `HttpError(400, 'File Excel bị hỏng hoặc không đọc được')`.
 
 ### Lọc chứng từ không phân trang
 
 - `services/orders.ts`: tách phần dựng `where` của `listOrders` thành hàm nội bộ
   `orderFilter(query, clock)` (trả `where` và khoảng ngày); `listOrders` dùng lại, hành vi không đổi.
-  Thêm `listOrdersForExport(db, query, clock?, maxRows?): OrderDetail[]`: cùng `where`, `orderBy(desc(id))`,
+  Thêm `listOrdersForExport(db, query, clock?, maxRows?): { from; to; orders: OrderDetail[] }`
+  (`from`/`to` đã resolve, dùng đặt tên file): cùng `where`, `orderBy(desc(id))`,
   không `limit`; lấy món bằng **một** câu `select … from order_items where order_id in (…)` rồi ghép
   theo đơn. Phần `debt` của `OrderDetail` để `null` (file không dùng).
   Đếm trước: quá `maxRows` (tham số cuối, mặc định `MAX_EXPORT_ROWS` = 20.000, hằng số trong
   `shared/src/schemas/list-filters.ts`; test truyền số nhỏ) →
   `HttpError(400, 'Quá nhiều hóa đơn, hãy chọn khoảng ngày ngắn hơn')`.
-- `services/imports.ts`: tương tự với `importFilter`, `listImportsForExport(db, query, clock?, maxRows?): ImportDetail[]`,
+- `services/imports.ts`: tương tự với `importFilter`, `listImportsForExport(db, query, clock?, maxRows?): { from; to; imports: ImportDetail[] }`,
   thông báo "Quá nhiều phiếu nhập, hãy chọn khoảng ngày ngắn hơn".
 - SQLite giới hạn số tham số trong `in (…)`: lấy món theo từng lô 500 id.
 
@@ -164,10 +169,23 @@ route danh sách. Bỏ `GET /api/products/csv` và `POST /api/products/csv`.
   - Còn lại → giải mã UTF-8, bỏ BOM → `parseProductCsv` (hành vi như hiện nay).
   - Ghi vào DB giữ nguyên: `upsertRow` trong một transaction, trùng mã vạch → cập nhật không đổi tồn,
     tạo mới → tồn đầu qua `adjustStockTo`.
+  - **Dòng không có mã vạch khớp theo tên** (mới): tìm sản phẩm *không có mã vạch* (cả hàng ngừng
+    bán) có tên trùng sau khi `trim()` + `toLocaleLowerCase('vi')` → cập nhật như trùng mã vạch.
+    Không có → tạo mới (và từ đó các dòng sau cùng tên trong file cập nhật nó). Có từ 2 sản phẩm trở
+    lên cùng tên → lỗi dòng `Có nhiều sản phẩm tên "X" không có mã vạch, hãy thêm mã vạch cho từng sản
+    phẩm ở trang Sản phẩm`. Dòng có mã vạch khớp theo mã vạch trước; mã chưa có trong DB thì khớp theo
+    tên như trên và **gán mã vạch đó** cho sản phẩm (chủ tiệm vừa điền mã cho hàng không mã; không làm
+    vậy sẽ tạo bản trùng và cộng tồn hai lần). So tên bằng JS (bảng tên nạp một lần đầu transaction)
+    vì `lower()` của SQLite không đổi chữ hoa có dấu. Lý do: không có quy tắc này thì mọi hàng không mã
+    vạch (rau, hàng cân) bị tạo trùng mỗi lần xuất → sửa → nhập lại.
 - `exportProductsCsv` bị bỏ (xuất sản phẩm dùng `exportProductsXlsx`). `productToCsvRow` giữ để
   `exports.ts` dùng chung thứ tự cột.
-- Vượt 10 MB: body-parser ném lỗi `type = 'entity.too.large'`; `middleware/error.ts` thêm một nhánh
-  trả 413 "File quá lớn (tối đa 10 MB)" (hiện đang rơi vào 500 "Lỗi hệ thống").
+- Vượt 10 MB: body-parser ném lỗi `type = 'entity.too.large'` kèm `limit` (byte); `middleware/error.ts`
+  thêm một nhánh trả 413 "Dữ liệu gửi lên quá lớn (tối đa 10 MB)" (số MB lấy từ `limit`, nên JSON quá
+  1 MB cũng báo đúng; hiện đang rơi vào 500 "Lỗi hệ thống").
+- Lỗi của một dòng khi ghi (`HttpError` 4xx: trùng mã vạch, tồn đầu âm) được đưa vào `errors` theo
+  dòng; lỗi khác → rollback cả file như cũ.
+- Movement tồn đầu ghi chú "Nhập Excel" (file `.xlsx`) hoặc "Nhập CSV" (file `.csv`).
 - Route export/import là hàm `async`; Express 5 tự chuyển promise bị reject sang `errorHandler`.
 
 ## 6. Shared
@@ -178,10 +196,17 @@ route danh sách. Bỏ `GET /api/products/csv` và `POST /api/products/csv`.
     `parseVnNumber`: ô số `1.234` là 1,234 kg, không phải 1234); ô chữ đi qua `parseVnNumber` như cũ;
     ô `boolean` của cột Hàng cân dùng thẳng; `null` như chuỗi rỗng. Dòng mà mọi ô đều trống bị bỏ qua
     (không báo lỗi). Số dòng báo lỗi = chỉ số trong bảng + 1.
+  - Ô **số** ở cột tiền (Giá nhập, Giá bán) được làm tròn tới đồng: giá tính bằng công thức Excel
+    (`=A2*1,1`) hay ra `16500,000000002`. Ô chữ có phần lẻ vẫn báo "phải là số nguyên".
+  - Cột Tồn được âm khi đọc file: hàng đang âm kho (cho bán âm) xuất ra rồi nhập lại phải cập nhật
+    được, vì cập nhật không đổi tồn. Chỉ khi **tạo mới** với Tồn < 0 mới báo lỗi dòng
+    "Tồn đầu không được âm" (kiểm ở `upsertRow`).
   - `parseProductCsv(text)` = `parseProductTable(parseCsv(text, detectDelimiter(text)))`; kết quả
     như hiện nay (trừ dòng trống giữa file giờ được bỏ qua).
   - Thông báo thiếu cột Tên đổi thành: `Không tìm thấy cột "Tên". Hãy giữ nguyên dòng tiêu đề như file xuất ra.`
-- `MAX_EXPORT_ROWS = 20_000` trong `schemas/list-filters.ts`.
+- `MAX_EXPORT_ROWS = 20_000` trong `schemas/list-filters.ts`; cùng file thêm
+  `productViewQuerySchema = z.object(productViewFields)` và `partyViewQuerySchema = z.object(partyViewFields)`
+  cho route export.
 
 ## 7. Client
 
@@ -190,7 +215,7 @@ route danh sách. Bỏ `GET /api/products/csv` và `POST /api/products/csv`.
   - `downloadFile(path): Promise<void>`: `fetch('/api' + path)`; lỗi → `ApiError` như `api()`; thành
     công → Blob → `URL.createObjectURL` → `<a download=…>` tạm, bấm, thu hồi URL. Tên file lấy từ
     `Content-Disposition`, không có thì `du-lieu.xlsx`.
-- `hooks/useExport.ts`: `useExport(path)` trả `{ run, pending }`; `run()` gọi
+- `hooks/useExportAction.ts`: `useExportAction(path): PageAction` – nút "Xuất Excel" gọi
   `downloadFile(path + location.search)`, lỗi → `toast.error(message)`.
 - Nút "Xuất Excel" (icon `FileSpreadsheet`) qua `PageTitle.actions` ở `OrdersPage`, `ImportsPage`,
   `ProductListPage`, `CustomersPage`, `SuppliersPage`; khi `pending`: `disabled`, nhãn "Đang xuất…".
@@ -214,7 +239,7 @@ route danh sách. Bỏ `GET /api/products/csv` và `POST /api/products/csv`.
 | Quá 20.000 chứng từ | 400 "Quá nhiều hóa đơn/phiếu nhập, hãy chọn khoảng ngày ngắn hơn" | toast |
 | File `.xls` cũ | 400 "File .xls cũ chưa hỗ trợ. Mở bằng Excel rồi lưu lại dạng .xlsx" | toast |
 | File `.xlsx` hỏng | 400 "File Excel bị hỏng hoặc không đọc được" | toast |
-| File > 10 MB | 413 "File quá lớn (tối đa 10 MB)" | toast |
+| File > 10 MB | 413 "Dữ liệu gửi lên quá lớn (tối đa 10 MB)" | toast |
 | Thiếu cột Tên / dòng sai | 200, `errors` theo dòng | danh sách lỗi trong hộp thoại |
 
 ## 9. Kiểm thử

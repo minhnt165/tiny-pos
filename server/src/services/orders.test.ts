@@ -4,7 +4,7 @@ import { customerCreateSchema, orderInputSchema, orderListQuerySchema, productIn
 import type { Db } from '../db/connection.js';
 import { stockMovements } from '../db/schema.js';
 import { createTestDb } from '../db/test-db.js';
-import { cancelOrder, createOrder, getOrder, listOrders } from './orders.js';
+import { cancelOrder, createOrder, getOrder, listOrders, listOrdersForExport } from './orders.js';
 import { createUnit, deleteUnit } from './product-units.js';
 import { createProduct, getProduct, setProductActive, updateProduct } from './products.js';
 import { collectDebt, createCustomer, deleteCustomer, getCustomer, listCustomerTransactions } from './customers.js';
@@ -303,5 +303,55 @@ describe('đơn ghi nợ', () => {
       debt: 6000,
       debtCollected: { cash: 50000, transfer: 30000 },
     });
+  });
+});
+
+describe('listOrdersForExport', () => {
+  const exportList = (q: Record<string, unknown>, maxRows?: number) =>
+    listOrdersForExport(db, orderListQuerySchema.parse({ date: '2026-09-29', ...q }), { tzOffsetMin: VN }, maxRows);
+
+  it('lấy hết đơn khớp lọc (không cắt 50), mới nhất trước, kèm món của từng đơn', () => {
+    const a = product({ name: 'Sữa', sellPrice: 15000 });
+    const b = product({ name: 'Bánh', sellPrice: 5000 });
+    for (let i = 0; i < 60; i++) createOrder(db, order({ items: [{ productId: a.id, qty: 1, price: 15000 }] }), MORNING);
+    const last = createOrder(
+      db,
+      order({ items: [{ productId: a.id, qty: 2, price: 15000 }, { productId: b.id, qty: 1, price: 5000 }] }),
+      MORNING,
+    );
+    const r = exportList({});
+    expect([r.from, r.to]).toEqual(['2026-09-29', '2026-09-29']);
+    expect(r.orders).toHaveLength(61);
+    expect(r.orders[0]).toMatchObject({ id: last.id, itemCount: 2, debt: null });
+    expect(r.orders[0]?.items.map((it) => [it.productName, it.qty])).toEqual([['Sữa', 2], ['Bánh', 1]]);
+    expect(r.orders[60]?.items).toHaveLength(1);
+  });
+
+  it('cùng bộ lọc với listOrders: hình thức, trạng thái, tên món, khách; có cả đơn đã hủy; page bị bỏ qua', () => {
+    const a = product({ name: 'Sữa tươi', sellPrice: 15000 });
+    const b = product({ name: 'Bánh', sellPrice: 5000 });
+    const c = createCustomer(db, customerCreateSchema.parse({ name: 'Cô Ba' }));
+    const cash = createOrder(db, order({ items: [{ productId: a.id, qty: 1, price: 15000 }] }), MORNING);
+    const transfer = createOrder(db, order({ paymentMethod: 'transfer', items: [{ productId: b.id, qty: 1, price: 5000 }] }), MORNING);
+    const debt = createOrder(
+      db,
+      order({ paymentMethod: 'debt', paid: 0, customerId: c.id, items: [{ productId: b.id, qty: 2, price: 5000 }] }),
+      MORNING,
+    );
+    cancelOrder(db, cash.id, MORNING);
+    const ids = (q: Record<string, unknown>) => exportList(q).orders.map((o) => o.id);
+    expect(ids({})).toEqual([debt.id, transfer.id, cash.id]);
+    expect(ids({ pay: 'transfer,debt' })).toEqual([debt.id, transfer.id]);
+    expect(ids({ status: 'cancelled' })).toEqual([cash.id]);
+    expect(ids({ q: 'sua' })).toEqual([cash.id]);
+    expect(ids({ customerId: String(c.id) })).toEqual([debt.id]);
+    expect(ids({ page: '2' })).toHaveLength(3);
+  });
+
+  it('quá giới hạn thì báo lỗi, không dựng danh sách', () => {
+    const a = product({ name: 'Sữa', sellPrice: 15000 });
+    for (let i = 0; i < 3; i++) createOrder(db, order({ items: [{ productId: a.id, qty: 1, price: 15000 }] }), MORNING);
+    expect(() => exportList({}, 2)).toThrow('Quá nhiều hóa đơn, hãy chọn khoảng ngày ngắn hơn');
+    expect(exportList({}, 3).orders).toHaveLength(3);
   });
 });

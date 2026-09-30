@@ -4,12 +4,15 @@ import {
   productInputSchema,
   productListQuerySchema,
   productUnitInputSchema,
+  productViewQuerySchema,
   type MovementListQuery,
   type ProductListQuery,
+  type ProductView,
 } from '@tiny-pos/shared';
 import type { Db } from '../db/connection.js';
 import { intParam, validateBody, validateQuery } from '../middleware/validate.js';
-import { exportProductsCsv, importProductsCsv } from '../services/product-csv.js';
+import { exportProductsXlsx } from '../services/exports.js';
+import { importProductsFile } from '../services/product-csv.js';
 import { createUnit, deleteUnit, updateUnit } from '../services/product-units.js';
 import { listMovements } from '../services/movements.js';
 import {
@@ -20,19 +23,18 @@ import {
   setProductActive,
   updateProduct,
 } from '../services/products.js';
+import { sendXlsx } from './send-xlsx.js';
 
 export function productsRouter(db: Db): Router {
   const r = Router();
 
   // Các route tĩnh phải đứng trước /:id
-  r.get('/csv', (_req, res) => {
-    const date = new Date().toISOString().slice(0, 10);
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="san-pham-${date}.csv"`);
-    res.send(exportProductsCsv(db));
-  });
-  r.post('/csv', express.text({ type: ['text/csv', 'text/plain'], limit: '10mb' }), (req, res) => {
-    res.json(importProductsCsv(db, typeof req.body === 'string' ? req.body : ''));
+  r.get('/export.xlsx', validateQuery(productViewQuerySchema), async (_req, res) =>
+    sendXlsx(res, await exportProductsXlsx(db, res.locals['query'] as ProductView)),
+  );
+  // File thô (.xlsx hoặc .csv); client gửi application/octet-stream
+  r.post('/import', express.raw({ type: () => true, limit: '10mb' }), async (req, res) => {
+    res.json(await importProductsFile(db, Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0)));
   });
   r.get('/by-barcode/:code', (req, res) => res.json(findProductByBarcode(db, String(req.params['code']))));
 
