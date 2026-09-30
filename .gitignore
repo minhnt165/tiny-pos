@@ -7,3 +7,4 @@ data/
 .certs/
 .playwright-mcp/
 .vite/
+.superpowers/
