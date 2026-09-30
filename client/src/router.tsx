@@ -13,12 +13,14 @@ export interface NavItem {
   label: string;
   icon: LucideIcon;
   disabled?: boolean;
+  /** Hiện trên thanh dưới điện thoại (tối đa 4 mục, còn lại vào nút "Thêm"). */
+  mobile?: boolean;
 }
 
 export const NAV: NavItem[] = [
-  { to: '/sell', label: 'Bán hàng', icon: ShoppingCart },
-  { to: '/orders', label: 'Hóa đơn', icon: ReceiptText },
-  { to: '/products', label: 'Sản phẩm', icon: Package },
+  { to: '/sell', label: 'Bán hàng', icon: ShoppingCart, mobile: true },
+  { to: '/orders', label: 'Hóa đơn', icon: ReceiptText, mobile: true },
+  { to: '/products', label: 'Sản phẩm', icon: Package, mobile: true },
   { to: '/categories', label: 'Danh mục', icon: FolderOpen },
   { to: '/quick-add', label: 'Nhập nhanh', icon: ScanBarcode },
   { to: '/settings', label: 'Cài đặt', icon: Settings },

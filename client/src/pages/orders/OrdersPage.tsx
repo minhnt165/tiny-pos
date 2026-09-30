@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { StatCard } from '@/components/StatCard';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { DayPicker, today } from './DayPicker';
+import { DayPicker, today } from '@/components/DayPicker';
 import { OrderDetailDialog } from './OrderDetailDialog';
 import { OrderTable } from './OrderTable';
 

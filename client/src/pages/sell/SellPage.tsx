@@ -14,7 +14,7 @@ import { CheckoutDialog } from './CheckoutDialog';
 import { CheckoutPanel } from './CheckoutPanel';
 import { CustomItemDialog } from './CustomItemDialog';
 import { HeldCarts } from './HeldCarts';
-import { ProductSearch } from './ProductSearch';
+import { ProductSearch } from '@/components/ProductSearch';
 import { SaleResult } from './SaleResult';
 import { useCart } from './useCart';
 import { useHeldCarts } from './useHeldCarts';

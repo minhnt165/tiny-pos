@@ -7,6 +7,7 @@ import type {
   ProductUnit,
   ProductUnitInput,
   ProductWithUnits,
+  StockMovement,
 } from '@tiny-pos/shared';
 import { api } from './client';
 
@@ -100,3 +101,13 @@ export function useImportCsv() {
 /** Gợi ý ở màn Bán hàng: chỉ hàng đang bán, chỉ gọi khi có chữ để tìm. */
 export const useProductSuggestions = (q: string) =>
   useQuery({ queryKey: ['products', { q }], queryFn: () => api<Product[]>(`/products${qs({ q })}`), enabled: q.length > 0 });
+
+/** Sản phẩm kèm đơn vị quy đổi (màn Nhập hàng cần danh sách đơn vị để chọn). */
+export const fetchProduct = (id: number) => api<ProductWithUnits>(`/products/${id}`);
+
+export const useMovements = (id: number | null) =>
+  useQuery({
+    queryKey: ['products', 'movements', id],
+    queryFn: () => api<StockMovement[]>(`/products/${id}/movements`),
+    enabled: id !== null,
+  });

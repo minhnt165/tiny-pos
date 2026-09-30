@@ -1,6 +1,7 @@
 import { Store } from 'lucide-react';
 import { NavLink } from 'react-router';
 import { Topbar } from '@/components/Topbar';
+import { MobileMoreMenu } from '@/components/MobileMoreMenu';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { AppRoutes, NAV } from './router';
@@ -58,8 +59,8 @@ export default function App() {
           )}
         </nav>
         <div className="m-3 rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
-          <div className="text-sm font-medium">Giai đoạn 2</div>
-          <div className="text-xs text-emerald-100/60">Bán hàng, hóa đơn, in, cài đặt</div>
+          <div className="text-sm font-medium">Giai đoạn 3</div>
+          <div className="text-xs text-emerald-100/60">Nhập hàng, nhà cung cấp, kiểm kê</div>
         </div>
       </aside>
 
@@ -78,7 +79,7 @@ export default function App() {
 
       {/* Cao cố định 68px (+ safe-area) vì thanh Thanh toán ở màn Bán hàng bám ngay trên nó */}
       <nav className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(68px+env(safe-area-inset-bottom))] border-t bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
-        {NAV.filter((n) => !n.disabled).map(({ to, label, icon: Icon }) => (
+        {NAV.filter((n) => n.mobile).map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -96,6 +97,7 @@ export default function App() {
             )}
           </NavLink>
         ))}
+        <MobileMoreMenu items={NAV.filter((n) => !n.mobile && !n.disabled)} />
       </nav>
     </div>
   );
