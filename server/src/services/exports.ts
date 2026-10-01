@@ -11,6 +11,7 @@ import {
   type PartyView,
   type PaymentMethod,
   type ProductView,
+  type ReturnListQuery,
 } from '@tiny-pos/shared';
 import type { Db } from '../db/connection.js';
 import { addSheet, newWorkbook, toBuffer, type XlsxColumn, type XlsxValue } from '../xlsx/workbook.js';
@@ -19,6 +20,7 @@ import { resolveClock, type Clock } from './daily-code.js';
 import { listImportsForExport } from './imports.js';
 import { listOrdersForExport } from './orders.js';
 import { listProducts } from './products.js';
+import { listReturnsForExport } from './returns.js';
 import { listSuppliers } from './suppliers.js';
 
 export interface XlsxFile {
@@ -109,6 +111,7 @@ const ORDER_COLUMNS = [
   col('Phải trả', 12, 'money'),
   col('Đã trả', 12, 'money'),
   col('Còn nợ', 12, 'money'),
+  col('Trả hàng', 12, 'money'),
   col('Số món', 8, 'qty'),
   col('Trạng thái', 11),
   col('Hủy lúc', 17, 'datetime'),
@@ -133,7 +136,7 @@ export async function exportOrdersXlsx(db: Db, query: OrderListQuery, clock?: Cl
     // Đơn tiền mặt: `paid` là tiền khách đưa (gồm tiền thối) nên ghi số phải trả
     const paid = isDebt ? o.paid : o.payable;
     return [o.code, o.createdAt, o.customerName, METHOD_LABEL[o.paymentMethod], o.total, o.discount, o.payable, paid,
-      isDebt ? o.payable - o.paid : null, o.itemCount, STATUS_LABEL[o.status], o.cancelledAt];
+      isDebt ? o.payable - o.paid : null, o.refunded, o.itemCount, STATUS_LABEL[o.status], o.cancelledAt];
   });
   const items = orders.flatMap((o) =>
     o.items.map((it) => [o.code, o.createdAt, STATUS_LABEL[o.status], it.productName, it.unit, it.qty, it.price, it.amount, it.costPrice]),
@@ -143,6 +146,48 @@ export async function exportOrdersXlsx(db: Db, query: OrderListQuery, clock?: Cl
     [
       { name: 'Hóa đơn', columns: ORDER_COLUMNS, rows },
       { name: 'Chi tiết', columns: ORDER_ITEM_COLUMNS, rows: items },
+    ],
+    tz,
+  );
+}
+
+const RETURN_COLUMNS = [
+  col('Mã', 18),
+  col('Ngày giờ', 17, 'datetime'),
+  col('Hóa đơn', 18),
+  col('Khách', 22),
+  col('Tổng hoàn', 12, 'money'),
+  col('Trừ nợ', 12, 'money'),
+  col('Tiền mặt', 12, 'money'),
+  col('Số món', 8, 'qty'),
+  col('Trạng thái', 11),
+  col('Hủy lúc', 17, 'datetime'),
+  col('Ghi chú', 30),
+];
+const RETURN_ITEM_COLUMNS = [
+  col('Mã phiếu', 18),
+  col('Ngày giờ', 17, 'datetime'),
+  col('Trạng thái', 11),
+  col('Tên hàng', 32),
+  col('Đơn vị', 10),
+  col('SL', 8, 'qty'),
+  col('Tiền hoàn', 12, 'money'),
+  col('Nhập kho', 10),
+];
+
+export async function exportReturnsXlsx(db: Db, query: ReturnListQuery, clock?: Clock): Promise<XlsxFile> {
+  const { now, tz } = resolveClock(clock);
+  const { from, to, returns } = listReturnsForExport(db, query, { now, tzOffsetMin: tz });
+  const rows = returns.map((r) => [r.code, r.createdAt, r.orderCode, r.customerName, r.refund, r.debtReduced, r.cashRefund, r.itemCount,
+    STATUS_LABEL[r.status], r.cancelledAt, r.note]);
+  const items = returns.flatMap((r) =>
+    r.items.map((it) => [r.code, r.createdAt, STATUS_LABEL[r.status], it.productName, it.unit, it.qty, it.amount, it.restock ? 'Có' : 'Không']),
+  );
+  return build(
+    rangeName('tra-hang', from, to),
+    [
+      { name: 'Phiếu trả', columns: RETURN_COLUMNS, rows },
+      { name: 'Chi tiết', columns: RETURN_ITEM_COLUMNS, rows: items },
     ],
     tz,
   );

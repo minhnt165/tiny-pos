@@ -38,6 +38,8 @@ export function OrdersPage() {
   const customers = customerData?.customers ?? [];
   const s = data?.summary;
   const collected = (s?.debtCollected.cash ?? 0) + (s?.debtCollected.transfer ?? 0);
+  // Phiếu trả trong khoảng: Doanh thu và Tiền mặt hiện số thuần để khớp két (Báo cáo dùng cùng công thức)
+  const ret = s?.returns ?? { count: 0, refund: 0, cash: 0, debt: 0 };
 
   // Lọc hẹp lại làm trang hiện tại vượt số trang → về trang cuối có dữ liệu
   useEffect(() => {
@@ -61,8 +63,16 @@ export function OrdersPage() {
       <PageTitle title="Hóa đơn" count={data ? `${data.total} đơn` : undefined} actions={[exportAction]} />
       <StatStrip cols={6}>
         <Stat label="Số đơn" value={String(s?.count ?? 0)} hint="Không tính đơn đã hủy" />
-        <Stat label="Doanh thu" value={formatMoney(s?.total ?? 0)} />
-        <Stat label="Tiền mặt" value={formatMoney(s?.cash ?? 0)} />
+        <Stat
+          label="Doanh thu"
+          value={formatMoney((s?.total ?? 0) - ret.refund)}
+          hint={ret.count ? `Bán ${formatMoney(s?.total ?? 0)} · Trả ${formatMoney(ret.refund)}` : undefined}
+        />
+        <Stat
+          label="Tiền mặt"
+          value={formatMoney((s?.cash ?? 0) - ret.cash)}
+          hint={ret.count ? `Đã trừ hoàn ${formatMoney(ret.cash)}` : undefined}
+        />
         <Stat label="Chuyển khoản" value={formatMoney(s?.transfer ?? 0)} />
         <Stat label="Ghi nợ" value={formatMoney(s?.debt ?? 0)} hint="Phần khách còn thiếu" tone={s?.debt ? 'danger' : 'default'} />
         <Stat

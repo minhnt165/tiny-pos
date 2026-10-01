@@ -1,4 +1,4 @@
-import { cartTotals, lineAmount, type Cart, type CollectMethod, type CustomerPaymentResult, type OrderDebt, type OrderDetail, type PaymentMethod } from '@tiny-pos/shared';
+import { cartTotals, lineAmount, type Cart, type CollectMethod, type CustomerPaymentResult, type OrderDebt, type OrderDetail, type PaymentMethod, type ReturnDetail } from '@tiny-pos/shared';
 
 export interface ReceiptItem {
   name: string;
@@ -93,7 +93,7 @@ export interface DebtReceiptData {
   createdAt: string;
 }
 
-export type PrintData = ReceiptData | DebtReceiptData;
+export type PrintData = ReceiptData | DebtReceiptData | ReturnReceiptData;
 
 export function debtReceiptFromPayment(r: CustomerPaymentResult): DebtReceiptData {
   return {
@@ -103,5 +103,35 @@ export function debtReceiptFromPayment(r: CustomerPaymentResult): DebtReceiptDat
     method: r.transaction.method ?? 'cash',
     balanceAfter: r.transaction.balanceAfter,
     createdAt: r.transaction.createdAt,
+  };
+}
+
+/** Phiếu trả hàng 80mm: khách giữ làm bằng đã nhận tiền hoàn / được trừ nợ. */
+export interface ReturnReceiptData {
+  kind: 'return';
+  code: string;
+  orderCode: string;
+  createdAt: string;
+  customerName: string | null;
+  items: ReceiptItem[];
+  refund: number;
+  debtReduced: number;
+  cashRefund: number;
+  /** Phiếu đã hủy: in lại phải ghi rõ. */
+  cancelled: boolean;
+}
+
+export function receiptFromReturn(r: ReturnDetail): ReturnReceiptData {
+  return {
+    kind: 'return',
+    code: r.code,
+    orderCode: r.orderCode,
+    createdAt: r.createdAt,
+    customerName: r.customerName,
+    items: r.items.map((i) => ({ name: i.productName, unit: i.unit, qty: i.qty, price: i.price, amount: i.amount })),
+    refund: r.refund,
+    debtReduced: r.debtReduced,
+    cashRefund: r.cashRefund,
+    cancelled: r.status === 'cancelled',
   };
 }

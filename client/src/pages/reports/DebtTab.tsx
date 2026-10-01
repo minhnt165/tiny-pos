@@ -67,7 +67,7 @@ export function DebtTab({ range }: { range: ReportRangeParams }) {
       <StatStrip>
         <Stat label="Khách đang nợ" value={formatMoney(c?.total ?? 0)} hint={`Hiện tại · ${c?.count ?? 0} khách`} tone={c?.total ? 'danger' : 'default'} />
         <Stat label="Mình nợ NCC" value={formatMoney(s?.total ?? 0)} hint={`Hiện tại · ${s?.count ?? 0} nhà cung cấp`} tone={s?.total ? 'warning' : 'default'} />
-        <Stat label="Ghi nợ trong kỳ" value={formatMoney(p?.debt ?? 0)} hint="Phần khách còn thiếu trên hóa đơn" />
+        <Stat label="Ghi nợ trong kỳ" value={formatMoney(p?.debt ?? 0)} hint={p?.returnDebt ? `Phần khách còn thiếu · trả hàng trừ ${formatMoney(p.returnDebt)}` : 'Phần khách còn thiếu trên hóa đơn'} />
         <Stat
           label="Thu nợ trong kỳ"
           value={formatMoney(collected)}

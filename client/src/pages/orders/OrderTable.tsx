@@ -4,9 +4,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { cn } from '@/lib/utils';
 
 export const METHOD_LABEL = { cash: 'Tiền mặt', transfer: 'Chuyển khoản', debt: 'Ghi nợ' } as const;
-const time = (iso: string) => new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+export const time = (iso: string) => new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
 /** "30/09 13:33": xem nhiều ngày thì cần cả ngày. */
-const dayTime = (iso: string) => {
+export const dayTime = (iso: string) => {
   const d = new Date(iso);
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} ${time(iso)}`;
 };
@@ -37,7 +37,10 @@ export function OrderTable({ orders, onOpen, showDate = false }: { orders: Order
               <TableCell className="px-4 py-3">
                 {o.paymentMethod === 'debt' ? <Badge variant="outline">Ghi nợ · {o.customerName}</Badge> : METHOD_LABEL[o.paymentMethod]}
               </TableCell>
-              <TableCell className="px-4 py-3">{cancelled ? <Badge variant="secondary">Đã hủy</Badge> : <Badge>Hoàn tất</Badge>}</TableCell>
+              <TableCell className="px-4 py-3">
+                {cancelled ? <Badge variant="secondary">Đã hủy</Badge> : <Badge>Hoàn tất</Badge>}
+                {o.refunded > 0 && <Badge variant="outline" className="ml-1">Có trả hàng</Badge>}
+              </TableCell>
             </TableRow>
           );
         })}

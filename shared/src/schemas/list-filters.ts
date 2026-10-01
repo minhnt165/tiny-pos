@@ -101,6 +101,13 @@ export const importListQuerySchema = z.object(importListFields).superRefine((q, 
 });
 export type ImportListQuery = z.output<typeof importListQuerySchema>;
 
+export const returnListFields = { ...rangeFields, q: search, status: csvEnum(DOC_STATUSES), page };
+export const returnListQuerySchema = z.object(returnListFields).superRefine((q, ctx) => {
+  const message = rangeError(q);
+  if (message) ctx.addIssue({ code: 'custom', message });
+});
+export type ReturnListQuery = z.output<typeof returnListQuerySchema>;
+
 export const partyListQuerySchema = z.object({ q: search, includeInactive: flag });
 export type PartyListQuery = z.output<typeof partyListQuerySchema>;
 

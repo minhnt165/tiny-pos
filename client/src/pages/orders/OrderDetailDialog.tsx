@@ -1,29 +1,29 @@
-import { Ban, Printer } from 'lucide-react';
+import { useState } from 'react';
+import { Ban, Printer, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatMoney, formatQty } from '@tiny-pos/shared';
+import { formatMoney, formatQty, remainingQty } from '@tiny-pos/shared';
 import { useCancelOrder, useOrder } from '@/api/orders';
 import { useConfirm } from '@/components/ConfirmDialog';
+import { MoneyLine as Line } from '@/components/MoneyLine';
 import { usePrint } from '@/components/receipt/PrintProvider';
 import { receiptFromOrder } from '@/components/receipt/receipt-data';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
+import { ReturnDetailDialog } from '../returns/ReturnDetailDialog';
+import { ReturnDialog } from '../returns/ReturnDialog';
 import { METHOD_LABEL } from './OrderTable';
-
-function Line({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
-  return (
-    <div className={strong ? 'flex justify-between text-lg font-semibold' : 'flex justify-between text-muted-foreground'}>
-      <span>{label}</span>
-      <span className="tabular-nums">{value}</span>
-    </div>
-  );
-}
 
 export function OrderDetailDialog({ id, onClose }: { id: number | null; onClose: () => void }) {
   const { data: o } = useOrder(id);
   const cancel = useCancelOrder();
   const confirm = useConfirm();
   const print = usePrint();
+  const [returning, setReturning] = useState(false);
+  const [returnId, setReturnId] = useState<number | null>(null);
+  const hasReturns = !!o?.returns.some((r) => r.status === 'done');
+  const canReturn = o?.status === 'done' && o.items.some((it) => remainingQty(it.qty, it.returnedQty) > 0);
 
   const onCancel = async () => {
     if (!o) return;
@@ -60,6 +60,11 @@ export function OrderDetailDialog({ id, onClose }: { id: number | null; onClose:
                     <div className="text-sm text-muted-foreground tabular-nums">
                       {formatQty(it.qty)} {it.unit} × {formatMoney(it.price)}
                     </div>
+                    {it.returnedQty > 0 && (
+                      <div className="text-sm text-warning tabular-nums">
+                        Đã trả {formatQty(it.returnedQty)} {it.unit}
+                      </div>
+                    )}
                   </div>
                   <div className="font-semibold tabular-nums">{formatMoney(it.amount)}</div>
                 </li>
@@ -87,13 +92,44 @@ export function OrderDetailDialog({ id, onClose }: { id: number | null; onClose:
                 </>
               )}
             </div>
+            {o.returns.length > 0 && (
+              <div className="space-y-1">
+                <div className="text-sm font-semibold">Phiếu trả</div>
+                <ul className="divide-y rounded-xl border">
+                  {o.returns.map((r) => (
+                    <li key={r.id}>
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left hover:bg-muted/40"
+                        onClick={() => setReturnId(r.id)}
+                      >
+                        <span className={cn('font-mono', r.status === 'cancelled' && 'text-muted-foreground line-through')}>{r.code}</span>
+                        <span className="text-sm text-muted-foreground">{new Date(r.createdAt).toLocaleString('vi-VN')}</span>
+                        {r.status === 'cancelled' ? (
+                          <Badge variant="secondary">Đã hủy</Badge>
+                        ) : (
+                          <span className="font-semibold tabular-nums">{formatMoney(r.refund)}</span>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
+        {o?.status === 'done' && hasReturns && <p className="text-sm text-muted-foreground">Hủy các phiếu trả trước khi hủy hóa đơn.</p>}
         <DialogFooter>
           {o?.status === 'done' && (
-            <Button variant="outline" className="h-11 text-base text-destructive" disabled={cancel.isPending} onClick={() => void onCancel()}>
+            <Button variant="outline" className="h-11 text-base text-destructive" disabled={cancel.isPending || hasReturns} onClick={() => void onCancel()}>
               <Ban data-icon="inline-start" />
               Hủy đơn
+            </Button>
+          )}
+          {canReturn && (
+            <Button variant="outline" className="h-11 text-base" onClick={() => setReturning(true)}>
+              <Undo2 data-icon="inline-start" />
+              Trả hàng
             </Button>
           )}
           <Button className="h-11 text-base" disabled={!o} onClick={() => o && void print(receiptFromOrder(o))}>
@@ -101,6 +137,8 @@ export function OrderDetailDialog({ id, onClose }: { id: number | null; onClose:
             In lại
           </Button>
         </DialogFooter>
+        {o && <ReturnDialog order={o} open={returning} onClose={() => setReturning(false)} />}
+        <ReturnDetailDialog id={returnId} onClose={() => setReturnId(null)} />
       </DialogContent>
     </Dialog>
   );

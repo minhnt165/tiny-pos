@@ -96,7 +96,7 @@ export const debtTransactions = sqliteTable(
     orderId: integer('order_id').references(() => orders.id),
     amount: integer('amount').notNull(), // + nợ thêm, - trả nợ
     note: text('note'),
-    kind: text('kind', { enum: ['opening', 'order', 'order_cancel', 'payment', 'manual'] }).notNull().default('manual'),
+    kind: text('kind', { enum: ['opening', 'order', 'order_cancel', 'payment', 'manual', 'return', 'return_cancel'] }).notNull().default('manual'),
     method: text('method', { enum: ['cash', 'transfer'] }), // chỉ dòng thu nợ
     createdAt: createdAt(),
   },
@@ -120,6 +120,43 @@ export const orderItems = sqliteTable(
     amount: integer('amount').notNull().default(0), // thành tiền dòng lúc bán
   },
   (t) => [index('order_items_order_idx').on(t.orderId)],
+);
+
+export const returns = sqliteTable(
+  'returns',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    code: text('code').notNull().unique(), // TH-20261001-0001
+    orderId: integer('order_id')
+      .notNull()
+      .references(() => orders.id),
+    refund: integer('refund').notNull(), // tổng hoàn = Σ return_items.amount
+    debtReduced: integer('debt_reduced').notNull().default(0), // phần trừ vào nợ khách
+    cashRefund: integer('cash_refund').notNull().default(0), // phần trả tiền mặt
+    note: text('note'),
+    status: text('status', { enum: ['done', 'cancelled'] }).notNull().default('done'),
+    createdAt: createdAt(),
+    cancelledAt: text('cancelled_at'),
+  },
+  (t) => [index('returns_created_idx').on(t.createdAt), index('returns_order_idx').on(t.orderId)],
+);
+
+export const returnItems = sqliteTable(
+  'return_items',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    returnId: integer('return_id')
+      .notNull()
+      .references(() => returns.id, { onDelete: 'cascade' }),
+    orderItemId: integer('order_item_id')
+      .notNull()
+      .references(() => orderItems.id),
+    qty: real('qty').notNull(), // theo đơn vị lúc bán
+    restock: integer('restock', { mode: 'boolean' }).notNull().default(true),
+    amount: integer('amount').notNull(), // tiền hoàn của dòng (đã trừ giảm giá phân bổ)
+    cost: integer('cost').notNull(), // round(qty × cost_price lúc bán), không nhân factor như báo cáo
+  },
+  (t) => [index('return_items_return_idx').on(t.returnId), index('return_items_order_item_idx').on(t.orderItemId)],
 );
 
 export const imports = sqliteTable(

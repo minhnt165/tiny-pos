@@ -13,6 +13,7 @@ const PROFIT_COLUMNS = [
   col('Kỳ', 12),
   col('Số đơn', 8, 'qty'),
   col('Doanh thu', 14, 'money'),
+  col('Trả hàng', 14, 'money'),
   col('Giá vốn', 14, 'money'),
   col('Lãi gộp', 14, 'money'),
   col('Tiền mặt', 14, 'money'),
@@ -25,7 +26,7 @@ const PROFIT_COLUMNS = [
 export async function exportProfitReportXlsx(db: Db, q: ReportQuery, clock?: Clock): Promise<XlsxFile> {
   const { now, tz } = resolveClock(clock);
   const r = profitReport(db, q, { now, tzOffsetMin: tz });
-  const row = (label: string, x: typeof r.total): XlsxValue[] => [label, x.orders, x.revenue, x.cost, x.profit, x.cash, x.transfer, x.debt,
+  const row = (label: string, x: typeof r.total): XlsxValue[] => [label, x.orders, x.revenue, x.returns, x.cost, x.profit, x.cash, x.transfer, x.debt,
     x.debtCollected.cash, x.debtCollected.transfer];
   const rows = [...r.rows.map((x) => row(periodLabel(x.period), x)), row(TOTAL, r.total)];
   return build(rangeName('bao-cao-lai-lo', r.range.from, r.range.to), [{ name: 'Lãi lỗ', columns: PROFIT_COLUMNS, rows }], tz);

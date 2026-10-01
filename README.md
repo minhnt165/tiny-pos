@@ -32,6 +32,7 @@ Trên máy quầy (Windows 10/11, đã cài Node.js 20+): nhấp đúp `scripts\
 - Biểu tượng *Tiny POS*: bảo đảm server đang chạy rồi mở Chrome/Edge chế độ ứng dụng với `--kiosk-printing` (in không hỏi).
 - Điện thoại cùng Wi-Fi: `http://<IP máy>:3000` (install in IP ra cuối).
 - Trang *Tổng quan* (`http://<IP máy>:3000/overview`, mục đầu menu): số liệu hôm nay, 7 ngày, hàng sắp hết, khách nợ lâu, nợ NCC, kiểm kê dở, tình trạng sao lưu; tự làm mới mỗi phút. Máy quầy mở app vẫn vào thẳng Bán hàng.
+- Khách trả hàng: *Hóa đơn* → bấm vào đơn → *Trả hàng*; danh sách phiếu ở *Trả hàng* (menu Bán hàng). Phiếu tính vào ngày trả, hủy được.
 - Log server: `data\server.log` (ghi đè mỗi lần chạy).
 - Cập nhật phiên bản: `scripts\update.cmd` (dừng, `git pull`, build, chạy lại). Gỡ: `scripts\uninstall.cmd` (giữ `data\`).
 - Chạy tay không cài: `npm run build` rồi `scripts\start.cmd` (hoặc `npm start`); dừng: `scripts\stop.cmd`.
@@ -161,3 +162,12 @@ In không hỏi: tạo shortcut `chrome.exe --app=http://localhost:3000 --kiosk-
 3. *7 ngày gần đây* có "Hôm nay"/"Hôm qua", dòng Tổng; *Hóa đơn hôm nay* 5 đơn mới nhất, đơn hủy gạch ngang; *Hàng sắp hết* tối đa 10 dòng + "và n mặt hàng nữa"; *Khách nợ* / *Nợ nhà cung cấp* 5 người, khách nợ lâu có dòng vàng "Giao dịch gần nhất dd/mm", bấm dòng sang trang với tên điền sẵn.
 4. Bán một đơn ở tab khác rồi quay lại → số đổi ngay (invalidate), hoặc chờ ≤ 1 phút. Dừng server rồi *Làm mới* → dòng đỏ "Không tải được số liệu mới", số cũ vẫn hiện; mở trang khi server tắt → màn "Không tải được tổng quan" có nút *Thử lại*.
 5. Điện thoại: thanh dưới Tổng quan · Bán hàng · Hóa đơn · Sản phẩm · Thêm (Kiểm kê nằm trong Thêm); không cuộn ngang. Đường dẫn gốc vẫn vào Bán hàng.
+
+## Kiểm thử thủ công – Trả hàng 0.11.0
+
+1. *Hóa đơn* → mở đơn tiền mặt có giảm giá → *Trả hàng* → trả 1 món, giữ *Nhập lại kho* → toast "Đã lập TH-…", bấm *In phiếu* ra "PHIẾU TRẢ HÀNG"; tồn sản phẩm tăng đúng (thùng tăng 24 lon); chi tiết đơn có "Đã trả …" và khối *Phiếu trả*.
+2. Trả tiếp đến hết đơn (có dòng bỏ *Nhập lại kho*) → tổng các phiếu bằng đúng *Phải trả* của đơn; món bỏ nhập kho không cộng tồn; nút *Trả hàng* biến mất.
+3. Đơn ghi nợ: khách còn nợ ít hơn tiền hoàn → hộp hiện "Trừ nợ khách" bằng số nợ, phần dư "Trả tiền mặt"; sổ nợ của khách có dòng *Trả hàng*.
+4. Đơn còn phiếu trả: nút *Hủy đơn* bị khóa. *Trả hàng* → mở phiếu → *Hủy phiếu* → tồn và nợ về như trước, sổ nợ có *Hủy phiếu trả*; lúc này hủy được hóa đơn.
+5. Trả hàng hôm nay cho đơn hôm qua: *Hóa đơn* hôm nay *Doanh thu*/*Tiền mặt* đã trừ, hint "Bán … · Trả …"; *Báo cáo* hôm qua không đổi, hôm nay có cột *Trả hàng*; *Tổng quan* hôm nay khớp *Hóa đơn*.
+6. *Trả hàng*: lọc ngày / trạng thái / tìm "tui da" ra phiếu có Túi đá; *Xuất Excel* ra 2 sheet *Phiếu trả*, *Chi tiết*.

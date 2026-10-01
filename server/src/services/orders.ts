@@ -7,6 +7,7 @@ import {
   MAX_EXPORT_ROWS,
   PAGE_SIZE,
   resolveRange,
+  roundQty,
   stripDiacritics,
   type DaySummary,
   type OrderDebt,
@@ -18,11 +19,12 @@ import {
   type OrderSummary,
 } from '@tiny-pos/shared';
 import type { Db, DbOrTx } from '../db/connection.js';
-import { customers, debtTransactions, orderItems, orders, productUnits, products } from '../db/schema.js';
+import { customers, debtTransactions, orderItems, orders, productUnits, products, returns } from '../db/schema.js';
 import { BadRequestError, ConflictError, NotFoundError } from '../errors.js';
 import { recordMovement } from './stock.js';
 import { debtBalanceAt, recordCustomerDebtTx } from './customer-ledger.js';
 import { nextDailyCode, resolveClock, type Clock } from './daily-code.js';
+import { refundedSql, returnedQtySql, returnRows, returnSummary } from './return-rows.js';
 
 export type { Clock } from './daily-code.js';
 
@@ -73,7 +75,7 @@ function resolveLine(tx: DbOrTx, it: OrderInput['items'][number]): ResolvedLine 
 
 type OrderRow = typeof orders.$inferSelect;
 
-function toSummary(o: OrderRow, itemCount: number, customerName: string | null): OrderSummary {
+function toSummary(o: OrderRow, itemCount: number, customerName: string | null, refunded: number): OrderSummary {
   return {
     id: o.id,
     code: o.code,
@@ -86,6 +88,7 @@ function toSummary(o: OrderRow, itemCount: number, customerName: string | null):
     customerName,
     status: o.status,
     itemCount,
+    refunded,
     createdAt: o.createdAt,
     cancelledAt: o.cancelledAt,
   };
@@ -102,6 +105,7 @@ const orderItemColumns = {
   costPrice: orderItems.costPrice,
   factor: orderItems.factor,
   amount: orderItems.amount,
+  returnedQty: returnedQtySql,
 };
 
 /** Nợ của đơn ghi nợ tại lúc bán: lấy dòng sổ `order` của đơn và số dư của khách ngay sau dòng đó. */
@@ -117,7 +121,7 @@ function orderDebt(db: DbOrTx, o: OrderRow): OrderDebt | null {
 
 export function getOrder(db: DbOrTx, id: number): OrderDetail {
   const r = db
-    .select({ order: orders, customerName: customers.name })
+    .select({ order: orders, customerName: customers.name, customerDebt: customers.debt, refunded: refundedSql })
     .from(orders)
     .leftJoin(customers, eq(orders.customerId, customers.id))
     .where(eq(orders.id, id))
@@ -129,8 +133,15 @@ export function getOrder(db: DbOrTx, id: number): OrderDetail {
     .from(orderItems)
     .where(eq(orderItems.orderId, id))
     .orderBy(asc(orderItems.id))
-    .all();
-  return { ...toSummary(o, items.length, r.customerName), items, debt: orderDebt(db, o) };
+    .all()
+    .map((it) => ({ ...it, returnedQty: roundQty(Number(it.returnedQty)) }));
+  return {
+    ...toSummary(o, items.length, r.customerName, Number(r.refunded)),
+    items,
+    debt: orderDebt(db, o),
+    returns: returnRows(db, eq(returns.orderId, id)),
+    customerDebt: r.customerDebt,
+  };
 }
 
 export function createOrder(db: Db, input: OrderInput, clock?: Clock): OrderDetail {
@@ -234,6 +245,7 @@ export function daySummary(db: DbOrTx, start: string, end: string): DaySummary {
     transfer: sum(done.filter((o) => o.paymentMethod === 'transfer')),
     debt: debtOrders.reduce((s, o) => s + o.payable - o.paid, 0),
     debtCollected: { cash: collectedBy('cash'), transfer: collectedBy('transfer') },
+    returns: returnSummary(db, start, end),
   };
 }
 
@@ -242,7 +254,7 @@ export function listOrders(db: Db, query: OrderListQuery, clock?: Clock): OrderL
   const page = query.page ?? 1;
   const total = db.select({ n: count() }).from(orders).where(where).get()?.n ?? 0;
   const list = db
-    .select({ order: orders, itemCount, customerName: customers.name })
+    .select({ order: orders, itemCount, customerName: customers.name, refunded: refundedSql })
     .from(orders)
     .leftJoin(customers, eq(orders.customerId, customers.id))
     .where(where)
@@ -250,21 +262,21 @@ export function listOrders(db: Db, query: OrderListQuery, clock?: Clock): OrderL
     .limit(PAGE_SIZE)
     .offset((page - 1) * PAGE_SIZE)
     .all()
-    .map((r) => toSummary(r.order, Number(r.itemCount), r.customerName));
+    .map((r) => toSummary(r.order, Number(r.itemCount), r.customerName, Number(r.refunded)));
   return { orders: list, summary: daySummary(db, start, end), total, page, pageSize: PAGE_SIZE };
 }
 
 /** Hóa đơn mới nhất trong [start, end) (ISO UTC), mọi trạng thái, không phân trang; trang Tổng quan. */
 export function recentOrders(db: Db, start: string, end: string, limit: number): OrderSummary[] {
   return db
-    .select({ order: orders, itemCount, customerName: customers.name })
+    .select({ order: orders, itemCount, customerName: customers.name, refunded: refundedSql })
     .from(orders)
     .leftJoin(customers, eq(orders.customerId, customers.id))
     .where(and(gte(orders.createdAt, start), lt(orders.createdAt, end)))
     .orderBy(desc(orders.id))
     .limit(limit)
     .all()
-    .map((r) => toSummary(r.order, Number(r.itemCount), r.customerName));
+    .map((r) => toSummary(r.order, Number(r.itemCount), r.customerName, Number(r.refunded)));
 }
 
 /** Mọi hóa đơn khớp bộ lọc (không phân trang), mới nhất trước, kèm món; quá `maxRows` thì báo lỗi thay vì dựng file khổng lồ. */
@@ -278,7 +290,7 @@ export function listOrdersForExport(
   const n = db.select({ n: count() }).from(orders).where(where).get()?.n ?? 0;
   if (n > maxRows) throw new BadRequestError('Quá nhiều hóa đơn, hãy chọn khoảng ngày ngắn hơn');
   const rows = db
-    .select({ order: orders, customerName: customers.name })
+    .select({ order: orders, customerName: customers.name, refunded: refundedSql })
     .from(orders)
     .leftJoin(customers, eq(orders.customerId, customers.id))
     .where(where)
@@ -305,7 +317,7 @@ export function listOrdersForExport(
     to,
     orders: rows.map((r) => {
       const items = itemsOf.get(r.order.id) ?? [];
-      return { ...toSummary(r.order, items.length, r.customerName), items, debt: null };
+      return { ...toSummary(r.order, items.length, r.customerName, Number(r.refunded)), items, debt: null, returns: [], customerDebt: null };
     }),
   };
 }
@@ -316,6 +328,7 @@ export function cancelOrder(db: Db, id: number, clock?: Clock): OrderDetail {
   return db.transaction((tx) => {
     const o = getOrder(tx, id);
     if (o.status === 'cancelled') throw new ConflictError('Hóa đơn đã hủy');
+    if (o.returns.some((r) => r.status === 'done')) throw new ConflictError('Hóa đơn đã có phiếu trả, hãy hủy phiếu trả trước');
     for (const it of o.items) {
       if (it.productId === null) continue;
       recordMovement(tx, { productId: it.productId, qty: it.qty * it.factor, type: 'return', refId: id, note: 'Hủy hóa đơn' });

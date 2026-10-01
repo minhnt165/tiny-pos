@@ -18,6 +18,8 @@ const KIND_LABEL: Record<DebtTxKind, string> = {
   order_cancel: 'Hủy đơn',
   payment: 'Thu nợ',
   manual: 'Ghi nợ tay',
+  return: 'Trả hàng',
+  return_cancel: 'Hủy phiếu trả',
 };
 const when = (iso: string) => new Date(iso).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
 const title = (t: CustomerTransaction) => (t.kind === 'payment' ? `Thu nợ (${t.method === 'transfer' ? 'CK' : 'TM'})` : KIND_LABEL[t.kind]);

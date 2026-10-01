@@ -17,7 +17,7 @@ import {
   type SlowProductRow,
 } from '@tiny-pos/shared';
 import type { Db } from '../db/connection.js';
-import { customers, debtTransactions, orderItems, orders, products, suppliers } from '../db/schema.js';
+import { customers, debtTransactions, orderItems, orders, products, returnItems, returns, suppliers } from '../db/schema.js';
 import { resolveClock, type Clock } from './daily-code.js';
 import { daySummary } from './orders.js';
 
@@ -38,6 +38,7 @@ const emptyRow = (period: string): ProfitRow => ({
   transfer: 0,
   debt: 0,
   debtCollected: { cash: 0, transfer: 0 },
+  returns: 0,
 });
 
 /** Lãi lỗ theo kỳ: chỉ đơn `done`; giá vốn = Σ qty × cost_price của dòng (đã theo đơn vị bán, không nhân factor). */
@@ -84,19 +85,38 @@ export function profitReport(db: Db, q: ReportQuery, clock?: Clock): ProfitRepor
     else row.debtCollected.cash -= c.amount;
   }
 
+  // Phiếu trả tính vào ngày lập phiếu: trừ doanh thu, tiền mặt, ghi nợ; giá vốn chỉ trừ phần đã nhập lại kho (hàng hỏng thành lỗ)
+  const restockCost = sql<number>`(select coalesce(sum(cost), 0) from return_items where return_items.return_id = returns.id and return_items.restock = 1)`;
+  const returned = db
+    .select({ refund: returns.refund, cash: returns.cashRefund, debt: returns.debtReduced, createdAt: returns.createdAt, cost: restockCost })
+    .from(returns)
+    .where(and(eq(returns.status, 'done'), gte(returns.createdAt, r.start), lt(returns.createdAt, r.end)))
+    .all();
+  for (const x of returned) {
+    const row = rows.get(periodOf(x.createdAt))!;
+    const c = Number(x.cost);
+    row.returns += x.refund;
+    row.revenue -= x.refund;
+    row.cost -= c;
+    row.profit -= x.refund - c;
+    row.cash -= x.cash;
+    row.debt -= x.debt;
+  }
+
   // Tổng lấy từ daySummary để chắc chắn khớp trang Hóa đơn; giá vốn/lãi cộng từ các kỳ
   const s = daySummary(db, r.start, r.end);
   const totalCost = [...rows.values()].reduce((sum, x) => sum + x.cost, 0);
   const total: ProfitRow = {
     period: '',
     orders: s.count,
-    revenue: s.total,
+    revenue: s.total - s.returns.refund,
     cost: totalCost,
-    profit: s.total - totalCost,
-    cash: s.cash,
+    profit: s.total - s.returns.refund - totalCost,
+    cash: s.cash - s.returns.cash,
     transfer: s.transfer,
-    debt: s.debt,
+    debt: s.debt - s.returns.debt,
     debtCollected: s.debtCollected,
+    returns: s.returns.refund,
   };
   return { range: { from: r.from, to: r.to, groupBy: r.groupBy }, total, rows: [...rows.values()].reverse() };
 }
@@ -121,19 +141,37 @@ export function productReport(db: Db, q: ProductReportQuery, clock?: Clock, limi
     .where(and(eq(orders.status, 'done'), gte(orders.createdAt, r.start), lt(orders.createdAt, r.end)))
     .groupBy(orderItems.productId)
     .all();
+  // Phần trả trong kỳ (ngày lập phiếu) trừ vào món đã bán trong kỳ; doanh thu cùng cơ sở trước giảm giá như order_items.amount
+  const returned = new Map(
+    db
+      .select({
+        productId: orderItems.productId,
+        qty: sql<number>`sum(return_items.qty * order_items.factor)`,
+        revenue: sql<number>`sum(order_items.amount * return_items.qty / order_items.qty)`,
+        cost: sql<number>`sum(case when return_items.restock = 1 then return_items.cost else 0 end)`,
+      })
+      .from(returnItems)
+      .innerJoin(returns, eq(returnItems.returnId, returns.id))
+      .innerJoin(orderItems, eq(returnItems.orderItemId, orderItems.id))
+      .where(and(eq(returns.status, 'done'), gte(returns.createdAt, r.start), lt(returns.createdAt, r.end)))
+      .groupBy(orderItems.productId)
+      .all()
+      .map((x) => [x.productId, x] as const),
+  );
   const active = db.select().from(products).where(eq(products.isActive, true)).all();
   const nameOf = new Map(db.select({ id: products.id, name: products.name, unit: products.unit }).from(products).all().map((p) => [p.id, p]));
 
   const topAll: ProductSalesRow[] = sold.map((s) => {
     const p = s.productId === null ? undefined : nameOf.get(s.productId);
-    const revenue = Number(s.revenue);
+    const back = returned.get(s.productId);
+    const revenue = Number(s.revenue) - Math.round(Number(back?.revenue ?? 0));
     return {
       productId: s.productId,
       name: p?.name ?? CUSTOM_LABEL,
       unit: p?.unit ?? 'cái',
-      qty: Number(s.qty),
+      qty: Number(s.qty) - Number(back?.qty ?? 0),
       revenue,
-      profit: revenue - Math.round(Number(s.cost)),
+      profit: revenue - (Math.round(Number(s.cost)) - Number(back?.cost ?? 0)),
     };
   });
   topAll.sort((a, b) => b[q.sort] - a[q.sort] || byName(a, b));
@@ -185,6 +223,6 @@ export function debtReport(db: Db, q: ReportQuery, clock?: Clock, limit = REPORT
     range: { from: r.from, to: r.to, groupBy: r.groupBy },
     customers: partyDebt(cs, limit),
     suppliers: partyDebt(ss, limit),
-    period: { debt: s.debt, collected: s.debtCollected },
+    period: { debt: s.debt, collected: s.debtCollected, returnDebt: s.returns.debt },
   };
 }

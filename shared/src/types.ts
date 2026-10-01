@@ -63,6 +63,8 @@ export interface OrderItem {
   costPrice: number;
   factor: number;
   amount: number;
+  /** Đã trả ở các phiếu trả chưa hủy (theo đơn vị lúc bán). */
+  returnedQty: number;
 }
 
 export interface OrderSummary {
@@ -79,6 +81,8 @@ export interface OrderSummary {
   customerName: string | null;
   status: 'done' | 'cancelled';
   itemCount: number;
+  /** Σ tiền hoàn của các phiếu trả chưa hủy. */
+  refunded: number;
   createdAt: string;
   cancelledAt: string | null;
 }
@@ -87,6 +91,10 @@ export interface OrderDetail extends OrderSummary {
   items: OrderItem[];
   /** Đơn ghi nợ: số nợ của đơn và tổng nợ của khách ngay sau đơn; đơn khác: null. */
   debt: OrderDebt | null;
+  /** Mọi phiếu trả của đơn, kể cả đã hủy, mới nhất trước. */
+  returns: ReturnSummaryRow[];
+  /** Nợ hiện tại của khách (đơn ghi nợ); đơn không có khách: null. */
+  customerDebt: number | null;
 }
 
 export interface DaySummary {
@@ -99,6 +107,8 @@ export interface DaySummary {
   debt: number;
   /** Thu nợ trong ngày theo hình thức (không tính vào total). */
   debtCollected: { cash: number; transfer: number };
+  /** Phiếu trả chưa hủy trong ngày (ngày lập phiếu); các số trên là bán ra, chưa trừ phần trả. */
+  returns: ReturnSummary;
 }
 
 export interface OrderList {
@@ -222,7 +232,7 @@ export interface StockMovement {
   refCode: string | null;
 }
 
-export type DebtTxKind = 'opening' | 'order' | 'order_cancel' | 'payment' | 'manual';
+export type DebtTxKind = 'opening' | 'order' | 'order_cancel' | 'payment' | 'manual' | 'return' | 'return_cancel';
 export type CollectMethod = 'cash' | 'transfer';
 
 export interface Customer {
@@ -286,15 +296,17 @@ export interface ProfitRow {
   /** "YYYY-MM-DD" hoặc "YYYY-MM"; dòng tổng để ''. */
   period: string;
   orders: number;
-  /** Σ (total − discount) của đơn hoàn tất. */
+  /** Σ (total − discount) của đơn hoàn tất − tiền hoàn của phiếu trả trong kỳ. */
   revenue: number;
-  /** Σ qty × costPrice của dòng (giá vốn lúc bán, theo đơn vị bán). */
+  /** Σ qty × costPrice của dòng (giá vốn lúc bán, theo đơn vị bán) − giá vốn phần trả có nhập lại kho. */
   cost: number;
   profit: number;
   cash: number;
   transfer: number;
   debt: number;
   debtCollected: { cash: number; transfer: number };
+  /** Tiền hoàn của phiếu trả trong kỳ (ngày lập phiếu); cash / debt đã trừ phần tương ứng. */
+  returns: number;
 }
 
 export interface ProfitReport {
@@ -349,7 +361,7 @@ export interface DebtReport {
   customers: { total: number; count: number; top: DebtPartyRow[] };
   suppliers: { total: number; count: number; top: DebtPartyRow[] };
   /** Ghi nợ mới và thu nợ trong khoảng (bằng DaySummary cùng khoảng). */
-  period: { debt: number; collected: { cash: number; transfer: number } };
+  period: { debt: number; collected: { cash: number; transfer: number }; returnDebt: number };
 }
 
 export type BackupKind = 'auto' | 'manual' | 'before-restore';
@@ -422,4 +434,63 @@ export interface Overview {
   stocktake: StocktakeSummary | null;
   /** null khi server không cấu hình sao lưu (test). */
   backup: OverviewBackup | null;
+}
+
+/** Phiếu trả chưa hủy trong một khoảng ngày: refund = cash + debt. */
+export interface ReturnSummary {
+  count: number;
+  refund: number;
+  /** Tiền mặt chi ra từ két. */
+  cash: number;
+  /** Phần trừ vào nợ khách. */
+  debt: number;
+}
+
+export interface ReturnSummaryRow {
+  id: number;
+  code: string;
+  orderId: number;
+  orderCode: string;
+  /** Khách của đơn ghi nợ (tên hiện tại); đơn khác null. */
+  customerId: number | null;
+  customerName: string | null;
+  refund: number;
+  debtReduced: number;
+  cashRefund: number;
+  note: string | null;
+  status: 'done' | 'cancelled';
+  itemCount: number;
+  createdAt: string;
+  cancelledAt: string | null;
+}
+
+/** Dòng phiếu trả; tên, đơn vị, giá, hệ số lấy từ dòng hóa đơn gốc. */
+export interface ReturnItem {
+  id: number;
+  orderItemId: number;
+  productId: number | null;
+  productName: string;
+  unit: string;
+  /** Theo đơn vị lúc bán. */
+  qty: number;
+  price: number;
+  factor: number;
+  restock: boolean;
+  /** Tiền hoàn của dòng (đã trừ phần giảm giá phân bổ). */
+  amount: number;
+  /** qty × giá vốn lúc bán. */
+  cost: number;
+}
+
+export interface ReturnDetail extends ReturnSummaryRow {
+  items: ReturnItem[];
+}
+
+export interface ReturnList {
+  returns: ReturnSummaryRow[];
+  summary: ReturnSummary;
+  /** Số phiếu khớp mọi bộ lọc; returns chỉ là trang hiện tại. */
+  total: number;
+  page: number;
+  pageSize: number;
 }

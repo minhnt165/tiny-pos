@@ -35,10 +35,10 @@ describe('exportProfitReportXlsx', () => {
     const [s] = await readWorkbook(f.buffer);
     expect(s!.name).toBe('Lãi lỗ');
     expect(s!.rows).toEqual([
-      ['Kỳ', 'Số đơn', 'Doanh thu', 'Giá vốn', 'Lãi gộp', 'Tiền mặt', 'Chuyển khoản', 'Ghi nợ', 'Thu nợ TM', 'Thu nợ CK'],
-      ['29/09/2026', 2, 45000, 30000, 15000, 30000, 0, 15000, 0, 0],
-      ['28/09/2026', 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      ['Tổng', 2, 45000, 30000, 15000, 30000, 0, 15000, 0, 0],
+      ['Kỳ', 'Số đơn', 'Doanh thu', 'Trả hàng', 'Giá vốn', 'Lãi gộp', 'Tiền mặt', 'Chuyển khoản', 'Ghi nợ', 'Thu nợ TM', 'Thu nợ CK'],
+      ['29/09/2026', 2, 45000, 0, 30000, 15000, 30000, 0, 15000, 0, 0],
+      ['28/09/2026', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      ['Tổng', 2, 45000, 0, 30000, 15000, 30000, 0, 15000, 0, 0],
     ]);
   });
   it('gom theo tháng thì kỳ ghi mm/yyyy', async () => {

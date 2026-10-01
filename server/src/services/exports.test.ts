@@ -10,18 +10,21 @@ import {
   productInputSchema,
   productUnitInputSchema,
   productViewQuerySchema,
+  returnInputSchema,
+  returnListQuerySchema,
   supplierInputSchema,
 } from '@tiny-pos/shared';
 import type { Db } from '../db/connection.js';
 import { createTestDb } from '../db/test-db.js';
 import { readWorkbook } from '../xlsx/workbook.js';
 import { createCustomer, deleteCustomer } from './customers.js';
-import { exportCustomersXlsx, exportImportsXlsx, exportOrdersXlsx, exportProductsXlsx, exportProductTemplateXlsx, exportSuppliersXlsx } from './exports.js';
+import { exportCustomersXlsx, exportImportsXlsx, exportOrdersXlsx, exportProductsXlsx, exportProductTemplateXlsx, exportReturnsXlsx, exportSuppliersXlsx } from './exports.js';
 import { createImport } from './imports.js';
 import { importProductsFile } from './product-csv.js';
 import { cancelOrder, createOrder } from './orders.js';
 import { createUnit } from './product-units.js';
 import { createProduct, setProductActive } from './products.js';
+import { createReturn } from './returns.js';
 import { createSupplier } from './suppliers.js';
 
 const VN = 420;
@@ -96,9 +99,9 @@ describe('exportOrdersXlsx', () => {
     const [head, detail] = await readWorkbook(f.buffer);
     expect(head!.name).toBe('Hóa đơn');
     expect(head!.rows).toEqual([
-      ['Mã', 'Ngày giờ', 'Khách', 'Hình thức', 'Tiền hàng', 'Giảm giá', 'Phải trả', 'Đã trả', 'Còn nợ', 'Số món', 'Trạng thái', 'Hủy lúc'],
-      ['HD-20260929-0002', '2026-09-29T10:00:00.000Z', 'Cô Ba', 'Ghi nợ', 15000, 0, 15000, 5000, 10000, 1, 'Hoàn tất'],
-      ['HD-20260929-0001', '2026-09-29T10:00:00.000Z', null, 'Tiền mặt', 30000, 1000, 29000, 29000, null, 1, 'Đã hủy', '2026-09-29T17:00:00.000Z'],
+      ['Mã', 'Ngày giờ', 'Khách', 'Hình thức', 'Tiền hàng', 'Giảm giá', 'Phải trả', 'Đã trả', 'Còn nợ', 'Trả hàng', 'Số món', 'Trạng thái', 'Hủy lúc'],
+      ['HD-20260929-0002', '2026-09-29T10:00:00.000Z', 'Cô Ba', 'Ghi nợ', 15000, 0, 15000, 5000, 10000, 0, 1, 'Hoàn tất'],
+      ['HD-20260929-0001', '2026-09-29T10:00:00.000Z', null, 'Tiền mặt', 30000, 1000, 29000, 29000, null, 0, 1, 'Đã hủy', '2026-09-29T17:00:00.000Z'],
     ]);
     expect(detail!.name).toBe('Chi tiết');
     expect(detail!.rows).toEqual([
@@ -106,6 +109,15 @@ describe('exportOrdersXlsx', () => {
       ['HD-20260929-0002', '2026-09-29T10:00:00.000Z', 'Hoàn tất', 'Sữa', 'cái', 1, 15000, 15000, 10000],
       ['HD-20260929-0001', '2026-09-29T10:00:00.000Z', 'Đã hủy', 'Sữa', 'cái', 2, 15000, 30000, 10000],
     ]);
+  });
+
+  it('cột Trả hàng là tổng hoàn của phiếu trả chưa hủy', async () => {
+    const a = product({ name: 'Sữa', sellPrice: 15000, costPrice: 10000 });
+    const o = createOrder(db, orderInputSchema.parse({ paymentMethod: 'cash', paid: 100000, items: [{ productId: a.id, qty: 2, price: 15000 }] }), MORNING);
+    createReturn(db, returnInputSchema.parse({ orderId: o.id, items: [{ orderItemId: o.items[0]!.id, qty: 1 }] }), MORNING);
+    const f = await exportOrdersXlsx(db, orderListQuerySchema.parse({ from: '2026-09-29', to: '2026-09-29' }), CLOCK);
+    const [head] = await readWorkbook(f.buffer);
+    expect(head!.rows[1]![9]).toBe(15000);
   });
 });
 
@@ -166,6 +178,27 @@ describe('exportCustomersXlsx / exportSuppliersXlsx', () => {
     expect(s!.rows).toEqual([
       ['Tên', 'SĐT', 'Ghi chú', 'Mình còn nợ', 'Giao dịch gần nhất', 'Trạng thái'],
       ['Đại lý Hùng', '0281234', null, 0, null, 'Đang theo dõi'],
+    ]);
+  });
+});
+
+describe('exportReturnsXlsx', () => {
+  it('sheet Phiếu trả + Chi tiết theo bộ lọc; nhập kho Có/Không; tên file theo khoảng ngày', async () => {
+    const a = product({ name: 'Sữa', sellPrice: 15000, costPrice: 10000, stock: 10 });
+    const o = createOrder(db, orderInputSchema.parse({ paymentMethod: 'cash', paid: 100000, items: [{ productId: a.id, qty: 2, price: 15000 }] }), MORNING);
+    createReturn(db, returnInputSchema.parse({ orderId: o.id, items: [{ orderItemId: o.items[0]!.id, qty: 1, restock: false }], note: 'Hỏng' }), MORNING);
+    const f = await exportReturnsXlsx(db, returnListQuerySchema.parse({ from: '2026-09-29', to: '2026-09-29' }), CLOCK);
+    expect(f.filename).toBe('tra-hang-20260929.xlsx');
+    const [head, detail] = await readWorkbook(f.buffer);
+    expect(head!.name).toBe('Phiếu trả');
+    expect(head!.rows).toEqual([
+      ['Mã', 'Ngày giờ', 'Hóa đơn', 'Khách', 'Tổng hoàn', 'Trừ nợ', 'Tiền mặt', 'Số món', 'Trạng thái', 'Hủy lúc', 'Ghi chú'],
+      ['TH-20260929-0001', '2026-09-29T10:00:00.000Z', 'HD-20260929-0001', null, 15000, 0, 15000, 1, 'Hoàn tất', null, 'Hỏng'],
+    ]);
+    expect(detail!.name).toBe('Chi tiết');
+    expect(detail!.rows).toEqual([
+      ['Mã phiếu', 'Ngày giờ', 'Trạng thái', 'Tên hàng', 'Đơn vị', 'SL', 'Tiền hoàn', 'Nhập kho'],
+      ['TH-20260929-0001', '2026-09-29T10:00:00.000Z', 'Hoàn tất', 'Sữa', 'cái', 1, 15000, 'Không'],
     ]);
   });
 });

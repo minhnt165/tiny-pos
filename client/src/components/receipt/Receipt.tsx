@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { formatMoney, formatQty, type Settings } from '@tiny-pos/shared';
-import type { DebtReceiptData, ReceiptData } from './receipt-data';
+import type { DebtReceiptData, ReceiptData, ReturnReceiptData } from './receipt-data';
 
 const METHOD_LABEL = { cash: 'Tiền mặt', transfer: 'Chuyển khoản', debt: 'Ghi nợ' } as const;
 
@@ -108,6 +108,34 @@ export function DebtReceipt({ data, settings }: { data: DebtReceiptData; setting
       <Row label="Đã thu" value={formatMoney(data.amount)} strong />
       <Row label="Hình thức" value={COLLECT_LABEL[data.method]} />
       <Row label={data.balanceAfter < 0 ? 'Tiệm nợ lại' : 'Còn nợ'} value={formatMoney(Math.abs(data.balanceAfter))} />
+      <div style={rule} />
+      {settings.receiptFooter && <div style={center}>{settings.receiptFooter}</div>}
+    </div>
+  );
+}
+
+/** Phiếu trả hàng 80mm; tiền từng dòng là tiền hoàn (đã trừ phần giảm giá của hóa đơn). */
+export function ReturnReceipt({ data, settings }: { data: ReturnReceiptData; settings: Settings }) {
+  return (
+    <div style={page}>
+      <StoreHeader settings={settings} />
+      <div style={rule} />
+      <div style={{ ...center, fontWeight: 700 }}>{data.cancelled ? 'PHIẾU TRẢ HÀNG ĐÃ HỦY' : 'PHIẾU TRẢ HÀNG'}</div>
+      <div style={center}>{data.code}</div>
+      <div style={center}>{timeLabel(data.createdAt)}</div>
+      <div style={center}>HĐ gốc: {data.orderCode}</div>
+      {data.customerName && <div style={{ ...center, overflowWrap: 'anywhere' }}>Khách: {data.customerName}</div>}
+      <div style={rule} />
+      {data.items.map((it, i) => (
+        <div key={i} style={{ marginBottom: '3px' }}>
+          <div>{it.name}</div>
+          <Row label={`${formatQty(it.qty)} ${it.unit} × ${formatMoney(it.price)}`} value={formatMoney(it.amount)} />
+        </div>
+      ))}
+      <div style={rule} />
+      <Row label="Tổng hoàn" value={formatMoney(data.refund)} strong />
+      {data.debtReduced > 0 && <Row label="Trừ nợ" value={formatMoney(data.debtReduced)} />}
+      <Row label="Trả tiền mặt" value={formatMoney(data.cashRefund)} />
       <div style={rule} />
       {settings.receiptFooter && <div style={center}>{settings.receiptFooter}</div>}
     </div>

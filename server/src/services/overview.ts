@@ -53,11 +53,12 @@ function debtSummary<T extends DebtPartyRow>(owing: T[], limit: number): { total
 /**
  * Khách đang nợ; nợ lâu = khoản nợ chưa trả đã ≥ DEBT_OVERDUE_DAYS: mốc là khoản ghi nợ sớm nhất sau lần trả gần nhất,
  * không có thì là chính lần trả đó. Mua chịu thêm không làm mới mốc, nên khách cứ mua chịu mà không trả vẫn bị cờ.
+ * Bút toán bù khi hủy phiếu trả (return_cancel) không phải ghi nợ mới nên không làm mới mốc.
  */
 function customerDebt(db: Db, today: string, tz: number, limit: number): Overview['customers'] {
   // Viết tên bảng cứng trong subquery (drizzle bỏ tiền tố bảng khi render cột), như listCustomers
   const lastPaymentAt = sql<string | null>`(select max(created_at) from debt_transactions where debt_transactions.customer_id = customers.id and kind = 'payment')`;
-  const owingSince = sql<string | null>`(select min(created_at) from debt_transactions where debt_transactions.customer_id = customers.id and amount > 0
+  const owingSince = sql<string | null>`(select min(created_at) from debt_transactions where debt_transactions.customer_id = customers.id and amount > 0 and kind <> 'return_cancel'
     and created_at > coalesce((select max(created_at) from debt_transactions where debt_transactions.customer_id = customers.id and kind = 'payment'), ''))`;
   const cutoff = shiftDate(today, -DEBT_OVERDUE_DAYS);
   const owing: OverdueCustomerRow[] = db

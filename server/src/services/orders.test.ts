@@ -158,7 +158,7 @@ describe('listOrders', () => {
     const r = list({ date: '2026-09-29' });
     expect(r.orders.map((o) => o.id)).toEqual([c.id, b.id, a.id]);
     expect(r.orders[0]).toMatchObject({ status: 'cancelled', itemCount: 1 });
-    expect(r.summary).toEqual({ count: 2, total: 20000, cash: 10000, transfer: 10000, debt: 0, debtCollected: { cash: 0, transfer: 0 } });
+    expect(r.summary).toEqual({ count: 2, total: 20000, cash: 10000, transfer: 10000, debt: 0, debtCollected: { cash: 0, transfer: 0 }, returns: { count: 0, refund: 0, cash: 0, debt: 0 } });
   });
 
   const item = (name = 'Sữa tươi') => ({ items: [{ name, qty: 1, price: 10000 }] });
@@ -302,6 +302,7 @@ describe('đơn ghi nợ', () => {
       transfer: 10000,
       debt: 6000,
       debtCollected: { cash: 50000, transfer: 30000 },
+      returns: { count: 0, refund: 0, cash: 0, debt: 0 },
     });
   });
 });

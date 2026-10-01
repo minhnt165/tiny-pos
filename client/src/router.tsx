@@ -1,4 +1,4 @@
-import { BarChart3, ClipboardList, FolderOpen, LayoutDashboard, Package, PackageOpen, ReceiptText, Settings, ShoppingCart, Truck, Users, type LucideIcon } from 'lucide-react';
+import { BarChart3, ClipboardList, FolderOpen, LayoutDashboard, Package, PackageOpen, ReceiptText, Settings, ShoppingCart, Truck, Undo2, Users, type LucideIcon } from 'lucide-react';
 import { Navigate, Route, Routes } from 'react-router';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { CategoriesPage } from './pages/categories/CategoriesPage';
@@ -10,6 +10,7 @@ import { OverviewPage } from './pages/overview/OverviewPage';
 import { ProductListPage } from './pages/products/ProductListPage';
 import { QuickAddPage } from './pages/quick-add/QuickAddPage';
 import { ReportsPage } from './pages/reports/ReportsPage';
+import { ReturnsPage } from './pages/returns/ReturnsPage';
 import { SettingsPage } from './pages/settings/SettingsPage';
 import { StocktakePage } from './pages/stocktake/StocktakePage';
 import { SuppliersPage } from './pages/suppliers/SuppliersPage';
@@ -37,6 +38,7 @@ export const NAV: NavItem[] = [
   { to: '/overview', label: 'Tổng quan', icon: LayoutDashboard, group: 'sell', mobile: 1 },
   { to: '/sell', label: 'Bán hàng', icon: ShoppingCart, group: 'sell', mobile: 2 },
   { to: '/orders', label: 'Hóa đơn', icon: ReceiptText, group: 'sell', mobile: 3 },
+  { to: '/returns', label: 'Trả hàng', icon: Undo2, group: 'sell' },
   { to: '/reports', label: 'Báo cáo', icon: BarChart3, group: 'sell' },
   { to: '/customers', label: 'Khách hàng', icon: Users, group: 'sell' },
   { to: '/products', label: 'Sản phẩm', icon: Package, group: 'stock', mobile: 4 },
@@ -60,6 +62,7 @@ export function AppRoutes() {
       <Route path="/overview" element={<OverviewPage />} />
       <Route path="/sell" element={<SellPage />} />
       <Route path="/orders" element={<OrdersPage />} />
+      <Route path="/returns" element={<ReturnsPage />} />
       <Route path="/reports" element={<ReportsPage />} />
       <Route path="/imports" element={<ImportsPage />} />
       <Route path="/imports/new" element={<ImportFormPage />} />

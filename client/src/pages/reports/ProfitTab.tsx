@@ -15,7 +15,7 @@ const tone = (n: number) => (n > 0 ? 'success' : n < 0 ? 'danger' : 'default');
 const CELL = 'px-3 py-3 md:px-4';
 const MONEY = `${CELL} text-right tabular-nums`;
 const HEAD = 'px-3 md:px-4';
-// Điện thoại chỉ đủ chỗ 4 cột: ẩn Giá vốn và ba cột hình thức (đều đã có ở StatStrip)
+// Điện thoại chỉ đủ chỗ 4 cột: ẩn Giá vốn, Trả hàng và ba cột hình thức (đều đã có ở StatStrip)
 const MOBILE_HIDDEN = 'hidden md:table-cell';
 
 function Row({ r, total = false }: { r: ProfitRow; total?: boolean }) {
@@ -25,6 +25,7 @@ function Row({ r, total = false }: { r: ProfitRow; total?: boolean }) {
       <TableCell className={`${CELL} ${cls}`}>{total ? 'Tổng' : periodLabel(r.period)}</TableCell>
       <TableCell className={`${MONEY} ${cls}`}>{r.orders}</TableCell>
       <TableCell className={`${MONEY} ${cls}`}>{formatMoney(r.revenue)}</TableCell>
+      <TableCell className={`${MONEY} ${MOBILE_HIDDEN} ${cls}`}>{formatMoney(r.returns)}</TableCell>
       <TableCell className={`${MONEY} ${MOBILE_HIDDEN} ${cls}`}>{formatMoney(r.cost)}</TableCell>
       <TableCell className={`${MONEY} font-semibold ${r.profit < 0 ? 'text-destructive' : ''}`}>{formatMoney(r.profit)}</TableCell>
       <TableCell className={`${MONEY} ${MOBILE_HIDDEN} ${cls}`}>{formatMoney(r.cash)}</TableCell>
@@ -41,8 +42,8 @@ export function ProfitTab({ range }: { range: ReportRangeParams }) {
   return (
     <>
       <StatStrip>
-        <Stat label="Doanh thu" value={formatMoney(t?.revenue ?? 0)} hint="Đơn hoàn tất, đã trừ giảm giá" />
-        <Stat label="Giá vốn" value={formatMoney(t?.cost ?? 0)} hint="Giá vốn lúc bán" />
+        <Stat label="Doanh thu" value={formatMoney(t?.revenue ?? 0)} hint="Đơn hoàn tất, đã trừ giảm giá và trả hàng" />
+        <Stat label="Giá vốn" value={formatMoney(t?.cost ?? 0)} hint="Giá vốn lúc bán, trừ hàng trả nhập lại kho" />
         <Stat label="Lãi gộp" value={formatMoney(t?.profit ?? 0)} hint={t ? percent(t.profit, t.revenue) : undefined} tone={tone(t?.profit ?? 0)} />
         <Stat label="Số đơn" value={String(t?.orders ?? 0)} hint="Không tính đơn đã hủy" />
       </StatStrip>
@@ -61,7 +62,7 @@ export function ProfitTab({ range }: { range: ReportRangeParams }) {
       <ListPanel>
         {isLoading || !data ? (
           <TableSkeleton />
-        ) : data.total.orders === 0 ? (
+        ) : data.total.orders === 0 && data.total.returns === 0 ? (
           <EmptyState icon={ReceiptText} title="Chưa có hóa đơn trong khoảng này" description="Đổi khoảng thời gian ở trên để xem kỳ khác." />
         ) : (
           <Table>
@@ -70,6 +71,7 @@ export function ProfitTab({ range }: { range: ReportRangeParams }) {
                 <TableHead className={HEAD}>{data.range.groupBy === 'day' ? 'Ngày' : 'Tháng'}</TableHead>
                 <TableHead className={`${HEAD} text-right`}>Số đơn</TableHead>
                 <TableHead className={`${HEAD} text-right`}>Doanh thu</TableHead>
+                <TableHead className={`${HEAD} text-right ${MOBILE_HIDDEN}`}>Trả hàng</TableHead>
                 <TableHead className={`${HEAD} text-right ${MOBILE_HIDDEN}`}>Giá vốn</TableHead>
                 <TableHead className={`${HEAD} text-right`}>Lãi</TableHead>
                 <TableHead className={`${HEAD} text-right ${MOBILE_HIDDEN}`}>Tiền mặt</TableHead>

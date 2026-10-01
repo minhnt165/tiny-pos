@@ -9,6 +9,7 @@ import {
   orderListQuerySchema,
   productInputSchema,
   productViewQuerySchema,
+  returnInputSchema,
   supplierInputSchema,
 } from '@tiny-pos/shared';
 import type { Db } from '../db/connection.js';
@@ -19,6 +20,7 @@ import { createImport } from './imports.js';
 import { cancelOrder, createOrder, listOrders } from './orders.js';
 import { overview } from './overview.js';
 import { createProduct, listProducts, setProductActive } from './products.js';
+import { cancelReturn, createReturn } from './returns.js';
 import { createSupplier } from './suppliers.js';
 import { countItem, openStocktake } from './stocktakes.js';
 
@@ -142,6 +144,15 @@ describe('overview – công nợ và kiểm kê', () => {
     expect(all).toHaveLength(6);
     expect(all.find((c) => c.id === bay.id)).toMatchObject({ debt: 50000, overdue: true, owingSince: expect.stringMatching(/^2026-07-31T/), lastPaymentAt: null });
     expect(all.find((c) => c.id === tam.id)).toMatchObject({ debt: 10000, overdue: false, owingSince: expect.stringMatching(/^2026-09-26T/), lastPaymentAt: expect.stringMatching(/^2026-08-20T/) });
+  });
+
+  it('hủy phiếu trả không làm mới mốc nợ lâu: bút toán bù return_cancel không tính là ghi nợ mới', () => {
+    const c = createCustomer(db, customerCreateSchema.parse({ name: 'Chị Lan' }));
+    const o = order({ paymentMethod: 'debt', customerId: c.id, paid: 0, items: [{ name: 'Gạo', qty: 2, price: 25000 }] }, daysAgo(40));
+    collectDebt(db, c.id, customerPaymentSchema.parse({ amount: 10000, method: 'cash' }), daysAgo(35));
+    const r = createReturn(db, returnInputSchema.parse({ orderId: o.id, items: [{ orderItemId: o.items[0]!.id, qty: 1 }] }), NOON);
+    cancelReturn(db, r.id, NOON);
+    expect(overview(db, NOON).customers).toMatchObject({ overdueCount: 1, overdueTotal: 40000 });
   });
 
   it('NCC: nợ > 0 đang theo dõi, top giảm dần cắt theo limits.parties', () => {

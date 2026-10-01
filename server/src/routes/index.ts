@@ -3,6 +3,7 @@ import type { Db } from '../db/connection.js';
 import { categoriesRouter } from './categories.js';
 import { productsRouter } from './products.js';
 import { ordersRouter } from './orders.js';
+import { returnsRouter } from './returns.js';
 import { settingsRouter } from './settings.js';
 import { importsRouter } from './imports.js';
 import { stocktakesRouter } from './stocktakes.js';
@@ -18,6 +19,7 @@ export function apiRouter(db: Db, deps: { backups?: BackupService } = {}): Route
   r.use('/categories', categoriesRouter(db));
   r.use('/products', productsRouter(db));
   r.use('/orders', ordersRouter(db));
+  r.use('/returns', returnsRouter(db));
   r.use('/settings', settingsRouter(db));
   r.use('/suppliers', suppliersRouter(db));
   r.use('/customers', customersRouter(db));
