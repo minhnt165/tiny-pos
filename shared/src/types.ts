@@ -271,3 +271,83 @@ export interface OrderDebt {
   amount: number;
   balanceAfter: number;
 }
+
+// Báo cáo (0.8.0) – chỉ đọc, tính từ hóa đơn `done` và snapshot giá vốn trên dòng
+export type ProductReportSort = 'revenue' | 'qty' | 'profit';
+
+export interface ReportRange {
+  from: string;
+  to: string;
+  /** ≤ 31 ngày gom theo ngày, dài hơn theo tháng. */
+  groupBy: 'day' | 'month';
+}
+
+export interface ProfitRow {
+  /** "YYYY-MM-DD" hoặc "YYYY-MM"; dòng tổng để ''. */
+  period: string;
+  orders: number;
+  /** Σ (total − discount) của đơn hoàn tất. */
+  revenue: number;
+  /** Σ qty × costPrice của dòng (giá vốn lúc bán, theo đơn vị bán). */
+  cost: number;
+  profit: number;
+  cash: number;
+  transfer: number;
+  debt: number;
+  debtCollected: { cash: number; transfer: number };
+}
+
+export interface ProfitReport {
+  range: ReportRange;
+  total: ProfitRow;
+  /** Đủ mọi kỳ trong khoảng (kỳ trống là số 0), mới nhất trước. */
+  rows: ProfitRow[];
+}
+
+export interface ProductSalesRow {
+  /** null = món ngoài danh mục, gom một dòng. */
+  productId: number | null;
+  name: string;
+  unit: string;
+  /** Theo đơn vị gốc (qty × factor). */
+  qty: number;
+  revenue: number;
+  /** Σ (amount − qty × costPrice); chưa trừ giảm giá của đơn. */
+  profit: number;
+}
+
+export interface SlowProductRow {
+  productId: number;
+  name: string;
+  unit: string;
+  stock: number;
+  /** round(stock × costPrice). */
+  value: number;
+}
+
+export interface ProductReport {
+  range: ReportRange;
+  sort: ProductReportSort;
+  /** Tại thời điểm xem, chỉ hàng đang bán. */
+  stock: { costValue: number; sellValue: number; lowCount: number; outCount: number };
+  topSelling: ProductSalesRow[];
+  /** Tổng của mọi mặt hàng đã bán, không chỉ các dòng trả về. */
+  topSellingTotal: { count: number; qty: number; revenue: number; profit: number };
+  slow: SlowProductRow[];
+  slowCount: number;
+}
+
+export interface DebtPartyRow {
+  id: number;
+  name: string;
+  phone: string | null;
+  debt: number;
+}
+
+export interface DebtReport {
+  range: ReportRange;
+  customers: { total: number; count: number; top: DebtPartyRow[] };
+  suppliers: { total: number; count: number; top: DebtPartyRow[] };
+  /** Ghi nợ mới và thu nợ trong khoảng (bằng DaySummary cùng khoảng). */
+  period: { debt: number; collected: { cash: number; transfer: number } };
+}

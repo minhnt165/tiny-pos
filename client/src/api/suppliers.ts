@@ -14,7 +14,10 @@ export const useSupplierTransactions = (id: number | null) =>
 
 function useInvalidateSuppliers() {
   const qc = useQueryClient();
-  return () => void qc.invalidateQueries({ queryKey: ['suppliers'] });
+  return () => {
+    void qc.invalidateQueries({ queryKey: ['suppliers'] });
+    void qc.invalidateQueries({ queryKey: ['reports'] });
+  };
 }
 
 export function useSaveSupplier() {

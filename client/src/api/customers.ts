@@ -27,6 +27,7 @@ function useInvalidateCustomers() {
   return () => {
     void qc.invalidateQueries({ queryKey: ['customers'] });
     void qc.invalidateQueries({ queryKey: ['orders'] });
+    void qc.invalidateQueries({ queryKey: ['reports'] });
   };
 }
 

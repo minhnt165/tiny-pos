@@ -8,6 +8,7 @@ import { importsRouter } from './imports.js';
 import { stocktakesRouter } from './stocktakes.js';
 import { suppliersRouter } from './suppliers.js';
 import { customersRouter } from './customers.js';
+import { reportsRouter } from './reports.js';
 
 export function apiRouter(db: Db): Router {
   const r = Router();
@@ -19,6 +20,7 @@ export function apiRouter(db: Db): Router {
   r.use('/customers', customersRouter(db));
   r.use('/imports', importsRouter(db));
   r.use('/stocktakes', stocktakesRouter(db));
+  r.use('/reports', reportsRouter(db));
   r.use((_req, res) => res.status(404).json({ error: 'Không tìm thấy' }));
   return r;
 }

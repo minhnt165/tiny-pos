@@ -128,3 +128,11 @@ In không hỏi: tạo shortcut `chrome.exe --app=http://localhost:3000 --kiosk-
 4. *Sản phẩm* → *Sắp hết*, *Giá bán* từ–đến, *Sắp xếp giá giảm dần*; từ *Danh mục* → *Xem sản phẩm* vẫn lọc đúng danh mục.
 5. *Khách hàng*/*Nhà cung cấp* → *Chỉ người đang nợ*, *Hiện cả người đã xóa* (dòng mờ, nhãn "Đã xóa"), *Nợ nhiều nhất*.
 6. Điện thoại: *Bộ lọc* mở bảng trượt từ dưới lên, nút *Xem n …* đóng bảng; không trang nào cuộn ngang.
+
+## Kiểm thử thủ công – Báo cáo 0.8.0
+
+1. *Báo cáo* mở ra là *Tháng này*, thẻ *Lãi lỗ*: Doanh thu, Giá vốn, Lãi gộp (% doanh thu), Số đơn; hàng dưới Tiền mặt / Chuyển khoản / Ghi nợ / Thu nợ bằng đúng trang *Hóa đơn* cùng khoảng. Bảng theo ngày có dòng Tổng; chọn khoảng dài hơn 31 ngày thì gom theo tháng.
+2. Thẻ *Mặt hàng*: giá trị tồn theo giá vốn / giá bán, ô *Sắp hết* và *Hết hàng* bấm sang *Sản phẩm* với bộ lọc tương ứng; *Bán chạy* xếp theo Doanh thu / Số lượng / Lãi (lưu trên URL), có dòng tổng; *Không bán được trong kỳ* liệt kê hàng còn tồn mà không bán.
+3. Thẻ *Công nợ*: nợ khách / nợ NCC hiện tại, ghi nợ và thu nợ trong kỳ; bấm một dòng *Khách nợ nhiều nhất* sang *Khách hàng* với tên điền sẵn.
+4. *Xuất Excel* ở mỗi thẻ ra file `bao-cao-…-FROM-TO.xlsx` đúng khoảng đang xem, có dòng Tổng.
+5. Điện thoại: *Thêm* → *Báo cáo*; không cuộn ngang; bảng Lãi lỗ ẩn cột Giá vốn và ba cột hình thức thanh toán, bảng Bán chạy chỉ hiện cột tiền đang xếp theo.

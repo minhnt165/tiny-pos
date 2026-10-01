@@ -26,7 +26,7 @@ npm workspaces, TypeScript ESM:
 - `client/` – React 19 + Vite 7 + Tailwind v4 + TanStack Query 5 + react-router 7, PWA. UI bằng shadcn/ui (style `radix-nova`, gói `radix-ui`) + icon lucide-react. Version ở `package.json` gốc (Vite chèn `__APP_VERSION__`); tùy chọn giao diện theo máy ở `lib/ui-prefs.ts` (`data-*` trên `<html>`).
 - `docs/superpowers/specs|plans/` – spec và kế hoạch từng giai đoạn. Đọc spec của giai đoạn liên quan trước khi sửa hành vi nghiệp vụ.
 
-Đã xong: Giai đoạn 1 (sản phẩm, danh mục, đơn vị quy đổi, CSV), 2 (bán hàng, hóa đơn 80mm, VietQR, cài đặt), 3 (nhập hàng, nhà cung cấp + công nợ, kiểm kê, lịch sử tồn), 4 (khách hàng, công nợ khách), làm mới giao diện 0.5.0 (sidebar nhóm menu, tùy chỉnh giao diện theo máy, version), bộ lọc nâng cao 0.6.0 (khoảng ngày, lọc chứng từ ở server, lọc sản phẩm/khách/NCC ở trình duyệt, lưu trên URL), Excel 0.7.0 (xuất `.xlsx` 5 danh sách theo bộ lọc, nhập sản phẩm từ `.xlsx`/`.csv`, `exceljs` chỉ ở server).
+Đã xong: Giai đoạn 1 (sản phẩm, danh mục, đơn vị quy đổi, CSV), 2 (bán hàng, hóa đơn 80mm, VietQR, cài đặt), 3 (nhập hàng, nhà cung cấp + công nợ, kiểm kê, lịch sử tồn), 4 (khách hàng, công nợ khách), làm mới giao diện 0.5.0 (sidebar nhóm menu, tùy chỉnh giao diện theo máy, version), bộ lọc nâng cao 0.6.0 (khoảng ngày, lọc chứng từ ở server, lọc sản phẩm/khách/NCC ở trình duyệt, lưu trên URL), Excel 0.7.0 (xuất `.xlsx` 5 danh sách theo bộ lọc, nhập sản phẩm từ `.xlsx`/`.csv`, `exceljs` chỉ ở server), Báo cáo 0.8.0 (lãi lỗ / mặt hàng / công nợ theo khoảng ngày, xuất Excel; `services/reports.ts`, dùng chung `daySummary` với trang Hóa đơn).
 
 ## Bất biến nghiệp vụ (không được phá)
 
@@ -39,6 +39,7 @@ npm workspaces, TypeScript ESM:
 - **Giá vốn** = giá nhập lần gần nhất, quy về đơn vị gốc (giá thùng / factor).
 - **Kiểm kê**: chênh lệch tính theo tồn tại lúc đếm; món không đếm thì bỏ qua; chốt ghi movement `adjust`.
 - Sản phẩm ngừng bán: không bán được, nhưng vẫn nhập hàng và kiểm kê được.
+- **Báo cáo chỉ đọc**: tính từ hóa đơn `done` và snapshot `cost_price` trên dòng hóa đơn (không nhân `factor`); số tiền mặt / CK / ghi nợ / thu nợ lấy từ `daySummary` (`services/orders.ts`) để luôn khớp trang Hóa đơn. Tồn kho và công nợ trong báo cáo là số **hiện tại**, không theo khoảng ngày.
 
 ## Quy ước làm việc
 

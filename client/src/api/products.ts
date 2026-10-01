@@ -43,6 +43,7 @@ function useInvalidateProducts() {
   return () => {
     void qc.invalidateQueries({ queryKey: ['products'] });
     void qc.invalidateQueries({ queryKey: ['categories'] });
+    void qc.invalidateQueries({ queryKey: ['reports'] });
   };
 }
 

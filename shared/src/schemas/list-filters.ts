@@ -22,7 +22,7 @@ export const isoDate = z
   }, 'không phải ngày hợp lệ');
 
 /** Số ngày của khoảng [from, to], tính cả hai đầu. */
-const spanDays = (from: string, to: string) => (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY + 1;
+export const spanDays = (from: string, to: string) => (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY + 1;
 
 export function validRange(from: string, to: string): boolean {
   return from <= to && spanDays(from, to) <= MAX_RANGE_DAYS;
@@ -65,7 +65,7 @@ const positiveId = z.coerce.number().int().positive().optional();
 const rangeFields = { from: isoDate.optional(), to: isoDate.optional(), date: isoDate.optional() };
 
 /** Lỗi của khoảng from/to (nếu có); gắn vào gốc (path rỗng) để thông báo không bị thêm nhãn trường. */
-function rangeError(q: { from?: string; to?: string; date?: string }): string | undefined {
+export function rangeError(q: { from?: string; to?: string; date?: string }): string | undefined {
   if (!q.from && !q.to) return undefined;
   const { from, to } = resolveRange(q, q.from ?? q.to!);
   if (from > to) return 'Ngày bắt đầu phải trước ngày kết thúc';

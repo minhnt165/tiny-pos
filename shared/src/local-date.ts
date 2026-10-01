@@ -74,3 +74,24 @@ export function formatRangeVn(from: string, to: string, today: string): string {
   const f = (d: string) => (sameYear ? formatDateVn(d).slice(0, 5) : formatDateVn(d));
   return from === to ? f(from) : `${f(from)} – ${f(to)}`;
 }
+
+/** Các ngày "YYYY-MM-DD" từ `from` đến `to`, tính cả hai đầu. */
+export function daysBetween(from: string, to: string): string[] {
+  const out: string[] = [];
+  for (let d = from; d <= to; d = shiftDate(d, 1)) out.push(d);
+  return out;
+}
+
+/** Các tháng "YYYY-MM" từ tháng của `from` đến tháng của `to`. */
+export function monthsBetween(from: string, to: string): string[] {
+  const out: string[] = [];
+  const last = to.slice(0, 7);
+  for (let ym = from.slice(0, 7); ym <= last; ym = shiftDate(monthEnd(ym), 1).slice(0, 7)) out.push(ym);
+  return out;
+}
+
+/** "YYYY-MM" → "Tháng mm/yyyy"; chuỗi khác dạng trả nguyên. */
+export function formatMonthVn(ym: string): string {
+  const m = /^(\d{4})-(\d{2})$/.exec(ym);
+  return m ? `Tháng ${m[2]}/${m[1]}` : ym;
+}

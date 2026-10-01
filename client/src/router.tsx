@@ -1,4 +1,4 @@
-import { ClipboardList, FolderOpen, Package, PackageOpen, ReceiptText, Settings, ShoppingCart, Truck, Users, type LucideIcon } from 'lucide-react';
+import { BarChart3, ClipboardList, FolderOpen, Package, PackageOpen, ReceiptText, Settings, ShoppingCart, Truck, Users, type LucideIcon } from 'lucide-react';
 import { Navigate, Route, Routes } from 'react-router';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { CategoriesPage } from './pages/categories/CategoriesPage';
@@ -8,6 +8,7 @@ import { ImportsPage } from './pages/imports/ImportsPage';
 import { OrdersPage } from './pages/orders/OrdersPage';
 import { ProductListPage } from './pages/products/ProductListPage';
 import { QuickAddPage } from './pages/quick-add/QuickAddPage';
+import { ReportsPage } from './pages/reports/ReportsPage';
 import { SettingsPage } from './pages/settings/SettingsPage';
 import { StocktakePage } from './pages/stocktake/StocktakePage';
 import { SuppliersPage } from './pages/suppliers/SuppliersPage';
@@ -34,6 +35,7 @@ export interface NavItem {
 export const NAV: NavItem[] = [
   { to: '/sell', label: 'Bán hàng', icon: ShoppingCart, group: 'sell', mobile: 1 },
   { to: '/orders', label: 'Hóa đơn', icon: ReceiptText, group: 'sell', mobile: 2 },
+  { to: '/reports', label: 'Báo cáo', icon: BarChart3, group: 'sell' },
   { to: '/customers', label: 'Khách hàng', icon: Users, group: 'sell' },
   { to: '/products', label: 'Sản phẩm', icon: Package, group: 'stock', mobile: 4 },
   { to: '/imports', label: 'Nhập hàng', icon: PackageOpen, group: 'stock' },
@@ -55,6 +57,7 @@ export function AppRoutes() {
       <Route path="/" element={<Navigate to="/sell" replace />} />
       <Route path="/sell" element={<SellPage />} />
       <Route path="/orders" element={<OrdersPage />} />
+      <Route path="/reports" element={<ReportsPage />} />
       <Route path="/imports" element={<ImportsPage />} />
       <Route path="/imports/new" element={<ImportFormPage />} />
       <Route path="/stocktake" element={<StocktakePage />} />

@@ -26,7 +26,7 @@ export interface XlsxFile {
   buffer: Buffer;
 }
 
-interface SheetSpec {
+export interface SheetSpec {
   name: string;
   columns: XlsxColumn[];
   rows: XlsxValue[][];
@@ -35,12 +35,12 @@ interface SheetSpec {
 const METHOD_LABEL: Record<PaymentMethod, string> = { cash: 'Tiền mặt', transfer: 'Chuyển khoản', debt: 'Ghi nợ' };
 const STATUS_LABEL = { done: 'Hoàn tất', cancelled: 'Đã hủy' } as const;
 
-const col = (header: string, width: number, kind: XlsxColumn['kind'] = 'text'): XlsxColumn => ({ header, width, kind });
+export const col = (header: string, width: number, kind: XlsxColumn['kind'] = 'text'): XlsxColumn => ({ header, width, kind });
 const compact = (d: string) => d.replaceAll('-', '');
 /** Tên file theo khoảng ngày; một ngày thì chỉ ghi một mốc. */
-const rangeName = (prefix: string, from: string, to: string) => `${prefix}-${compact(from)}${from === to ? '' : `-${compact(to)}`}.xlsx`;
+export const rangeName = (prefix: string, from: string, to: string) => `${prefix}-${compact(from)}${from === to ? '' : `-${compact(to)}`}.xlsx`;
 
-async function build(filename: string, sheets: SheetSpec[], tz: number): Promise<XlsxFile> {
+export async function build(filename: string, sheets: SheetSpec[], tz: number): Promise<XlsxFile> {
   const wb = newWorkbook();
   for (const s of sheets) addSheet(wb, s.name, s.columns, s.rows, tz);
   return { filename, buffer: await toBuffer(wb) };

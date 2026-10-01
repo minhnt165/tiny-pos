@@ -8,6 +8,7 @@ import {
   PAGE_SIZE,
   resolveRange,
   stripDiacritics,
+  type DaySummary,
   type OrderDebt,
   type OrderDetail,
   type OrderInput,
@@ -207,8 +208,37 @@ function orderFilter(query: OrderListQuery, clock?: Clock) {
   return { from, to, start, end, inRange, where };
 }
 
+/**
+ * Số liệu két trong [start, end) (ISO UTC): đơn hoàn tất theo hình thức + thu nợ. Theo khoảng ngày,
+ * không theo lọc khác để đối soát két vẫn đúng khi đang lọc. Trang Hóa đơn và Báo cáo dùng chung.
+ */
+export function daySummary(db: DbOrTx, start: string, end: string): DaySummary {
+  const done = db
+    .select({ paymentMethod: orders.paymentMethod, total: orders.total, discount: orders.discount, paid: orders.paid })
+    .from(orders)
+    .where(and(eq(orders.status, 'done'), gte(orders.createdAt, start), lt(orders.createdAt, end)))
+    .all()
+    .map((o) => ({ paymentMethod: o.paymentMethod, payable: o.total - o.discount, paid: o.paid }));
+  const sum = (rows: { payable: number }[]) => rows.reduce((s, o) => s + o.payable, 0);
+  const debtOrders = done.filter((o) => o.paymentMethod === 'debt');
+  const collected = db
+    .select({ method: debtTransactions.method, amount: debtTransactions.amount })
+    .from(debtTransactions)
+    .where(and(eq(debtTransactions.kind, 'payment'), gte(debtTransactions.createdAt, start), lt(debtTransactions.createdAt, end)))
+    .all();
+  const collectedBy = (m: 'cash' | 'transfer') => collected.filter((r) => r.method === m).reduce((s, r) => s - r.amount, 0);
+  return {
+    count: done.length,
+    total: sum(done),
+    cash: sum(done.filter((o) => o.paymentMethod === 'cash')) + debtOrders.reduce((s, o) => s + o.paid, 0),
+    transfer: sum(done.filter((o) => o.paymentMethod === 'transfer')),
+    debt: debtOrders.reduce((s, o) => s + o.payable - o.paid, 0),
+    debtCollected: { cash: collectedBy('cash'), transfer: collectedBy('transfer') },
+  };
+}
+
 export function listOrders(db: Db, query: OrderListQuery, clock?: Clock): OrderList {
-  const { start, end, inRange, where } = orderFilter(query, clock);
+  const { start, end, where } = orderFilter(query, clock);
   const page = query.page ?? 1;
   const total = db.select({ n: count() }).from(orders).where(where).get()?.n ?? 0;
   const list = db
@@ -221,36 +251,7 @@ export function listOrders(db: Db, query: OrderListQuery, clock?: Clock): OrderL
     .offset((page - 1) * PAGE_SIZE)
     .all()
     .map((r) => toSummary(r.order, Number(r.itemCount), r.customerName));
-
-  // Số liệu theo khoảng ngày, không theo lọc khác: đối soát két vẫn đúng khi đang lọc
-  const done = db
-    .select({ paymentMethod: orders.paymentMethod, total: orders.total, discount: orders.discount, paid: orders.paid })
-    .from(orders)
-    .where(and(inRange, eq(orders.status, 'done')))
-    .all()
-    .map((o) => ({ paymentMethod: o.paymentMethod, payable: o.total - o.discount, paid: o.paid }));
-  const sum = (rows: { payable: number }[]) => rows.reduce((s, o) => s + o.payable, 0);
-  const debtOrders = done.filter((o) => o.paymentMethod === 'debt');
-  const collected = db
-    .select({ method: debtTransactions.method, amount: debtTransactions.amount })
-    .from(debtTransactions)
-    .where(and(eq(debtTransactions.kind, 'payment'), gte(debtTransactions.createdAt, start), lt(debtTransactions.createdAt, end)))
-    .all();
-  const collectedBy = (m: 'cash' | 'transfer') => collected.filter((r) => r.method === m).reduce((s, r) => s - r.amount, 0);
-  return {
-    orders: list,
-    summary: {
-      count: done.length,
-      total: sum(done),
-      cash: sum(done.filter((o) => o.paymentMethod === 'cash')) + debtOrders.reduce((s, o) => s + o.paid, 0),
-      transfer: sum(done.filter((o) => o.paymentMethod === 'transfer')),
-      debt: debtOrders.reduce((s, o) => s + o.payable - o.paid, 0),
-      debtCollected: { cash: collectedBy('cash'), transfer: collectedBy('transfer') },
-    },
-    total,
-    page,
-    pageSize: PAGE_SIZE,
-  };
+  return { orders: list, summary: daySummary(db, start, end), total, page, pageSize: PAGE_SIZE };
 }
 
 /** Mọi hóa đơn khớp bộ lọc (không phân trang), mới nhất trước, kèm món; quá `maxRows` thì báo lỗi thay vì dựng file khổng lồ. */
