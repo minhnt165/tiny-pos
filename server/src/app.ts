@@ -4,13 +4,14 @@ import path from 'node:path';
 import type { Db } from './db/connection.js';
 import { errorHandler } from './middleware/error.js';
 import { apiRouter } from './routes/index.js';
+import type { BackupService } from './services/backups.js';
 
 /** Tạo app Express; tách khỏi listen() để test bằng cổng ngẫu nhiên. */
-export function createApp(db: Db, opts: { clientDist?: string } = {}): Express {
+export function createApp(db: Db, opts: { clientDist?: string; backups?: BackupService } = {}): Express {
   const app = express();
   app.disable('x-powered-by');
   app.use(express.json({ limit: '1mb' }));
-  app.use('/api', apiRouter(db));
+  app.use('/api', apiRouter(db, { backups: opts.backups }));
 
   const dist = opts.clientDist;
   if (dist && fs.existsSync(dist)) {

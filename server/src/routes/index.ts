@@ -9,8 +9,10 @@ import { stocktakesRouter } from './stocktakes.js';
 import { suppliersRouter } from './suppliers.js';
 import { customersRouter } from './customers.js';
 import { reportsRouter } from './reports.js';
+import { backupsRouter } from './backups.js';
+import type { BackupService } from '../services/backups.js';
 
-export function apiRouter(db: Db): Router {
+export function apiRouter(db: Db, deps: { backups?: BackupService } = {}): Router {
   const r = Router();
   r.use('/categories', categoriesRouter(db));
   r.use('/products', productsRouter(db));
@@ -21,6 +23,7 @@ export function apiRouter(db: Db): Router {
   r.use('/imports', importsRouter(db));
   r.use('/stocktakes', stocktakesRouter(db));
   r.use('/reports', reportsRouter(db));
+  if (deps.backups) r.use('/backups', backupsRouter(deps.backups));
   r.use((_req, res) => res.status(404).json({ error: 'Không tìm thấy' }));
   return r;
 }
