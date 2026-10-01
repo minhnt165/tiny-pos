@@ -70,3 +70,17 @@ describe('backup scheduler', () => {
     s.stop();
   });
 });
+
+describe('backup scheduler: không làm chết tiến trình', () => {
+  it('lastAutoAt ném → tick vẫn resolve và ghi lastError', async () => {
+    const broken: BackupService = {
+      ...svc,
+      lastAutoAt: () => {
+        throw new Error('EPERM');
+      },
+    };
+    const s = createBackupScheduler({ service: broken, dbFile, log: () => undefined });
+    await expect(s.tick(new Date())).resolves.toBeUndefined();
+    expect(svc.status().lastError).toContain('EPERM');
+  });
+});

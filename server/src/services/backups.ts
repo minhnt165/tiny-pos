@@ -193,10 +193,13 @@ export function createBackupService(db: Db, opts: BackupOpts): BackupService {
 
   /** Chép toàn bộ bảng từ file vào DB đang mở trong một transaction; cột chỉ có ở DB hiện tại nhận mặc định. */
   const copyTables = (file: string) => {
+    // File có thể bị xóa/dọn trong lúc tạo before-restore; ATTACH đường dẫn thiếu sẽ tạo DB rỗng → không được xóa dữ liệu
+    if (!fs.existsSync(file)) throw new NotFoundError('Không tìm thấy bản sao');
     sqlite.pragma('foreign_keys = OFF');
     try {
       sqlite.prepare('attach database ? as src').run(file);
       try {
+        if (!hasTable('src', 'products')) throw new NotFoundError('Không tìm thấy bản sao');
         sqlite.transaction(() => {
           const tables = tableNames('main');
           const srcTables = new Set(tableNames('src'));

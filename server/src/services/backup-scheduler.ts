@@ -27,15 +27,16 @@ const mtime = (file: string): number => {
  */
 export function createBackupScheduler(o: SchedulerOpts) {
   const log = o.log ?? console.log;
+  // Mọi lỗi đều bắt trong tick: tick chạy trong setInterval, reject sẽ thành unhandled rejection làm chết server
   const tick = async (now?: Date): Promise<void> => {
-    const { now: at, tz } = resolveClock({ ...o.clock, ...(now ? { now } : {}) });
-    const last = o.service.lastAutoAt();
-    if (last) {
-      if (localDate(new Date(last), tz) === localDate(at, tz)) return;
-      const lastMs = Date.parse(last);
-      if (mtime(o.dbFile) <= lastMs && mtime(`${o.dbFile}-wal`) <= lastMs) return;
-    }
     try {
+      const { now: at, tz } = resolveClock({ ...o.clock, ...(now ? { now } : {}) });
+      const last = o.service.lastAutoAt();
+      if (last) {
+        if (localDate(new Date(last), tz) === localDate(at, tz)) return;
+        const lastMs = Date.parse(last);
+        if (mtime(o.dbFile) <= lastMs && mtime(`${o.dbFile}-wal`) <= lastMs) return;
+      }
       const item = await o.service.create('auto');
       o.service.noteAutoError(null);
       log(`Sao lưu tự động: ${item.name}`);

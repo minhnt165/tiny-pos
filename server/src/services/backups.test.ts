@@ -248,3 +248,20 @@ describe('backups: khôi phục', () => {
     await expect(svc.restoreUpload(Buffer.alloc(0))).rejects.toThrow('Chưa có file');
   });
 });
+
+describe('backups: bản sao biến mất giữa chừng', () => {
+  it('file bị dọn/xóa sau khi kiểm → 404, DB không đổi (không ATTACH tạo DB rỗng)', async () => {
+    const s = createBackupService(db, { dir: dir(), tmpDir: tmp(), keepAuto: 2 });
+    product('Coca', '1');
+    const a1 = await s.create('auto');
+    const a2 = await s.create('auto');
+    // Người dùng chép tay một bản auto cũ vào thư mục: thừa so với keepAuto, sẽ bị dọn ở lần sao lưu kế tiếp
+    const old = path.join(dir(), 'grocery-20260901-000000-auto.db');
+    fs.copyFileSync(path.join(dir(), a1.name), old);
+    fs.utimesSync(old, new Date('2026-09-01'), new Date('2026-09-01'));
+    expect(fs.existsSync(path.join(dir(), a2.name))).toBe(true);
+    await expect(s.restore('grocery-20260901-000000-auto.db')).rejects.toThrow(NotFoundError);
+    expect(listProducts(db, { includeInactive: true })).toHaveLength(1);
+    expect(fs.existsSync(old)).toBe(false);
+  });
+});
