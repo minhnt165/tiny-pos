@@ -28,7 +28,7 @@ Tiêu chí thành công:
 
 Trong phạm vi: bảng `returns` + `return_items` (migration `0004`); `shared/return-math.ts`; service
 `services/returns.ts` (lập, xem, danh sách lọc, hủy, xuất `.xlsx`); route `/api/returns`; sửa `daySummary`,
-`profitReport`, `productReport`, `debtReport`, `getOrder`, `listOrders`, `cancelOrder`, xuất Excel hóa đơn và
+`profitReport`, `productReport`, `debtReport`, mốc nợ lâu ở `overview.ts`, `getOrder`, `listOrders`, `cancelOrder`, xuất Excel hóa đơn và
 lãi lỗ; nút *Trả hàng* và phần phiếu trả trong chi tiết hóa đơn; hộp lập phiếu; trang `/returns`; phiếu in
 80mm; nhãn sổ nợ khách; version 0.11.0; README; CLAUDE.md.
 
@@ -43,13 +43,13 @@ thanh dưới điện thoại, thống kê lý do trả.
 | Gắn hóa đơn | **Bắt buộc** gắn một hóa đơn `done`; mỗi dòng phiếu trỏ về `order_item_id` | Giá bán, giá vốn, đơn vị, hệ số lấy đúng snapshot lúc bán nên lãi lỗ chính xác; chặn trả quá số đã mua |
 | Lưu trữ | Bảng riêng `returns` + `return_items`, mã `TH-YYYYMMDD-NNNN` | Hóa đơn gốc không đổi ("chứng từ không sửa"); không lẫn vào mọi truy vấn `orders.status = 'done'` như cách hóa đơn âm; giữ được ngày trả và hủy được phiếu, điều cột `returned_qty` không làm được |
 | Số lượng | Theo đơn vị lúc bán; mỗi dòng ≤ số đã mua − số đã trả ở phiếu `done` khác; hàng cân cho số lẻ (3 chữ số) | Chủ tiệm nhìn "đã mua 3 lốc" mà trả, không phải quy đổi |
-| Tiền hoàn có giảm giá | Phân bổ giảm giá của đơn theo tỷ lệ thành tiền từng dòng; dòng cuối nhận phần dư làm tròn; hoàn theo lũy kế số đã trả (§5) | Trả hết thì đúng bằng `payable`; trả nhiều lần cộng lại không lệch đồng nào |
+| Tiền hoàn có giảm giá | Phân bổ giảm giá của đơn theo tỷ lệ thành tiền từng dòng; phần lẻ từng đồng cho dòng có phần thập phân lớn nhất (không dòng nào âm); hoàn theo lũy kế số đã trả (§5) | Trả hết thì đúng bằng `payable`; trả nhiều lần cộng lại không lệch đồng nào |
 | Hình thức hoàn | Đơn ghi nợ: **trừ nợ trước**, tối đa bằng nợ hiện tại của khách (nếu > 0), phần dư trả tiền mặt; đơn tiền mặt / chuyển khoản: toàn bộ tiền mặt | Người dùng chọn "theo hóa đơn gốc": không thêm bước ở quầy; tiệm không hoàn chuyển khoản |
 | Nhập lại kho | Mỗi dòng có checkbox *Nhập lại kho*, mặc định bật; món ngoài không có | Hàng hỏng / hết hạn vẫn hoàn tiền nhưng không cộng tồn; giá vốn của phần đó thành lỗ trong báo cáo |
 | Ngày tính | Phiếu `done` tính vào **ngày lập phiếu**; số ngày bán không đổi | Két cuối ngày khớp tiền thật đã chi; số ngày cũ đã chốt không bị sửa |
 | Hủy phiếu trả | Cho phép; ghi movement bù `adjust` và bút toán bù `return_cancel`; phiếu giữ lại, trạng thái *Đã hủy* | Bất biến "chứng từ không sửa, chỉ hủy" |
 | Hủy hóa đơn có phiếu trả | **Chặn** khi còn phiếu trả `done`: "Hóa đơn đã có phiếu trả, hãy hủy phiếu trả trước" | Không cộng tồn hay bù nợ hai lần; không phải tính "phần còn lại" khi hủy đơn |
-| Nợ lâu (Tổng quan) | Phiếu trả trừ nợ **không** tính là trả nợ (`kind = 'return'`, không phải `'payment'`) | Trả hàng không phải khách trả tiền; quy tắc nợ lâu 0.10.0 giữ nguyên |
+| Nợ lâu (Tổng quan) | Phiếu trả trừ nợ **không** tính là trả nợ (`kind = 'return'`, không phải `'payment'`); bút toán bù `return_cancel` (dương) **không** tính là ghi nợ mới khi tìm mốc nợ lâu | Trả hàng không phải khách trả tiền; hủy phiếu trả không được làm mới mốc của khoản nợ cũ |
 | Khách ngừng theo dõi | Vẫn trừ nợ bình thường | Nợ thật vẫn còn; sổ nợ không phụ thuộc trạng thái theo dõi |
 | Vị trí trang | `/returns` *Trả hàng* (icon `Undo2`) trong nhóm *Bán hàng*, ngay sau *Hóa đơn*; không có ô trên thanh dưới | Thanh dưới chỉ 4 ô; lập phiếu đi từ chi tiết hóa đơn |
 
@@ -90,8 +90,8 @@ Hàm thuần, client dùng để hiện số trước khi lưu, server dùng khi
 client gửi).
 
 - `lineValues(items, discount)`: giá trị sau giảm giá của từng dòng.
-  `share_i = floor(discount × amount_i / total)`, dòng cuối nhận `discount − Σ share` của các dòng trước;
-  `value_i = amount_i − share_i`. `total = 0` thì mọi `value_i = 0`. Σ `value_i` = `payable`.
+  `exact_i = discount × amount_i / total`, `share_i = floor(exact_i)`; phần còn thiếu `discount − Σ share` (đồng) chia
+  mỗi dòng 1 đồng theo phần thập phân của `exact_i` giảm dần (bằng nhau thì dòng trước); `value_i = amount_i − share_i ≥ 0`. `total = 0` thì mọi `value_i = 0`. Σ `value_i` = `payable`.
 - `refundFor(value, qty, returnedBefore, returningNow)`:
   `round(value × (returnedBefore + returningNow) / qty) − round(value × returnedBefore / qty)`;
   khi `returnedBefore + returningNow` bằng `qty` (sai số `1e-9`) thì số hạng đầu là đúng `value`.
@@ -117,7 +117,9 @@ client gửi).
 - `listReturns(db, query, clock)`: lọc khoảng ngày (bắt buộc, mặc định hôm nay như hóa đơn), `status[]`, `q`
   (bỏ dấu, LIKE trên mã phiếu, mã hóa đơn, tên món), phân trang; trả kèm `summary` = `returnSummary` của khoảng
   ngày (không theo lọc khác, giống `daySummary`).
-- `returnSummary(db, start, end)`: `{ count, refund, cash, debt }` của phiếu `done` trong `[start, end)`.
+- `returnSummary(db, start, end)`: `{ count, refund, cash, debt }` của phiếu `done` trong `[start, end)`. Hàm này cùng các truy vấn
+  đọc dùng chung (dòng phiếu, số đã trả của dòng hóa đơn, Σ hoàn của đơn) đặt ở `services/return-rows.ts`, chỉ phụ thuộc schema,
+  để `orders.ts` (getOrder, daySummary) và `returns.ts` không import vòng nhau.
 - `cancelReturn(db, id, clock)`: đã hủy → 409; dòng `restock` có `productId` → movement `adjust` `−qty × factor`,
   note 'Hủy phiếu trả TH-…'; `debtReduced > 0` → `recordCustomerDebtTx({ amount: +debtReduced, kind: 'return_cancel' })`;
   cập nhật `status`, `cancelledAt`. Không kiểm tra tồn (cho âm như bán hàng).
@@ -128,7 +130,7 @@ client gửi).
 
 - `getOrder`: mỗi `OrderItem` thêm `returnedQty` (Σ qty ở phiếu `done`); `OrderDetail` thêm `returns: ReturnSummaryRow[]`
   (mọi phiếu của đơn, kể cả đã hủy, mới nhất trước) và `customerDebt` (nợ **hiện tại** của khách, đơn không có khách thì `null`) để hộp lập phiếu tính phần trừ nợ.
-- `listOrders` / `OrderSummary`: thêm `refunded` (Σ `refund` phiếu `done` của đơn). Xuất Excel hóa đơn thêm cột *Đã trả*.
+- `listOrders` / `OrderSummary`: thêm `refunded` (Σ `refund` phiếu `done` của đơn). Xuất Excel hóa đơn thêm cột *Trả hàng* (cột *Đã trả* đã có, là tiền khách trả).
 - `cancelOrder`: còn phiếu trả `done` → 409 như §3.
 - `daySummary`: thêm `returns = returnSummary(start, end)`; các trường cũ giữ nguyên nghĩa (bán ra gộp).
 - `profitReport`: thêm cột `returns` (tiền hoàn trong kỳ); `revenue`, `cost`, `cash`, `debt` thành số thuần (§7).
@@ -141,7 +143,7 @@ client gửi).
 
 ### Route `routes/returns.ts`
 
-`POST /api/returns`, `GET /api/returns`, `GET /api/returns/export`, `GET /api/returns/:id`,
+`POST /api/returns`, `GET /api/returns`, `GET /api/returns/export.xlsx`, `GET /api/returns/:id`,
 `POST /api/returns/:id/cancel`. Validate bằng schema shared (`shared/src/schemas/return.ts`) rồi gọi service, như
 `routes/orders.ts`.
 
