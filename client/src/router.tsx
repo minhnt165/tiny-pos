@@ -1,4 +1,4 @@
-import { BarChart3, ClipboardList, FolderOpen, Package, PackageOpen, ReceiptText, Settings, ShoppingCart, Truck, Users, type LucideIcon } from 'lucide-react';
+import { BarChart3, ClipboardList, FolderOpen, LayoutDashboard, Package, PackageOpen, ReceiptText, Settings, ShoppingCart, Truck, Users, type LucideIcon } from 'lucide-react';
 import { Navigate, Route, Routes } from 'react-router';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { CategoriesPage } from './pages/categories/CategoriesPage';
@@ -6,6 +6,7 @@ import { CustomersPage } from './pages/customers/CustomersPage';
 import { ImportFormPage } from './pages/imports/ImportFormPage';
 import { ImportsPage } from './pages/imports/ImportsPage';
 import { OrdersPage } from './pages/orders/OrdersPage';
+import { OverviewPage } from './pages/overview/OverviewPage';
 import { ProductListPage } from './pages/products/ProductListPage';
 import { QuickAddPage } from './pages/quick-add/QuickAddPage';
 import { ReportsPage } from './pages/reports/ReportsPage';
@@ -33,13 +34,14 @@ export interface NavItem {
 
 /** Nhập nhanh không có trong menu: mở từ nút trên trang Sản phẩm (route vẫn giữ). */
 export const NAV: NavItem[] = [
-  { to: '/sell', label: 'Bán hàng', icon: ShoppingCart, group: 'sell', mobile: 1 },
-  { to: '/orders', label: 'Hóa đơn', icon: ReceiptText, group: 'sell', mobile: 2 },
+  { to: '/overview', label: 'Tổng quan', icon: LayoutDashboard, group: 'sell', mobile: 1 },
+  { to: '/sell', label: 'Bán hàng', icon: ShoppingCart, group: 'sell', mobile: 2 },
+  { to: '/orders', label: 'Hóa đơn', icon: ReceiptText, group: 'sell', mobile: 3 },
   { to: '/reports', label: 'Báo cáo', icon: BarChart3, group: 'sell' },
   { to: '/customers', label: 'Khách hàng', icon: Users, group: 'sell' },
   { to: '/products', label: 'Sản phẩm', icon: Package, group: 'stock', mobile: 4 },
   { to: '/imports', label: 'Nhập hàng', icon: PackageOpen, group: 'stock' },
-  { to: '/stocktake', label: 'Kiểm kê', icon: ClipboardList, group: 'stock', mobile: 3 },
+  { to: '/stocktake', label: 'Kiểm kê', icon: ClipboardList, group: 'stock' },
   { to: '/categories', label: 'Danh mục', icon: FolderOpen, group: 'stock' },
   { to: '/suppliers', label: 'Nhà cung cấp', icon: Truck, group: 'other' },
   { to: '/settings', label: 'Cài đặt', icon: Settings, group: 'other' },
@@ -55,6 +57,7 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/sell" replace />} />
+      <Route path="/overview" element={<OverviewPage />} />
       <Route path="/sell" element={<SellPage />} />
       <Route path="/orders" element={<OrdersPage />} />
       <Route path="/reports" element={<ReportsPage />} />

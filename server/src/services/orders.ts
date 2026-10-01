@@ -254,6 +254,19 @@ export function listOrders(db: Db, query: OrderListQuery, clock?: Clock): OrderL
   return { orders: list, summary: daySummary(db, start, end), total, page, pageSize: PAGE_SIZE };
 }
 
+/** Hóa đơn mới nhất trong [start, end) (ISO UTC), mọi trạng thái, không phân trang; trang Tổng quan. */
+export function recentOrders(db: Db, start: string, end: string, limit: number): OrderSummary[] {
+  return db
+    .select({ order: orders, itemCount, customerName: customers.name })
+    .from(orders)
+    .leftJoin(customers, eq(orders.customerId, customers.id))
+    .where(and(gte(orders.createdAt, start), lt(orders.createdAt, end)))
+    .orderBy(desc(orders.id))
+    .limit(limit)
+    .all()
+    .map((r) => toSummary(r.order, Number(r.itemCount), r.customerName));
+}
+
 /** Mọi hóa đơn khớp bộ lọc (không phân trang), mới nhất trước, kèm món; quá `maxRows` thì báo lỗi thay vì dựng file khổng lồ. */
 export function listOrdersForExport(
   db: Db,

@@ -74,4 +74,10 @@ describe('API sao lưu', () => {
     expect((await fetch(`http://127.0.0.1:${port}/api/backups`)).status).toBe(404);
     s.close();
   });
+
+  it('GET /api/overview có backup.lastBackupAt bằng bản sao mới nhất', async () => {
+    const created = await call('POST', '/api/backups');
+    const o = (await call('GET', '/api/overview')).json;
+    expect(o.backup).toEqual({ lastBackupAt: created.json.createdAt, lastAutoAt: null, lastError: null, extraError: null });
+  });
 });

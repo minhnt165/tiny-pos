@@ -31,6 +31,7 @@ Trên máy quầy (Windows 10/11, đã cài Node.js 20+): nhấp đúp `scripts\
 
 - Biểu tượng *Tiny POS*: bảo đảm server đang chạy rồi mở Chrome/Edge chế độ ứng dụng với `--kiosk-printing` (in không hỏi).
 - Điện thoại cùng Wi-Fi: `http://<IP máy>:3000` (install in IP ra cuối).
+- Trang *Tổng quan* (`http://<IP máy>:3000/overview`, mục đầu menu): số liệu hôm nay, 7 ngày, hàng sắp hết, khách nợ lâu, nợ NCC, kiểm kê dở, tình trạng sao lưu; tự làm mới mỗi phút. Máy quầy mở app vẫn vào thẳng Bán hàng.
 - Log server: `data\server.log` (ghi đè mỗi lần chạy).
 - Cập nhật phiên bản: `scripts\update.cmd` (dừng, `git pull`, build, chạy lại). Gỡ: `scripts\uninstall.cmd` (giữ `data\`).
 - Chạy tay không cài: `npm run build` rồi `scripts\start.cmd` (hoặc `npm start`); dừng: `scripts\stop.cmd`.
@@ -152,3 +153,11 @@ In không hỏi: tạo shortcut `chrome.exe --app=http://localhost:3000 --kiosk-
 4. **Khôi phục**: bán thêm một đơn sau khi sao lưu → *Khôi phục* bản đó → xác nhận → toast xanh, trang Hóa đơn không còn đơn vừa bán, danh sách có bản "Trước khôi phục"; khôi phục lại bản đó → đơn quay lại.
 5. **Khôi phục từ file**: chọn file `.txt` đổi đuôi `.db` → toast đỏ "File không phải dữ liệu Tiny POS hoặc đã hỏng", dữ liệu không đổi. Chọn file `.db` tải về ở bước 2 → khôi phục được.
 6. **Scripts** (dừng `npm run dev` trước): `scripts\install.cmd` → Startup và Desktop có "Tiny POS", app mở chế độ kiosk; đăng xuất/đăng nhập → server tự chạy; điện thoại mở `http://<IP>:3000`. `scripts\uninstall.cmd` → biểu tượng mất, `data\` còn.
+
+## Kiểm thử thủ công – Tổng quan 0.10.0
+
+1. *Tổng quan* (mục đầu menu; điện thoại ô đầu thanh dưới): hai hàng số hôm nay bằng đúng trang *Hóa đơn* hôm nay; *So với hôm qua* đổi dấu/màu; ô *Hết hàng* bấm sang *Sản phẩm* lọc hết hàng.
+2. *Cần chú ý*: không có gì thì "Mọi thứ ổn"; có kiểm kê đang mở → dòng "Kiểm kê KK-… đang dở" bấm *Tiếp tục*; có hàng dưới mức tối thiểu → "n mặt hàng sắp hết" bấm *Xem*; khách còn nợ mà quá 30 ngày không có giao dịch → "n khách nợ quá 30 ngày…"; sao lưu lỗi hoặc quá 2 ngày không có bản sao → dòng sao lưu bấm *Cài đặt*.
+3. *7 ngày gần đây* có "Hôm nay"/"Hôm qua", dòng Tổng; *Hóa đơn hôm nay* 5 đơn mới nhất, đơn hủy gạch ngang; *Hàng sắp hết* tối đa 10 dòng + "và n mặt hàng nữa"; *Khách nợ* / *Nợ nhà cung cấp* 5 người, khách nợ lâu có dòng vàng "Giao dịch gần nhất dd/mm", bấm dòng sang trang với tên điền sẵn.
+4. Bán một đơn ở tab khác rồi quay lại → số đổi ngay (invalidate), hoặc chờ ≤ 1 phút. Dừng server rồi *Làm mới* → dòng đỏ "Không tải được số liệu mới", số cũ vẫn hiện; mở trang khi server tắt → màn "Không tải được tổng quan" có nút *Thử lại*.
+5. Điện thoại: thanh dưới Tổng quan · Bán hàng · Hóa đơn · Sản phẩm · Thêm (Kiểm kê nằm trong Thêm); không cuộn ngang. Đường dẫn gốc vẫn vào Bán hàng.

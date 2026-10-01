@@ -380,3 +380,44 @@ export interface RestoreResult {
   restoredFrom: string;
   beforeRestore: BackupItem;
 }
+
+// Tổng quan (0.10.0) – một API gom: 7 ngày qua profitReport, hóa đơn hôm nay, tồn thấp, công nợ, kiểm kê dở, sao lưu
+export interface LowStockRow {
+  productId: number;
+  name: string;
+  unit: string;
+  stock: number;
+  minStock: number;
+}
+
+export interface OverdueCustomerRow extends DebtPartyRow {
+  /** Giao dịch sổ nợ gần nhất (ghi nợ hoặc trả nợ), null nếu chưa có. */
+  lastActivityAt: string | null;
+  /** Còn nợ và lastActivityAt cách hôm nay ≥ DEBT_OVERDUE_DAYS (hoặc null). */
+  overdue: boolean;
+}
+
+export interface OverviewBackup {
+  /** Bản sao mới nhất bất kỳ loại nào; null = chưa có. */
+  lastBackupAt: string | null;
+  lastAutoAt: string | null;
+  lastError: string | null;
+  extraError: string | null;
+}
+
+export interface Overview {
+  /** Ngày địa phương hôm nay theo đồng hồ server, "YYYY-MM-DD". */
+  today: string;
+  /** profitReport 7 ngày đến hôm nay, gom theo ngày, rows[0] = hôm nay, rows[1] = hôm qua. */
+  week: ProfitReport;
+  /** Hóa đơn hôm nay mới nhất trước, kể cả đơn hủy. */
+  recentOrders: OrderSummary[];
+  /** count = số hàng đang bán có stock < minStock; outCount = stock ≤ 0; items cắt theo giới hạn, thiếu nặng nhất trước. */
+  lowStock: { count: number; outCount: number; items: LowStockRow[] };
+  customers: { total: number; count: number; overdueCount: number; overdueTotal: number; top: OverdueCustomerRow[] };
+  suppliers: { total: number; count: number; top: DebtPartyRow[] };
+  /** Phiếu kiểm kê đang mở, không kèm items; null nếu không có. */
+  stocktake: StocktakeSummary | null;
+  /** null khi server không cấu hình sao lưu (test). */
+  backup: OverviewBackup | null;
+}

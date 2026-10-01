@@ -207,7 +207,7 @@ deps.backups))` trong `apiRouter`. Không query param; không cache header (đã
 
 | Tình huống | Server | Người dùng thấy |
 |---|---|---|
-| API lỗi (server tắt, mạng) | – | Toast lỗi như các trang khác; số cũ giữ nguyên nếu đã có (`placeholderData`) |
+| API lỗi (server tắt, mạng) | – | Như trang Kiểm kê (không có toast toàn cục cho GET): chưa có số → `EmptyState` "Không tải được tổng quan" + nút *Thử lại*; đã có số cũ → giữ nguyên (`placeholderData`) và một dòng đỏ "Không tải được số liệu mới" |
 | Không có dữ liệu gì (tiệm mới) | 200, mọi số 0, mảng rỗng, `rows` đủ 7 ngày | StatStrip số 0, các khối `EmptyState`, khối Cần chú ý báo "Mọi thứ ổn" (trừ khi chưa có bản sao nào → dòng cảnh báo sao lưu) |
 | `backup: null` | – | Không có dòng cảnh báo sao lưu nào |
 
