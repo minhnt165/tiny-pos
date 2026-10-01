@@ -55,7 +55,9 @@ function TopSellingTable({
         ))}
         <TableRow className={`${HEAD} font-semibold`}>
           <TableCell className="px-3 py-3 md:px-4">Tổng {total.count} mặt hàng</TableCell>
-          <TableCell className={NUM}>{formatQty(total.qty)}</TableCell>
+          {/* Không cộng số lượng: lon, kg, cái khác đơn vị, cộng chung không có nghĩa */}
+          <TableCell className={NUM} />
+
           <TableCell className={`${NUM} ${revenueCls}`}>{formatMoney(total.revenue)}</TableCell>
           <TableCell className={`${NUM} ${profitCls}`}>{formatMoney(total.profit)}</TableCell>
         </TableRow>

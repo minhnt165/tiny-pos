@@ -1,4 +1,5 @@
 import { REPORT_TABS, reportViewFields, resolveReportRange, validRange, type ReportTab } from '@tiny-pos/shared';
+import { queryString } from '@/api/client';
 import { DateRangeFilter, rangeChipLabel } from '@/components/filters/DateRangeFilter';
 import { PageTitle } from '@/components/layout/PageTitle';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -19,8 +20,8 @@ export function ReportsPage() {
   const picked = resolveReportRange(f, today);
   // Khoảng sai trên URL (sửa tay) thì về tháng này, không báo lỗi
   const range = validRange(picked.from, picked.to) ? picked : thisMonth;
-  // Nút xuất nối location.search nên from/to/sort đi theo; server bỏ qua khóa tab
-  const exportAction = useExportAction(`/reports/${f.tab}/export.xlsx`);
+  // Xuất đúng khoảng/sort màn hình đang dùng (URL sửa tay sai đã được thay bằng mặc định), không gửi URL thô
+  const exportAction = useExportAction(`/reports/${f.tab}/export.xlsx`, queryString({ ...range, sort: f.sort }));
   return (
     <>
       <PageTitle title="Báo cáo" count={rangeChipLabel(range.from, range.to, today)} actions={[exportAction]} />
