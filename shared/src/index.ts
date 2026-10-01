@@ -26,5 +26,6 @@ export * from './schemas/stocktake.js';
 export * from './schemas/customer.js';
 export * from './schemas/list-filters.js';
 export * from './schemas/report.js';
+export * from './schemas/backups.js';
 export * from './list-filters.js';
 export * from './product-csv.js';

@@ -351,3 +351,32 @@ export interface DebtReport {
   /** Ghi nợ mới và thu nợ trong khoảng (bằng DaySummary cùng khoảng). */
   period: { debt: number; collected: { cash: number; transfer: number } };
 }
+
+export type BackupKind = 'auto' | 'manual' | 'before-restore';
+
+export interface BackupItem {
+  name: string;
+  kind: BackupKind;
+  /** ISO, lấy từ mtime của file. */
+  createdAt: string;
+  /** Byte. */
+  size: number;
+}
+
+export interface BackupStatus {
+  dir: string;
+  extraDir: string;
+  /** Lỗi chép sang thư mục thêm ở lần sao lưu gần nhất; null = ổn. */
+  extraError: string | null;
+  lastAutoAt: string | null;
+  /** Lỗi sao lưu tự động gần nhất; null = ổn. */
+  lastError: string | null;
+  /** Mới nhất trước. */
+  items: BackupItem[];
+}
+
+export interface RestoreResult {
+  /** Tên bản sao hoặc 'upload'. */
+  restoredFrom: string;
+  beforeRestore: BackupItem;
+}
