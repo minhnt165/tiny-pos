@@ -3,11 +3,14 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { productInputSchema } from '@tiny-pos/shared';
+import { categoryInputSchema, productInputSchema } from '@tiny-pos/shared';
+import { eq } from 'drizzle-orm';
 import { createTestDb } from '../db/test-db.js';
 import type { Db } from '../db/connection.js';
 import { BadRequestError, NotFoundError } from '../errors.js';
-import { createProduct } from './products.js';
+import { categories, productUnits, settings } from '../db/schema.js';
+import { createCategory } from './categories.js';
+import { createProduct, listProducts } from './products.js';
 import { createBackupService, type BackupService } from './backups.js';
 
 const CLOCK = { now: new Date('2026-10-01T02:31:05.000Z'), tzOffsetMin: 420 }; // 09:31:05 giờ VN
@@ -149,5 +152,99 @@ describe('backups: thư mục chép thêm', () => {
     expect(fs.existsSync(path.join(extra, item.name))).toBe(false);
     svc.setExtraDir('   ');
     expect(svc.getExtraDir()).toBe('');
+  });
+});
+
+describe('backups: khôi phục', () => {
+  const names = () => db.select().from(categories).all().map((c) => c.name).sort();
+
+  it('restore: về đúng dữ liệu bản sao, giữ sqlite_sequence, có bản before-restore', async () => {
+    const cat = createCategory(db, categoryInputSchema.parse({ name: 'Đồ uống' }));
+    product('Coca', '1');
+    product('Pepsi', '2');
+    db.insert(settings).values({ key: 'storeName', value: 'Tiệm A' }).run();
+    const snap = await svc.create('manual');
+
+    product('Sting', '3');
+    createCategory(db, categoryInputSchema.parse({ name: 'Bánh' }));
+    db.update(settings).set({ value: 'Tiệm B' }).where(eq(settings.key, 'storeName')).run();
+
+    const r = await svc.restore(snap.name);
+    expect(r.restoredFrom).toBe(snap.name);
+    expect(r.beforeRestore.kind).toBe('before-restore');
+    expect(countProducts(path.join(dir(), r.beforeRestore.name))).toBe(3);
+
+    expect(listProducts(db, { includeInactive: true }).map((p) => p.name).sort()).toEqual(['Coca', 'Pepsi']);
+    expect(names()).toEqual(['Đồ uống']);
+    expect(db.select().from(settings).where(eq(settings.key, 'storeName')).get()?.value).toBe('Tiệm A');
+    // id tiếp theo nối tiếp bản sao (Sting từng là id 3, bị bỏ → sản phẩm mới nhận id 3)
+    expect(product('Mới').id).toBe(3);
+    expect(cat.id).toBe(1);
+  });
+
+  it('bản sao schema cũ (thiếu cột, thiếu bảng) → cột thiếu nhận mặc định, bảng thiếu bị trống', async () => {
+    product('Coca', '1');
+    const snap = await svc.create('manual');
+    const file = path.join(dir(), snap.name);
+    const d = new Database(file);
+    d.exec('alter table products drop column min_stock');
+    d.exec('drop table customers');
+    d.close();
+    createCategory(db, categoryInputSchema.parse({ name: 'Bánh' }));
+    await svc.restore(snap.name);
+    expect(listProducts(db, { includeInactive: true }).map((p) => ({ name: p.name, minStock: p.minStock }))).toEqual([{ name: 'Coca', minStock: 0 }]);
+    expect(names()).toEqual([]);
+  });
+
+  it('file rác / thiếu bảng / phiên bản mới hơn → 400, DB không đổi, không tạo before-restore', async () => {
+    product('Coca', '1');
+    const junk = path.join(dir(), 'grocery-20261001-000000-manual.db');
+    fs.writeFileSync(junk, 'không phải sqlite');
+    await expect(svc.restore('grocery-20261001-000000-manual.db')).rejects.toThrow('File không phải dữ liệu Tiny POS hoặc đã hỏng');
+
+    const empty = path.join(dir(), 'grocery-20261001-000001-manual.db');
+    const e = new Database(empty);
+    e.exec('create table t(x)');
+    e.close();
+    await expect(svc.restore('grocery-20261001-000001-manual.db')).rejects.toThrow('File không phải dữ liệu Tiny POS');
+
+    const future = await svc.create('manual');
+    const d = new Database(path.join(dir(), future.name));
+    d.exec("insert into __drizzle_migrations (hash, created_at) values ('x', 0)");
+    d.close();
+    await expect(svc.restore(future.name)).rejects.toThrow(/phiên bản mới hơn/);
+
+    expect(countProducts(path.join(dir(), future.name))).toBe(1);
+    expect(listProducts(db, { includeInactive: true })).toHaveLength(1);
+    expect(svc.status().items.filter((i) => i.kind === 'before-restore')).toEqual([]);
+  });
+
+  it('bản sao vi phạm khóa ngoại → rollback, DB không đổi, before-restore đã tạo', async () => {
+    product('Coca', '1');
+    const snap = await svc.create('manual');
+    const d = new Database(path.join(dir(), snap.name));
+    d.pragma('foreign_keys = OFF');
+    d.exec("insert into product_units (product_id, name, barcode, factor, sell_price) values (999, 'Thùng', 'T1', 24, 1000)");
+    d.close();
+    product('Pepsi', '2');
+    await expect(svc.restore(snap.name)).rejects.toThrow('Bản sao có dữ liệu không nhất quán, không khôi phục');
+    expect(listProducts(db, { includeInactive: true })).toHaveLength(2);
+    expect(db.select().from(productUnits).all()).toEqual([]);
+    expect(svc.status().items.filter((i) => i.kind === 'before-restore')).toHaveLength(1);
+  });
+
+  it('restoreUpload: như restore, xóa file tạm kể cả khi lỗi', async () => {
+    product('Coca', '1');
+    const snap = await svc.create('manual');
+    const buf = fs.readFileSync(path.join(dir(), snap.name));
+    product('Pepsi', '2');
+    const r = await svc.restoreUpload(buf);
+    expect(r.restoredFrom).toBe('upload');
+    expect(listProducts(db, { includeInactive: true })).toHaveLength(1);
+    expect(fs.readdirSync(tmp())).toEqual([]);
+
+    await expect(svc.restoreUpload(Buffer.from('rác'))).rejects.toThrow(/không phải dữ liệu/);
+    expect(fs.readdirSync(tmp())).toEqual([]);
+    await expect(svc.restoreUpload(Buffer.alloc(0))).rejects.toThrow('Chưa có file');
   });
 });

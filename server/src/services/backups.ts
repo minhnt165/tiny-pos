@@ -152,6 +152,89 @@ export function createBackupService(db: Db, opts: BackupOpts): BackupService {
 
   const lastAutoAt = (): string | null => lastAuto ?? listDir(opts.dir).find((i) => i.kind === 'auto')?.createdAt ?? null;
 
+  const tableNames = (schema: 'main' | 'src'): string[] =>
+    (
+      sqlite
+        .prepare(`select name from ${schema}.sqlite_master where type = 'table' and name not like 'sqlite_%' and name <> '__drizzle_migrations'`)
+        .all() as { name: string }[]
+    ).map((r) => r.name);
+  const hasTable = (schema: 'main' | 'src', name: string): boolean =>
+    sqlite.prepare(`select 1 from ${schema}.sqlite_master where type = 'table' and name = ?`).get(name) !== undefined;
+  const columns = (schema: 'main' | 'src', table: string): string[] =>
+    (sqlite.pragma(`${schema}.table_info("${table}")`) as { name: string }[]).map((c) => c.name);
+  const migrationCount = (d: Database.Database): number =>
+    (d.prepare('select count(*) as n from __drizzle_migrations').get() as { n: number }).n;
+
+  /** Mở file nguồn chỉ đọc và kiểm: SQLite lành, có bảng Tiny POS, không mới hơn phần mềm. */
+  const validateSource = (file: string) => {
+    const broken = () => new BadRequestError('File không phải dữ liệu Tiny POS hoặc đã hỏng');
+    let src: Database.Database;
+    try {
+      src = new Database(file, { readonly: true, fileMustExist: true });
+    } catch {
+      throw broken();
+    }
+    try {
+      let quick: unknown;
+      try {
+        quick = src.pragma('quick_check', { simple: true });
+      } catch {
+        throw broken();
+      }
+      if (quick !== 'ok') throw broken();
+      const tables = new Set((src.prepare("select name from sqlite_master where type = 'table'").all() as { name: string }[]).map((r) => r.name));
+      if (!tables.has('__drizzle_migrations') || !tables.has('products')) throw new BadRequestError('File không phải dữ liệu Tiny POS');
+      if (migrationCount(src) > migrationCount(sqlite))
+        throw new BadRequestError('Bản sao từ phiên bản mới hơn, hãy cập nhật phần mềm rồi khôi phục lại');
+    } finally {
+      src.close();
+    }
+  };
+
+  /** Chép toàn bộ bảng từ file vào DB đang mở trong một transaction; cột chỉ có ở DB hiện tại nhận mặc định. */
+  const copyTables = (file: string) => {
+    sqlite.pragma('foreign_keys = OFF');
+    try {
+      sqlite.prepare('attach database ? as src').run(file);
+      try {
+        sqlite.transaction(() => {
+          const tables = tableNames('main');
+          const srcTables = new Set(tableNames('src'));
+          for (const t of tables) {
+            sqlite.prepare(`delete from main."${t}"`).run();
+            if (!srcTables.has(t)) continue;
+            const srcCols = new Set(columns('src', t));
+            const cols = columns('main', t)
+              .filter((c) => srcCols.has(c))
+              .map((c) => `"${c}"`)
+              .join(', ');
+            if (cols) sqlite.prepare(`insert into main."${t}" (${cols}) select ${cols} from src."${t}"`).run();
+          }
+          if (hasTable('main', 'sqlite_sequence')) {
+            sqlite.prepare('delete from main.sqlite_sequence').run();
+            if (hasTable('src', 'sqlite_sequence')) {
+              const list = tables.map((t) => `'${t}'`).join(', ');
+              sqlite.prepare(`insert into main.sqlite_sequence (name, seq) select name, seq from src.sqlite_sequence where name in (${list})`).run();
+            }
+          }
+          if ((sqlite.pragma('main.foreign_key_check') as unknown[]).length > 0)
+            throw new BadRequestError('Bản sao có dữ liệu không nhất quán, không khôi phục');
+        })();
+      } finally {
+        sqlite.prepare('detach database src').run();
+      }
+    } finally {
+      sqlite.pragma('foreign_keys = ON');
+    }
+  };
+
+  const restoreFromFile = async (file: string, label: string): Promise<RestoreResult> => {
+    validateSource(file);
+    const beforeRestore = await createUnlocked('before-restore');
+    copyTables(file);
+    return { restoredFrom: label, beforeRestore };
+  };
+
   return {
     status: () => ({
       dir: opts.dir,
@@ -168,8 +251,18 @@ export function createBackupService(db: Db, opts: BackupOpts): BackupService {
       if (extra) fs.rmSync(path.join(extra, name), { force: true });
     },
     filePath,
-    restore: () => Promise.reject(new Error('chưa làm')),
-    restoreUpload: () => Promise.reject(new Error('chưa làm')),
+    restore: (name) => locked(() => restoreFromFile(filePath(name), name)),
+    restoreUpload: (buf) =>
+      locked(async () => {
+        if (buf.length === 0) throw new BadRequestError('Chưa có file');
+        const tmpFile = path.join(opts.tmpDir, `upload-${Date.now()}.db`);
+        fs.writeFileSync(tmpFile, buf);
+        try {
+          return await restoreFromFile(tmpFile, 'upload');
+        } finally {
+          for (const f of [tmpFile, `${tmpFile}-wal`, `${tmpFile}-shm`]) fs.rmSync(f, { force: true });
+        }
+      }),
     getExtraDir,
     setExtraDir: (dir) => {
       const d = dir.trim();
