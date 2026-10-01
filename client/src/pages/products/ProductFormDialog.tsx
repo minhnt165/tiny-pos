@@ -37,8 +37,11 @@ export function ProductFormDialog({ open, product, initialBarcode, onClose, onSa
   // Có mã sẵn (quét ở Nhập nhanh) hoặc đang sửa → vào thẳng ô Tên; tạo mới tay → ô Mã vạch để máy quét gõ vào
   const firstFocusId = product || initialBarcode ? fieldId('name') : fieldId('barcode');
 
+  const saving = save.isPending || image.busy;
+
   const submit = (e: FormEvent) => {
     e.preventDefault();
+    if (saving) return; // Enter trong lúc đang gửi ảnh tạm: không tạo thêm sản phẩm
     const errs = validateForm(form);
     const firstBad = (Object.keys(errs) as (keyof FormState)[]).find((k) => errs[k]);
     if (firstBad) {
@@ -99,10 +102,11 @@ export function ProductFormDialog({ open, product, initialBarcode, onClose, onSa
           <section className="mb-6">
             <SectionTitle>Thông tin</SectionTitle>
             <div className="mb-4 flex items-center gap-4">
-              {image.preview ? (
-                <img src={image.preview} alt="" className="size-28 shrink-0 rounded-xl border object-cover" />
+              {image.pendingUrl ? (
+                <img src={image.pendingUrl} alt="" className="size-28 shrink-0 rounded-xl border object-cover" />
               ) : (
-                <ProductAvatar name={form.name || '?'} className="size-28 rounded-xl text-3xl" />
+                // Ảnh đã lưu (hoặc chữ cái khi chưa có / file ảnh không còn)
+                <ProductAvatar name={form.name || '?'} image={product?.image} className="size-28 rounded-xl text-3xl" />
               )}
               <div className="min-w-0 space-y-2">
                 <div className="flex flex-wrap gap-2">
@@ -199,9 +203,9 @@ export function ProductFormDialog({ open, product, initialBarcode, onClose, onSa
             <Button type="button" variant="outline" className="h-11 px-4 text-base" onClick={onClose}>
               Hủy
             </Button>
-            <Button type="submit" className="h-11 px-5 text-base" disabled={save.isPending}>
+            <Button type="submit" className="h-11 px-5 text-base" disabled={saving}>
               <Check data-icon="inline-start" />
-              {save.isPending ? 'Đang lưu…' : 'Lưu'}
+              {saving ? 'Đang lưu…' : 'Lưu'}
             </Button>
           </div>
         </form>

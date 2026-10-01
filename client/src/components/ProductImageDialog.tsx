@@ -16,7 +16,8 @@ export function ProductImageDialog({ product, onClose }: Props) {
           <DialogTitle>{product?.name}</DialogTitle>
           <DialogDescription>Ảnh sản phẩm</DialogDescription>
         </DialogHeader>
-        {src && <img src={src} alt={product?.name} className="mx-auto max-h-[70vh] rounded-lg object-contain" />}
+        {/* File ảnh không còn (khôi phục bản sao cũ): đóng luôn thay vì hiện khung trống */}
+        {src && <img src={src} alt={product?.name} className="mx-auto max-h-[70vh] rounded-lg object-contain" onError={onClose} />}
       </DialogContent>
     </Dialog>
   );

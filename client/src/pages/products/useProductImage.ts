@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import type { ProductWithUnits } from '@tiny-pos/shared';
-import { productImageUrl, useDeleteProductImage, useSaveProductImage } from '@/api/products';
+import { useDeleteProductImage, useSaveProductImage } from '@/api/products';
 import { resizeImage } from '@/lib/image-resize';
 
 /**
@@ -12,6 +12,8 @@ export function useProductImage(open: boolean, product: ProductWithUnits | null 
   const [pending, setPending] = useState<Blob | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Đang gửi ảnh tạm sau khi tạo sản phẩm: form phải khóa nút Lưu, không thì bấm lần hai tạo trùng sản phẩm
+  const [flushing, setFlushing] = useState(false);
   const save = useSaveProductImage();
   const del = useDeleteProductImage();
   const productId = product?.id ?? null;
@@ -63,13 +65,17 @@ export function useProductImage(open: boolean, product: ProductWithUnits | null 
   /** Sau khi tạo sản phẩm mới: gửi ảnh đang giữ tạm. Lỗi thì sản phẩm vẫn đã tạo, báo riêng. */
   const flush = async (created: ProductWithUnits): Promise<ProductWithUnits> => {
     if (!pending) return created;
+    setFlushing(true);
     try {
       return await save.mutateAsync({ id: created.id, file: pending });
     } catch (e) {
       toast.error(`Đã thêm sản phẩm nhưng chưa lưu được ảnh: ${e instanceof Error ? e.message : 'lỗi'}`);
       return created;
+    } finally {
+      setFlushing(false);
     }
   };
 
-  return { preview: preview ?? productImageUrl(product?.image), hasImage: !!(preview ?? product?.image), busy, pick, remove, flush };
+  /** `pendingUrl`: object URL của ảnh đang giữ tạm (thêm mới); đang sửa thì form vẽ `ProductAvatar` từ `product.image`. */
+  return { pendingUrl: preview, hasImage: !!(preview ?? product?.image), busy: busy || flushing, pick, remove, flush };
 }

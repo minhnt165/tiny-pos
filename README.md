@@ -51,7 +51,7 @@ Lưu ý:
 - Server tự sao lưu `data/grocery.db` vào `data/backups/grocery-YYYYMMDD-HHMMSS-auto.db` khi khởi động và mỗi ngày một lần (chỉ khi có thay đổi); giữ 30 bản tự động gần nhất. *Cài đặt → Sao lưu dữ liệu* có nút *Sao lưu ngay*.
 - **Nên** điền *Thư mục chép thêm* là USB (`E:\`) hoặc thư mục OneDrive/Google Drive đã cài trên máy: mỗi bản sao được chép thêm sang đó, máy hỏng vẫn còn dữ liệu. USB rút ra thì thẻ hiện cảnh báo, sao lưu chính vẫn chạy. Ảnh sản phẩm (`data\images`) cũng được chép sang đó; khôi phục bản sao không đụng tới ảnh.
 - Khôi phục: trong danh sách bản sao bấm *Khôi phục*; dữ liệu hiện tại được tự sao lưu thành bản *Trước khôi phục* rồi mới thay. Không cần dừng server.
-- Mang sang máy mới: cài như trên, rồi *Khôi phục từ file…* chọn file `.db` chép từ máy cũ (hoặc *Tải về* ở máy cũ). Bản sao từ phiên bản phần mềm cũ hơn dùng được; từ phiên bản mới hơn phải cập nhật phần mềm trước.
+- Mang sang máy mới: cài như trên, rồi *Khôi phục từ file…* chọn file `.db` chép từ máy cũ (hoặc *Tải về* ở máy cũ). Bản sao từ phiên bản phần mềm cũ hơn dùng được; từ phiên bản mới hơn phải cập nhật phần mềm trước. Ảnh sản phẩm không nằm trong file `.db`: chép thư mục `images` (ở `data\images` máy cũ, hoặc trong thư mục chép thêm) vào `data\images` máy mới.
 
 ## Lệnh khác
 
