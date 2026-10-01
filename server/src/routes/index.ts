@@ -16,11 +16,12 @@ import { backupsRouter } from './backups.js';
 import { overviewRouter } from './overview.js';
 import type { BackupService } from '../services/backups.js';
 import { NO_LABEL_WINDOW, type LabelDeps } from '../services/labels.js';
+import { NO_IMAGES, type ImageDeps } from '../services/product-images.js';
 
-export function apiRouter(db: Db, deps: { backups?: BackupService; labels?: LabelDeps } = {}): Router {
+export function apiRouter(db: Db, deps: { backups?: BackupService; labels?: LabelDeps; images?: ImageDeps } = {}): Router {
   const r = Router();
   r.use('/categories', categoriesRouter(db));
-  r.use('/products', productsRouter(db));
+  r.use('/products', productsRouter(db, deps.images ?? NO_IMAGES));
   r.use('/orders', ordersRouter(db));
   r.use('/returns', returnsRouter(db));
   r.use('/settings', settingsRouter(db));

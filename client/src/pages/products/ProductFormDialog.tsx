@@ -1,9 +1,10 @@
-import type { FormEvent } from 'react';
-import { Check, ScanBarcode } from 'lucide-react';
+import { useRef, type FormEvent } from 'react';
+import { Camera, Check, ScanBarcode, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ProductWithUnits } from '@tiny-pos/shared';
 import { useCategories } from '@/api/categories';
 import { useSaveProduct } from '@/api/products';
+import { ProductAvatar } from '@/components/ProductAvatar';
 import { SelectField } from '@/components/SelectField';
 import { SectionTitle, TextField } from '@/components/TextField';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ import { moneyChange } from '@/lib/money-input';
 import { cn } from '@/lib/utils';
 import { ProductUnitsEditor } from './ProductUnitsEditor';
 import { toInput, useProductForm, validateForm, type FormState } from './useProductForm';
+import { useProductImage } from './useProductImage';
 
 interface Props {
   open: boolean;
@@ -29,6 +31,8 @@ export function ProductFormDialog({ open, product, initialBarcode, onClose, onSa
   const { form, set, errors, setErrors } = useProductForm(open, product, initialBarcode);
   const { data: categories = [] } = useCategories();
   const save = useSaveProduct();
+  const image = useProductImage(open, product);
+  const fileRef = useRef<HTMLInputElement>(null);
   const unit = form.unit || 'cái';
   // Có mã sẵn (quét ở Nhập nhanh) hoặc đang sửa → vào thẳng ô Tên; tạo mới tay → ô Mã vạch để máy quét gõ vào
   const firstFocusId = product || initialBarcode ? fieldId('name') : fieldId('barcode');
@@ -46,9 +50,11 @@ export function ProductFormDialog({ open, product, initialBarcode, onClose, onSa
     save.mutate(
       { ...toInput(form), id: product?.id },
       {
-        onSuccess: (p) => {
-          toast.success(product ? 'Đã lưu' : `Đã thêm "${p.name}"`);
-          onSaved(p);
+        onSuccess: async (p) => {
+          // Thêm mới: sản phẩm có id rồi mới gửi được ảnh đang giữ tạm
+          const final = product ? p : await image.flush(p);
+          toast.success(product ? 'Đã lưu' : `Đã thêm "${final.name}"`);
+          onSaved(final);
         },
         onError: (err) => toast.error(err.message),
       },
@@ -92,6 +98,39 @@ export function ProductFormDialog({ open, product, initialBarcode, onClose, onSa
         <form onSubmit={submit} noValidate className="px-6 py-5">
           <section className="mb-6">
             <SectionTitle>Thông tin</SectionTitle>
+            <div className="mb-4 flex items-center gap-4">
+              {image.preview ? (
+                <img src={image.preview} alt="" className="size-28 shrink-0 rounded-xl border object-cover" />
+              ) : (
+                <ProductAvatar name={form.name || '?'} className="size-28 rounded-xl text-3xl" />
+              )}
+              <div className="min-w-0 space-y-2">
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" variant="outline" className="h-11 text-base" disabled={image.busy} onClick={() => fileRef.current?.click()}>
+                    <Camera data-icon="inline-start" />
+                    {image.busy ? 'Đang xử lý…' : image.hasImage ? 'Đổi ảnh' : 'Chọn ảnh'}
+                  </Button>
+                  {image.hasImage && (
+                    <Button type="button" variant="ghost" className="h-11 text-base" disabled={image.busy} onClick={() => void image.remove()}>
+                      <Trash2 data-icon="inline-start" />
+                      Xóa ảnh
+                    </Button>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">Chụp bằng điện thoại hoặc chọn file; ảnh được thu nhỏ trước khi lưu.</p>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    e.target.value = ''; // chọn lại cùng file vẫn kích onChange
+                    if (f) void image.pick(f);
+                  }}
+                />
+              </div>
+            </div>
             <div className="grid gap-4 md:grid-cols-2">
               <TextField
                 id={fieldId('barcode')}

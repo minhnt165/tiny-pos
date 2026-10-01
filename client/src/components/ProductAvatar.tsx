@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { productImageUrl } from '@/api/products';
 import { cn } from '@/lib/utils';
 
 export const TINTS = [
@@ -27,18 +29,21 @@ function initials(name: string): string {
     .join('');
 }
 
-/** Ô chữ cái đầu nền nhạt thay cho ảnh sản phẩm (chưa có chụp ảnh). */
-export function ProductAvatar({ name, className }: { name: string; className?: string }) {
+/** Ảnh sản phẩm nếu có; không có hoặc tải lỗi thì ô chữ cái đầu nền nhạt. */
+export function ProductAvatar({ name, image, className }: { name: string; image?: string | null; className?: string }) {
+  // Tên ảnh tải lỗi (file không còn sau khi khôi phục bản sao cũ); đổi ảnh khác thì thử lại
+  const [broken, setBroken] = useState<string | null>(null);
+  const src = image && broken !== image ? productImageUrl(image) : null;
   return (
     <div
       className={cn(
-        'grid size-10 shrink-0 place-items-center rounded-lg text-sm font-semibold',
-        tintFor(name),
+        'grid size-10 shrink-0 place-items-center overflow-hidden rounded-lg text-sm font-semibold',
+        src ? 'bg-muted' : tintFor(name),
         className,
       )}
       aria-hidden="true"
     >
-      {initials(name) || '?'}
+      {src ? <img src={src} alt="" loading="lazy" className="size-full object-cover" onError={() => setBroken(image ?? null)} /> : initials(name) || '?'}
     </div>
   );
 }

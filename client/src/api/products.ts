@@ -44,6 +44,7 @@ function useInvalidateProducts() {
     void qc.invalidateQueries({ queryKey: ['products'] });
     void qc.invalidateQueries({ queryKey: ['categories'] });
     void qc.invalidateQueries({ queryKey: ['reports'] });
+    void qc.invalidateQueries({ queryKey: ['overview'] });
   };
 }
 
@@ -65,6 +66,25 @@ export function useSetProductActive() {
       if (active) await api<Product>(`/products/${id}/restore`, { method: 'POST' });
       else await api<void>(`/products/${id}`, { method: 'DELETE' });
     },
+    onSuccess: invalidate,
+  });
+}
+
+/** URL ảnh phục vụ tĩnh; null khi chưa có ảnh. */
+export const productImageUrl = (image: string | null | undefined): string | null => (image ? `/images/${image}` : null);
+
+export function useSaveProductImage() {
+  const invalidate = useInvalidateProducts();
+  return useMutation({
+    mutationFn: ({ id, file }: { id: number; file: Blob }) => api<ProductWithUnits>(`/products/${id}/image`, { method: 'PUT', body: file }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteProductImage() {
+  const invalidate = useInvalidateProducts();
+  return useMutation({
+    mutationFn: ({ id }: { id: number }) => api<void>(`/products/${id}/image`, { method: 'DELETE' }),
     onSuccess: invalidate,
   });
 }

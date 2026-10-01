@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { PageTitle } from '@/components/layout/PageTitle';
 import { ListPanel } from '@/components/ListPanel';
 import { Pager } from '@/components/Pager';
+import { ProductImageDialog } from '@/components/ProductImageDialog';
 import { TableSkeleton } from '@/components/TableSkeleton';
 import { Button } from '@/components/ui/button';
 import { useUrlFilters } from '@/hooks/useUrlFilters';
@@ -28,6 +29,7 @@ export function ProductListPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [creating, setCreating] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [viewingImage, setViewingImage] = useState<Product | null>(null);
   const exportAction = useExportAction('/products/export.xlsx');
 
   // Tải hết một lần (kể cả ngừng bán) rồi lọc/sắp xếp trên trình duyệt
@@ -108,10 +110,10 @@ export function ProductListPage() {
         ) : (
           <>
             <div className="hidden md:block">
-              <ProductTable products={pageItems} onEdit={edit} onToggle={toggle} />
+              <ProductTable products={pageItems} onEdit={edit} onToggle={toggle} onViewImage={setViewingImage} />
             </div>
             <div className="md:hidden">
-              <ProductCardList products={pageItems} onEdit={edit} onToggle={toggle} />
+              <ProductCardList products={pageItems} onEdit={edit} onToggle={toggle} onViewImage={setViewingImage} />
             </div>
           </>
         )}
@@ -124,6 +126,7 @@ export function ProductListPage() {
         onSaved={close}
       />
       <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} />
+      <ProductImageDialog product={viewingImage} onClose={() => setViewingImage(null)} />
     </div>
   );
 }

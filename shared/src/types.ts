@@ -17,6 +17,8 @@ export interface Product {
   categoryId: number | null;
   minStock: number;
   isActive: boolean;
+  /** Tên file ảnh (`/images/<image>`); null = chưa có. */
+  image: string | null;
   createdAt: string;
   updatedAt: string;
   categoryName: string | null;
@@ -397,6 +399,7 @@ export interface RestoreResult {
 export interface LowStockRow {
   productId: number;
   name: string;
+  image: string | null;
   unit: string;
   stock: number;
   minStock: number;

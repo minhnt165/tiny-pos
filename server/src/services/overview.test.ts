@@ -89,7 +89,7 @@ describe('overview – hàng sắp hết', () => {
     expect(o.lowStock.count).toBe(3);
     expect(o.lowStock.outCount).toBe(2);
     expect(o.lowStock.items.map((i) => i.name)).toEqual(['Bánh', 'Nước']);
-    expect(o.lowStock.items[0]).toEqual({ productId: expect.any(Number), name: 'Bánh', unit: 'gói', stock: 0, minStock: 4 });
+    expect(o.lowStock.items[0]).toEqual({ productId: expect.any(Number), name: 'Bánh', image: null, unit: 'gói', stock: 0, minStock: 4 });
     expect(overview(db, NOON).lowStock.items).toHaveLength(3);
     const shown = listProducts(db, { includeInactive: false });
     expect(o.lowStock.count).toBe(filterProducts(shown, productViewQuerySchema.parse({ stock: 'low' })).length);

@@ -1,17 +1,17 @@
 import { formatMoney, type Product } from '@tiny-pos/shared';
-import { ProductAvatar } from '@/components/ProductAvatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { ProductMenu, StockCell } from './ProductTable';
+import { ProductAvatarButton, ProductMenu, StockCell } from './ProductTable';
 
 interface Props {
   products: Product[];
   onEdit: (p: Product) => void;
   onToggle: (p: Product) => void;
+  onViewImage: (p: Product) => void;
 }
 
 /** Danh sách dạng thẻ cho điện thoại; bấm vào thẻ để sửa. */
-export function ProductCardList({ products, onEdit, onToggle }: Props) {
+export function ProductCardList({ products, onEdit, onToggle, onViewImage }: Props) {
   return (
     <ul className="divide-y">
       {products.map((p) => (
@@ -20,7 +20,7 @@ export function ProductCardList({ products, onEdit, onToggle }: Props) {
           className={cn('flex items-center gap-3 px-4 py-3 active:bg-muted/50', !p.isActive && 'opacity-60')}
           onClick={() => onEdit(p)}
         >
-          <ProductAvatar name={p.name} className="size-12" />
+          <ProductAvatarButton p={p} className="size-12" onView={onViewImage} />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-1.5 font-medium">
               <span className="truncate">{p.name}</span>

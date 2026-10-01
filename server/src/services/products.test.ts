@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { eq } from 'drizzle-orm';
 import { productInputSchema } from '@tiny-pos/shared';
 import { createTestDb } from '../db/test-db.js';
 import type { Db } from '../db/connection.js';
-import { stockMovements } from '../db/schema.js';
+import { products, stockMovements } from '../db/schema.js';
 import { createCategory } from './categories.js';
 import { createProduct, getProduct, listProducts, setProductActive, updateProduct } from './products.js';
 
@@ -82,5 +83,11 @@ describe('listProducts – tìm không phân biệt hoa thường tiếng Việt
     createProduct(db, input({ name: 'Đường cát' }));
     expect(listProducts(db, { q: 'nuoc', includeInactive: false }).map((p) => p.name)).toEqual(['Nước suối']);
     expect(listProducts(db, { q: 'DUONG', includeInactive: false }).map((p) => p.name)).toEqual(['Đường cát']);
+  });
+
+  it('updateProduct không làm mất image (schema input không có trường này)', () => {
+    const p = createProduct(db, input({ name: 'Có ảnh' }));
+    db.update(products).set({ image: 'p1-1.jpg' }).where(eq(products.id, p.id)).run();
+    expect(updateProduct(db, p.id, input({ name: 'Đổi tên' })).image).toBe('p1-1.jpg');
   });
 });

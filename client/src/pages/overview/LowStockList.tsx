@@ -46,7 +46,7 @@ export function LowStockList({ low, loading }: { low: Overview['lowStock'] | und
               <TableRow key={i.productId}>
                 <TableCell className={`${CELL} font-medium`}>
                   <span className="flex min-w-0 items-center gap-2">
-                    <ProductAvatar name={i.name} className="size-8 shrink-0" />
+                    <ProductAvatar name={i.name} image={i.image} className="size-8 shrink-0" />
                     <span className="truncate">{i.name}</span>
                   </span>
                 </TableCell>

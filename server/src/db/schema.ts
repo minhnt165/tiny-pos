@@ -25,6 +25,8 @@ export const products = sqliteTable(
     categoryId: integer('category_id').references(() => categories.id, { onDelete: 'set null' }),
     minStock: real('min_stock').notNull().default(0),
     isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+    /** Tên file ảnh trong data/images (p<id>-<ms>.jpg); null = chưa có. Chỉ đổi qua services/product-images.ts. */
+    image: text('image'),
     createdAt: createdAt(),
     updatedAt: text('updated_at').notNull().default(isoNow),
   },

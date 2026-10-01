@@ -35,6 +35,7 @@ Trên máy quầy (Windows 10/11, đã cài Node.js 20+): nhấp đúp `scripts\
 - Khách trả hàng: *Hóa đơn* → bấm vào đơn → *Trả hàng*; danh sách phiếu ở *Trả hàng* (menu Bán hàng). Phiếu tính vào ngày trả, hủy được.
 - Trả hàng cho nhà cung cấp: *Trả NCC* (menu Kho hàng) → *Lập phiếu trả*, hoặc *Nhà cung cấp* → mở NCC → *Trả hàng*. Trừ nợ NCC trước, phần dư ghi là NCC trả tiền mặt; hủy phiếu thì tồn và nợ về như cũ.
 - In tem mã vạch: *In tem* (menu Kho hàng), hoặc ⋯ → *In tem* ở Sản phẩm, *In tem* trong phiếu nhập. Hàng chưa có mã được cấp mã nội bộ bắt đầu bằng `20`. Chọn khổ tem trong *Cài đặt → Tem mã vạch*. Tem mở trong một cửa sổ riêng có hộp chọn máy in: lần đầu chọn máy in tem, các lần sau Chrome tự nhớ; hóa đơn vẫn in thẳng ra máy hóa đơn.
+- Ảnh sản phẩm: mở sản phẩm → *Chọn ảnh*; trên điện thoại chụp trực tiếp, ảnh được thu nhỏ trước khi gửi. Ảnh hiện ở danh sách, gợi ý tìm khi bán, Tổng quan; bấm vào ảnh để xem to. File ảnh ở `data\images` (không nằm trong bản sao `.db`).
 - Log server: `data\server.log` (ghi đè mỗi lần chạy).
 - Cập nhật phiên bản: `scripts\update.cmd` (dừng, `git pull`, build, chạy lại). Gỡ: `scripts\uninstall.cmd` (giữ `data\`).
 - Chạy tay không cài: `npm run build` rồi `scripts\start.cmd` (hoặc `npm start`); dừng: `scripts\stop.cmd`.
@@ -48,7 +49,7 @@ Lưu ý:
 ## Sao lưu và khôi phục
 
 - Server tự sao lưu `data/grocery.db` vào `data/backups/grocery-YYYYMMDD-HHMMSS-auto.db` khi khởi động và mỗi ngày một lần (chỉ khi có thay đổi); giữ 30 bản tự động gần nhất. *Cài đặt → Sao lưu dữ liệu* có nút *Sao lưu ngay*.
-- **Nên** điền *Thư mục chép thêm* là USB (`E:\`) hoặc thư mục OneDrive/Google Drive đã cài trên máy: mỗi bản sao được chép thêm sang đó, máy hỏng vẫn còn dữ liệu. USB rút ra thì thẻ hiện cảnh báo, sao lưu chính vẫn chạy.
+- **Nên** điền *Thư mục chép thêm* là USB (`E:\`) hoặc thư mục OneDrive/Google Drive đã cài trên máy: mỗi bản sao được chép thêm sang đó, máy hỏng vẫn còn dữ liệu. USB rút ra thì thẻ hiện cảnh báo, sao lưu chính vẫn chạy. Ảnh sản phẩm (`data\images`) cũng được chép sang đó; khôi phục bản sao không đụng tới ảnh.
 - Khôi phục: trong danh sách bản sao bấm *Khôi phục*; dữ liệu hiện tại được tự sao lưu thành bản *Trước khôi phục* rồi mới thay. Không cần dừng server.
 - Mang sang máy mới: cài như trên, rồi *Khôi phục từ file…* chọn file `.db` chép từ máy cũ (hoặc *Tải về* ở máy cũ). Bản sao từ phiên bản phần mềm cũ hơn dùng được; từ phiên bản mới hơn phải cập nhật phần mềm trước.
 

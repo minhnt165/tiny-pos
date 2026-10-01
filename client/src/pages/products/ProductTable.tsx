@@ -14,6 +14,8 @@ interface Props {
   products: Product[];
   onEdit: (p: Product) => void;
   onToggle: (p: Product) => void;
+  /** Bấm ảnh sản phẩm → xem to (dialog đặt ở trang, dùng chung cho bảng và thẻ). */
+  onViewImage: (p: Product) => void;
 }
 
 export function StockCell({ p }: { p: Product }) {
@@ -24,6 +26,25 @@ export function StockCell({ p }: { p: Product }) {
       <span className="text-sm text-muted-foreground">{p.unit}</span>
       {low && <Badge variant="destructive">Sắp hết</Badge>}
     </div>
+  );
+}
+
+/** Avatar bấm được để xem ảnh to; chưa có ảnh thì chỉ là ô chữ cái. Dừng lan sự kiện để không mở form sửa của hàng. */
+export function ProductAvatarButton({ p, className, onView }: { p: Product; className?: string; onView: (p: Product) => void }) {
+  if (!p.image) return <ProductAvatar name={p.name} className={className} />;
+  return (
+    <button
+      type="button"
+      className="shrink-0 rounded-lg focus-visible:ring-2 focus-visible:ring-ring"
+      aria-label={`Xem ảnh ${p.name}`}
+      title="Xem ảnh"
+      onClick={(e) => {
+        e.stopPropagation();
+        onView(p);
+      }}
+    >
+      <ProductAvatar name={p.name} image={p.image} className={className} />
+    </button>
   );
 }
 
@@ -63,7 +84,7 @@ export function ProductMenu({ p, onEdit, onToggle }: { p: Product; onEdit: () =>
 }
 
 /** Bảng sản phẩm cho màn hình rộng; bấm vào hàng để sửa. */
-export function ProductTable({ products, onEdit, onToggle }: Props) {
+export function ProductTable({ products, onEdit, onToggle, onViewImage }: Props) {
   return (
     <Table>
       <TableHeader>
@@ -85,7 +106,7 @@ export function ProductTable({ products, onEdit, onToggle }: Props) {
           >
             <TableCell className="px-4 py-3">
               <div className="flex items-center gap-3">
-                <ProductAvatar name={p.name} />
+                <ProductAvatarButton p={p} onView={onViewImage} />
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2 font-medium">
                     <span className="truncate">{p.name}</span>

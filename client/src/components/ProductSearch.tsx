@@ -92,7 +92,7 @@ export function ProductSearch({ inputRef, onScan, onPick, includeInactive }: Pro
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => pick(p)}
             >
-              <ProductAvatar name={p.name} className="size-9 rounded-lg text-xs" />
+              <ProductAvatar name={p.name} image={p.image} className="size-9 rounded-lg text-xs" />
               <div className="min-w-0 flex-1">
                 <div className="truncate font-medium">{p.name}</div>
                 <div className="text-sm text-muted-foreground">

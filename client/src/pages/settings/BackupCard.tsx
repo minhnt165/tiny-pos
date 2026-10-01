@@ -115,6 +115,10 @@ export function BackupCard() {
               Tự sao lưu khi mở phần mềm và mỗi ngày một lần vào thư mục <span className="font-mono break-all">{data?.dir ?? '…'}</span>. Giữ 30
               bản tự động gần nhất.
             </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Ảnh sản phẩm nằm ở thư mục <span className="font-mono">data\images</span>, không có trong file <span className="font-mono">.db</span>; thư mục
+              chép thêm được chép cả ảnh.
+            </p>
           </div>
           <div className="space-y-1 text-sm">
             <p>

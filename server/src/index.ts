@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,14 +15,16 @@ const port = Number(process.env['PORT'] ?? 3000);
 
 const db = createDb(dbFile);
 const dataDir = path.dirname(dbFile);
-const backups = createBackupService(db, { dir: path.join(dataDir, 'backups'), tmpDir: path.join(dataDir, 'tmp') });
+const imagesDir = path.join(dataDir, 'images');
+fs.mkdirSync(imagesDir, { recursive: true });
+const backups = createBackupService(db, { dir: path.join(dataDir, 'backups'), tmpDir: path.join(dataDir, 'tmp'), imagesDir });
 // Chỉ bản build trên Windows (máy quầy) mới tự mở cửa sổ in tem; dev (tsx chạy src/) để trình duyệt mở tab mới
 const built = path.basename(path.dirname(fileURLToPath(import.meta.url))) === 'dist';
 const labels =
   process.platform === 'win32' && built
     ? { open: createLabelOpener(path.join(dataDir, 'label-browser')), origin: `http://localhost:${port}` }
     : undefined;
-const app = createApp(db, { clientDist: path.join(repoRoot, 'client', 'dist'), backups, labels });
+const app = createApp(db, { clientDist: path.join(repoRoot, 'client', 'dist'), backups, labels, imagesDir });
 
 app.listen(port, '0.0.0.0', () => {
   const lan = Object.values(os.networkInterfaces())

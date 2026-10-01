@@ -89,7 +89,7 @@ export function QuickAddPage() {
       {found && (
         <Card className="mb-(--gap) animate-in gap-0 py-0 fade-in-0 slide-in-from-bottom-2">
           <div className="flex items-start gap-4 p-5">
-            <ProductAvatar name={found.product.name} className="size-14 text-lg" />
+            <ProductAvatar name={found.product.name} image={found.product.image} className="size-14 text-lg" />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="font-heading text-xl font-semibold">{found.product.name}</h2>

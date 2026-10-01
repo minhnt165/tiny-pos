@@ -13,6 +13,7 @@ import type { Db } from '../db/connection.js';
 import { intParam, validateBody, validateQuery } from '../middleware/validate.js';
 import { exportProductsXlsx, exportProductTemplateXlsx } from '../services/exports.js';
 import { importProductsFile } from '../services/product-csv.js';
+import { deleteProductImage, saveProductImage, type ImageDeps } from '../services/product-images.js';
 import { createUnit, deleteUnit, updateUnit } from '../services/product-units.js';
 import { listMovements } from '../services/movements.js';
 import {
@@ -25,7 +26,7 @@ import {
 } from '../services/products.js';
 import { sendXlsx } from './send-xlsx.js';
 
-export function productsRouter(db: Db): Router {
+export function productsRouter(db: Db, images: ImageDeps): Router {
   const r = Router();
 
   // Các route tĩnh phải đứng trước /:id
@@ -55,6 +56,15 @@ export function productsRouter(db: Db): Router {
     res.status(204).end();
   });
   r.post('/:id/restore', (req, res) => res.json(setProductActive(db, intParam(req, 'id'), true)));
+
+  // Ảnh JPEG đã thu nhỏ ở trình duyệt, gửi nguyên dạng nhị phân
+  r.put('/:id/image', express.raw({ type: () => true, limit: '1mb' }), (req, res) =>
+    res.json(saveProductImage(db, images, intParam(req, 'id'), Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0))),
+  );
+  r.delete('/:id/image', (req, res) => {
+    deleteProductImage(db, images, intParam(req, 'id'));
+    res.status(204).end();
+  });
 
   r.post('/:id/units', validateBody(productUnitInputSchema), (req, res) =>
     res.status(201).json(createUnit(db, intParam(req, 'id'), req.body)),

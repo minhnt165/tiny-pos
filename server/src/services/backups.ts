@@ -7,12 +7,15 @@ import { registerFunctions, type Db } from '../db/connection.js';
 import { settings } from '../db/schema.js';
 import { BadRequestError, NotFoundError } from '../errors.js';
 import { resolveClock, type Clock } from './daily-code.js';
+import { copyMissingImages } from './product-images.js';
 
 export interface BackupOpts {
   /** Thư mục chứa bản sao (data/backups). */
   dir: string;
   /** Thư mục file tạm khi khôi phục từ file tải lên (data/tmp). */
   tmpDir: string;
+  /** Thư mục ảnh sản phẩm (data/images); có thì chép thêm sang thư mục chép thêm cùng bản sao. */
+  imagesDir?: string;
   /** Số bản `auto` giữ lại, mặc định 30. */
   keepAuto?: number;
   clock?: Clock;
@@ -104,13 +107,14 @@ export function createBackupService(db: Db, opts: BackupOpts): BackupService {
 
   const getExtraDir = (): string => db.select().from(settings).where(eq(settings.key, EXTRA_DIR_KEY)).get()?.value ?? '';
 
-  /** Chép bản vừa tạo sang thư mục thêm; lỗi chỉ ghi nhận (USB rút ra không được làm hỏng sao lưu chính). */
+  /** Chép bản vừa tạo (và ảnh sản phẩm còn thiếu) sang thư mục thêm; lỗi chỉ ghi nhận (USB rút ra không được làm hỏng sao lưu chính). */
   const copyExtra = (name: string) => {
     const extra = getExtraDir();
     if (!extra) return;
     try {
       fs.copyFileSync(path.join(opts.dir, name), path.join(extra, name));
       pruneAuto(extra);
+      if (opts.imagesDir) copyMissingImages(opts.imagesDir, path.join(extra, 'images'));
       extraError = null;
     } catch (e) {
       const code = (e as { code?: string } | null)?.code;

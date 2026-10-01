@@ -40,7 +40,7 @@ function lowStock(db: Db, limit: number): Overview['lowStock'] {
   const items: LowStockRow[] = low
     .sort((a, b) => ratio(a) - ratio(b) || byName(a, b))
     .slice(0, limit)
-    .map((p) => ({ productId: p.id, name: p.name, unit: p.unit, stock: p.stock, minStock: p.minStock }));
+    .map((p) => ({ productId: p.id, name: p.name, image: p.image, unit: p.unit, stock: p.stock, minStock: p.minStock }));
   return { count: low.length, outCount: active.filter((p) => p.stock <= 0).length, items };
 }
 

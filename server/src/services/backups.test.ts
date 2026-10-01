@@ -265,3 +265,46 @@ describe('backups: bản sao biến mất giữa chừng', () => {
     expect(fs.existsSync(old)).toBe(false);
   });
 });
+
+describe('backups: ảnh sản phẩm sang thư mục chép thêm', () => {
+  it('có imagesDir + extraDir → sau create, <extra>/images có đủ ảnh; chạy lại không lỗi', async () => {
+    const images = path.join(root, 'images');
+    fs.mkdirSync(images);
+    fs.writeFileSync(path.join(images, 'p1-1.jpg'), 'a');
+    const extra = path.join(root, 'usb');
+    fs.mkdirSync(extra);
+    const s = createBackupService(db, { dir: dir(), tmpDir: tmp(), imagesDir: images });
+    s.setExtraDir(extra);
+    await s.create('manual');
+    expect(fs.readdirSync(path.join(extra, 'images'))).toEqual(['p1-1.jpg']);
+    fs.writeFileSync(path.join(images, 'p2-1.jpg'), 'b');
+    await s.create('manual');
+    expect(fs.readdirSync(path.join(extra, 'images')).sort()).toEqual(['p1-1.jpg', 'p2-1.jpg']);
+    expect(s.status().extraError).toBeNull();
+  });
+
+  it('imagesDir chưa tồn tại → sao lưu bình thường, không tạo <extra>/images', async () => {
+    const extra = path.join(root, 'usb');
+    fs.mkdirSync(extra);
+    const s = createBackupService(db, { dir: dir(), tmpDir: tmp(), imagesDir: path.join(root, 'khong-co') });
+    s.setExtraDir(extra);
+    const m = await s.create('manual');
+    expect(fs.existsSync(path.join(extra, m.name))).toBe(true);
+    expect(fs.existsSync(path.join(extra, 'images'))).toBe(false);
+    expect(s.status().extraError).toBeNull();
+  });
+
+  it('thư mục chép thêm biến mất sau khi đặt (USB rút) → extraError, bản sao chính vẫn tạo', async () => {
+    const images = path.join(root, 'images');
+    fs.mkdirSync(images);
+    fs.writeFileSync(path.join(images, 'p1-1.jpg'), 'a');
+    const extra = path.join(root, 'usb');
+    fs.mkdirSync(extra);
+    const s = createBackupService(db, { dir: dir(), tmpDir: tmp(), imagesDir: images });
+    s.setExtraDir(extra);
+    fs.rmSync(extra, { recursive: true, force: true });
+    const m = await s.create('manual');
+    expect(fs.existsSync(path.join(dir(), m.name))).toBe(true);
+    expect(s.status().extraError).toMatch(/Không chép được sang/);
+  });
+});
