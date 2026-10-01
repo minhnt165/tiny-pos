@@ -102,3 +102,52 @@ describe('backups: tạo và liệt kê', () => {
     expect(fs.statSync(tmp()).isDirectory()).toBe(true);
   });
 });
+
+describe('backups: thư mục chép thêm', () => {
+  it('đặt thư mục hợp lệ → bản sao có ở cả hai nơi, dọn auto ở cả hai', async () => {
+    const extra = path.join(root, 'usb');
+    fs.mkdirSync(extra);
+    const s = createBackupService(db, { dir: dir(), tmpDir: tmp(), keepAuto: 2 });
+    s.setExtraDir(extra);
+    expect(s.getExtraDir()).toBe(extra);
+    expect(s.status().extraDir).toBe(extra);
+    for (let i = 0; i < 3; i++) await s.create('auto');
+    const m = await s.create('manual');
+    expect(fs.existsSync(path.join(extra, m.name))).toBe(true);
+    expect(fs.readdirSync(extra).filter((n) => n.includes('-auto'))).toHaveLength(2);
+    expect(fs.readdirSync(dir()).filter((n) => n.includes('-auto'))).toHaveLength(2);
+    expect(s.status().extraError).toBeNull();
+  });
+
+  it('thư mục không tồn tại / là file / không ghi được → 400, không lưu', () => {
+    expect(() => svc.setExtraDir(path.join(root, 'khong-co'))).toThrow(new BadRequestError('Thư mục không tồn tại'));
+    const f = path.join(root, 'file.txt');
+    fs.writeFileSync(f, '');
+    expect(() => svc.setExtraDir(f)).toThrow(new BadRequestError('Thư mục không tồn tại'));
+    expect(svc.getExtraDir()).toBe('');
+  });
+
+  it('rút USB (xóa thư mục) → sao lưu vẫn thành công, extraError có nội dung; đặt lại → hết lỗi', async () => {
+    const extra = path.join(root, 'usb');
+    fs.mkdirSync(extra);
+    svc.setExtraDir(extra);
+    fs.rmSync(extra, { recursive: true });
+    const item = await svc.create('manual');
+    expect(fs.existsSync(path.join(dir(), item.name))).toBe(true);
+    expect(svc.status().extraError).toMatch(/Không chép được sang .*usb/);
+    fs.mkdirSync(extra);
+    svc.setExtraDir(extra);
+    expect(svc.status().extraError).toBeNull();
+  });
+
+  it('đặt rỗng → xóa khóa; remove cũng xóa bản ở thư mục thêm', async () => {
+    const extra = path.join(root, 'usb');
+    fs.mkdirSync(extra);
+    svc.setExtraDir(extra);
+    const item = await svc.create('manual');
+    svc.remove(item.name);
+    expect(fs.existsSync(path.join(extra, item.name))).toBe(false);
+    svc.setExtraDir('   ');
+    expect(svc.getExtraDir()).toBe('');
+  });
+});

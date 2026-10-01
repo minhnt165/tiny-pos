@@ -34,6 +34,7 @@ export interface BackupService {
 }
 
 const EXTRA_DIR_KEY = 'backupExtraDir';
+const WRITE_TEST = '.tiny-pos-write-test';
 
 /** "YYYYMMDD-HHMMSS" theo giờ địa phương. */
 function stamp(now: Date, tzOffsetMin: number): string {
@@ -170,7 +171,29 @@ export function createBackupService(db: Db, opts: BackupOpts): BackupService {
     restore: () => Promise.reject(new Error('chưa làm')),
     restoreUpload: () => Promise.reject(new Error('chưa làm')),
     getExtraDir,
-    setExtraDir: () => undefined,
+    setExtraDir: (dir) => {
+      const d = dir.trim();
+      if (d) {
+        let isDir = false;
+        try {
+          isDir = fs.statSync(d).isDirectory();
+        } catch {
+          /* không tồn tại */
+        }
+        if (!isDir) throw new BadRequestError('Thư mục không tồn tại');
+        try {
+          const probe = path.join(d, WRITE_TEST);
+          fs.writeFileSync(probe, '');
+          fs.rmSync(probe);
+        } catch {
+          throw new BadRequestError('Không ghi được vào thư mục');
+        }
+        db.insert(settings).values({ key: EXTRA_DIR_KEY, value: d }).onConflictDoUpdate({ target: settings.key, set: { value: d } }).run();
+      } else {
+        db.delete(settings).where(eq(settings.key, EXTRA_DIR_KEY)).run();
+      }
+      extraError = null;
+    },
     lastAutoAt,
     noteAutoError: (m) => {
       lastError = m;
