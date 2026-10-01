@@ -140,7 +140,7 @@ Server luôn tính lại tiền, không tin số client gửi; client dùng cùn
 
 - `assignBarcodes(tx, items)`: với mỗi `{ productId, unitId | null }` chưa có mã (sản phẩm: `products.barcode`; đơn vị:
   `product_units.barcode`), cấp `internalEan13(seq)` với `seq` = số thứ tự lớn nhất trong các mã khớp `^20\d{11}$` ở cả
-  `products` và `product_units`, cộng 1, tăng dần trong lần gọi. Kiểm `assertBarcodeFree` trước khi ghi (mã đã bị chiếm
+  `products` và `product_units` (lấy lớn hơn với mốc đã cấp lưu ở `settings` key `internalBarcodeSeq`, để mã của đơn vị/sản phẩm đã xóa không bị cấp lại cho hàng khác), cộng 1, tăng dần trong lần gọi; ghi lại mốc sau khi cấp. Kiểm `assertBarcodeFree` trước khi ghi (mã đã bị chiếm
   thì tăng `seq` tiếp). Không bao giờ ghi đè mã đã có. Sản phẩm/đơn vị không tồn tại → 400 "Sản phẩm không hợp lệ".
 - `printLabels(db, input, opener)`: trong transaction gọi `assignBarcodes`, rồi dựng
   `url = <gốc client>/labels/print?i=<productId>.<unitId|0>x<copies>,…`; gọi `opener(url)` ngoài transaction và

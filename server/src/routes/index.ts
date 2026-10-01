@@ -4,6 +4,8 @@ import { categoriesRouter } from './categories.js';
 import { productsRouter } from './products.js';
 import { ordersRouter } from './orders.js';
 import { returnsRouter } from './returns.js';
+import { supplierReturnsRouter } from './supplier-returns.js';
+import { labelsRouter } from './labels.js';
 import { settingsRouter } from './settings.js';
 import { importsRouter } from './imports.js';
 import { stocktakesRouter } from './stocktakes.js';
@@ -13,8 +15,9 @@ import { reportsRouter } from './reports.js';
 import { backupsRouter } from './backups.js';
 import { overviewRouter } from './overview.js';
 import type { BackupService } from '../services/backups.js';
+import { NO_LABEL_WINDOW, type LabelDeps } from '../services/labels.js';
 
-export function apiRouter(db: Db, deps: { backups?: BackupService } = {}): Router {
+export function apiRouter(db: Db, deps: { backups?: BackupService; labels?: LabelDeps } = {}): Router {
   const r = Router();
   r.use('/categories', categoriesRouter(db));
   r.use('/products', productsRouter(db));
@@ -24,6 +27,8 @@ export function apiRouter(db: Db, deps: { backups?: BackupService } = {}): Route
   r.use('/suppliers', suppliersRouter(db));
   r.use('/customers', customersRouter(db));
   r.use('/imports', importsRouter(db));
+  r.use('/supplier-returns', supplierReturnsRouter(db));
+  r.use('/labels', labelsRouter(db, deps.labels ?? NO_LABEL_WINDOW));
   r.use('/stocktakes', stocktakesRouter(db));
   r.use('/reports', reportsRouter(db));
   r.use('/overview', overviewRouter(db, deps.backups));

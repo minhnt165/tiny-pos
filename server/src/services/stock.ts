@@ -3,7 +3,7 @@ import type { DbOrTx } from '../db/connection.js';
 import { products, stockMovements } from '../db/schema.js';
 import { NotFoundError } from '../errors.js';
 
-export type MovementType = 'sale' | 'import' | 'return' | 'adjust';
+export type MovementType = 'sale' | 'import' | 'return' | 'adjust' | 'supplier_return';
 
 export interface MovementInput {
   productId: number;

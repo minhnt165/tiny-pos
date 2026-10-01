@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { HandCoins, Pencil, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router';
+import { HandCoins, PackageMinus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatMoney } from '@tiny-pos/shared';
 import { useDeleteSupplier, useSupplierTransactions, useSuppliers } from '@/api/suppliers';
@@ -21,6 +22,7 @@ export function SupplierDetailDialog({ id, onClose }: { id: number | null; onClo
   const [paying, setPaying] = useState(false);
   const del = useDeleteSupplier();
   const confirm = useConfirm();
+  const navigate = useNavigate();
 
   const onDelete = async () => {
     if (!s) return;
@@ -82,6 +84,10 @@ export function SupplierDetailDialog({ id, onClose }: { id: number | null; onClo
                   Xóa
                 </Button>
               )}
+              <Button variant="outline" className="h-11 text-base" disabled={!s} onClick={() => s && navigate(`/supplier-returns/new?supplierId=${s.id}`)}>
+                <PackageMinus data-icon="inline-start" />
+                Trả hàng
+              </Button>
               <Button variant="outline" className="h-11 text-base" onClick={() => setEditing(true)}>
                 <Pencil data-icon="inline-start" />
                 Sửa

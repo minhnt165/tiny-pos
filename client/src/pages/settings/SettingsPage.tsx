@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Check, Info, Printer } from 'lucide-react';
+import { Check, Info, Printer, Tag } from 'lucide-react';
 import { toast } from 'sonner';
-import { BANKS, SETTINGS_DEFAULTS, stripDiacritics, type Settings } from '@tiny-pos/shared';
+import { BANKS, LABEL_LAYOUT, LABEL_SIZES, SETTINGS_DEFAULTS, stripDiacritics, type LabelSize, type Settings } from '@tiny-pos/shared';
+import { openLabelWindow, useSampleLabel } from '@/api/labels';
 import { useSaveSettings, useSettings } from '@/api/settings';
 import { PageTitle } from '@/components/layout/PageTitle';
 import { usePrint } from '@/components/receipt/PrintProvider';
@@ -17,11 +18,13 @@ import { BackupCard } from './BackupCard';
 
 type TextKey = 'storeName' | 'storeAddress' | 'storePhone' | 'receiptFooter';
 const bankOptions = BANKS.map((b) => ({ value: b.bin, label: `${b.shortName} – ${b.name}` }));
+const labelSizeOptions = LABEL_SIZES.map((s) => ({ value: s, label: LABEL_LAYOUT[s].label }));
 
 export function SettingsPage() {
   const { data } = useSettings();
   const save = useSaveSettings();
   const print = usePrint();
+  const sample = useSampleLabel();
   const [form, setForm] = useState<Settings>(SETTINGS_DEFAULTS);
   useEffect(() => {
     if (data) setForm(data);
@@ -85,6 +88,32 @@ export function SettingsPage() {
             In thử
           </Button>
           <p className="text-sm text-muted-foreground">In thử dùng thông tin đã lưu. Máy quầy mở Chrome với --kiosk-printing để in không cần hỏi.</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="space-y-4">
+          <SectionTitle>Tem mã vạch</SectionTitle>
+          <SelectField id="st-label-size" label="Khổ tem" value={form.labelSize} onChange={(v) => set('labelSize', v as LabelSize)} options={labelSizeOptions} />
+          <label className="flex items-center justify-between gap-4">
+            <span>
+              <span className="block font-medium">In giá trên tem</span>
+              <span className="text-sm text-muted-foreground">Tắt nếu chỉ cần mã vạch</span>
+            </span>
+            <Switch checked={form.labelShowPrice} onCheckedChange={(v) => set('labelShowPrice', v)} />
+          </label>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11 text-base"
+            disabled={sample.isPending}
+            onClick={() => sample.mutate(undefined, { onSuccess: openLabelWindow, onError: (e) => toast.error(e.message) })}
+          >
+            <Tag data-icon="inline-start" />
+            In thử 1 tem
+          </Button>
+          <p className="text-sm text-muted-foreground">
+            In thử dùng khổ đã lưu. Tem in ra máy in tem riêng: lần đầu chọn máy tem trong hộp in, các lần sau tự nhớ; hóa đơn vẫn in thẳng ra máy hóa đơn.
+          </p>
         </CardContent>
       </Card>
       <BackupCard />

@@ -11,10 +11,12 @@ import { SupplierFormDialog } from '../suppliers/SupplierFormDialog';
 interface Props {
   value: number | null;
   onChange: (id: number | null) => void;
+  /** Có mục "Không ghi nhà cung cấp" (phiếu nhập); phiếu trả NCC thì bắt buộc chọn. */
+  allowNone?: boolean;
 }
 
 /** Ô chọn NCC có tìm; có mục "Không ghi nhà cung cấp" và "+ Thêm nhà cung cấp". */
-export function SupplierPicker({ value, onChange }: Props) {
+export function SupplierPicker({ value, onChange, allowNone = true }: Props) {
   const { data: suppliers = [] } = useSuppliers();
   const [open, setOpen] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -31,7 +33,7 @@ export function SupplierPicker({ value, onChange }: Props) {
           <Button variant="outline" role="combobox" aria-expanded={open} className="h-11 w-full justify-between text-base sm:w-96">
             <span className="flex min-w-0 items-center gap-2">
               <Truck className="shrink-0 text-primary" />
-              <span className="truncate">{current ? current.name : 'Không ghi nhà cung cấp'}</span>
+              <span className="truncate">{current ? current.name : allowNone ? 'Không ghi nhà cung cấp' : 'Chọn nhà cung cấp'}</span>
             </span>
             <ChevronsUpDown className="opacity-50" />
           </Button>
@@ -42,10 +44,12 @@ export function SupplierPicker({ value, onChange }: Props) {
             <CommandList>
               <CommandEmpty>Không tìm thấy</CommandEmpty>
               <CommandGroup>
-                <CommandItem value="Không ghi nhà cung cấp #none" className="py-2 text-base" onSelect={() => pick(null)}>
-                  <Check className={cn(value === null ? 'opacity-100' : 'opacity-0')} />
-                  Không ghi nhà cung cấp
-                </CommandItem>
+                {allowNone && (
+                  <CommandItem value="Không ghi nhà cung cấp #none" className="py-2 text-base" onSelect={() => pick(null)}>
+                    <Check className={cn(value === null ? 'opacity-100' : 'opacity-0')} />
+                    Không ghi nhà cung cấp
+                  </CommandItem>
+                )}
                 {suppliers.map((s) => (
                   <CommandItem key={s.id} value={`${s.name} ${s.phone ?? ''} #${s.id}`} className="py-2 text-base" onSelect={() => pick(s.id)}>
                     <Check className={cn(value === s.id ? 'opacity-100' : 'opacity-0')} />

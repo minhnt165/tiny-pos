@@ -1,15 +1,12 @@
 import type { Dispatch } from 'react';
 import { Trash2 } from 'lucide-react';
-import { currentOption, formatMoney, formatQty, importLineAmount, marginPercent, type DraftAction, type DraftLine } from '@tiny-pos/shared';
+import { currentOption, formatMoney, importLineAmount, marginPercent, type DraftAction, type DraftLine } from '@tiny-pos/shared';
 import { CommitInput } from '@/components/CommitInput';
+import { UnitSelect } from '@/components/UnitSelect';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-
-/** Radix không cho SelectItem value rỗng: đơn vị gốc dùng giá trị thay thế. */
-const BASE = '__base__';
 
 interface Props {
   line: DraftLine;
@@ -29,26 +26,7 @@ export function ImportLineRow({ line, dispatch, onDone }: Props) {
         {!line.isActive && <Badge variant="secondary">Ngừng bán</Badge>}
       </TableCell>
       <TableCell className="px-2 py-2">
-        {line.options.length > 1 ? (
-          <Select
-            value={line.unitId === null ? BASE : String(line.unitId)}
-            onValueChange={(v) => dispatch({ type: 'setUnit', key: line.key, unitId: v === BASE ? null : Number(v) })}
-          >
-            <SelectTrigger aria-label="Đơn vị" className="h-11 w-36 text-base data-[size=default]:h-11">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent position="popper">
-              {line.options.map((o) => (
-                <SelectItem key={o.id ?? BASE} value={o.id === null ? BASE : String(o.id)} className="py-2 text-base">
-                  {o.name}
-                  {o.factor !== 1 && ` (${formatQty(o.factor)})`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : (
-          <span className="px-2">{opt.name}</span>
-        )}
+        <UnitSelect options={line.options} value={line.unitId} onChange={(unitId) => dispatch({ type: 'setUnit', key: line.key, unitId })} />
       </TableCell>
       <TableCell className="px-2 py-2">
         <CommitInput aria-label="Số lượng" value={line.qty} onCommit={(qty) => update({ qty })} onEnter={onDone} className="w-20 text-center" />

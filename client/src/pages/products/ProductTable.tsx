@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Ban, History, MoreHorizontal, Pencil, RotateCcw } from 'lucide-react';
+import { useNavigate } from 'react-router';
+import { Ban, History, MoreHorizontal, Pencil, RotateCcw, Tag } from 'lucide-react';
 import { formatMoney, type Product } from '@tiny-pos/shared';
 import { ProductAvatar } from '@/components/ProductAvatar';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +30,7 @@ export function StockCell({ p }: { p: Product }) {
 /** Menu thao tác của một sản phẩm (Sửa / Lịch sử tồn / Ngừng bán / Bán lại). */
 export function ProductMenu({ p, onEdit, onToggle }: { p: Product; onEdit: () => void; onToggle: () => void }) {
   const [history, setHistory] = useState(false);
+  const navigate = useNavigate();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -44,6 +46,10 @@ export function ProductMenu({ p, onEdit, onToggle }: { p: Product; onEdit: () =>
         <DropdownMenuItem onSelect={() => setHistory(true)}>
           <History />
           Lịch sử tồn
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => navigate(`/labels?add=${p.id}.0x1`)}>
+          <Tag />
+          In tem
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant={p.isActive ? 'destructive' : 'default'} onSelect={onToggle}>

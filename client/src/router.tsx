@@ -1,10 +1,11 @@
-import { BarChart3, ClipboardList, FolderOpen, LayoutDashboard, Package, PackageOpen, ReceiptText, Settings, ShoppingCart, Truck, Undo2, Users, type LucideIcon } from 'lucide-react';
+import { BarChart3, ClipboardList, FolderOpen, LayoutDashboard, Package, PackageMinus, PackageOpen, ReceiptText, Settings, ShoppingCart, Tag, Truck, Undo2, Users, type LucideIcon } from 'lucide-react';
 import { Navigate, Route, Routes } from 'react-router';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { CategoriesPage } from './pages/categories/CategoriesPage';
 import { CustomersPage } from './pages/customers/CustomersPage';
 import { ImportFormPage } from './pages/imports/ImportFormPage';
 import { ImportsPage } from './pages/imports/ImportsPage';
+import { LabelsPage } from './pages/labels/LabelsPage';
 import { OrdersPage } from './pages/orders/OrdersPage';
 import { OverviewPage } from './pages/overview/OverviewPage';
 import { ProductListPage } from './pages/products/ProductListPage';
@@ -13,6 +14,8 @@ import { ReportsPage } from './pages/reports/ReportsPage';
 import { ReturnsPage } from './pages/returns/ReturnsPage';
 import { SettingsPage } from './pages/settings/SettingsPage';
 import { StocktakePage } from './pages/stocktake/StocktakePage';
+import { SupplierReturnFormPage } from './pages/supplier-returns/SupplierReturnFormPage';
+import { SupplierReturnsPage } from './pages/supplier-returns/SupplierReturnsPage';
 import { SuppliersPage } from './pages/suppliers/SuppliersPage';
 import { SellPage } from './pages/sell/SellPage';
 
@@ -43,6 +46,8 @@ export const NAV: NavItem[] = [
   { to: '/customers', label: 'Khách hàng', icon: Users, group: 'sell' },
   { to: '/products', label: 'Sản phẩm', icon: Package, group: 'stock', mobile: 4 },
   { to: '/imports', label: 'Nhập hàng', icon: PackageOpen, group: 'stock' },
+  { to: '/supplier-returns', label: 'Trả NCC', icon: PackageMinus, group: 'stock' },
+  { to: '/labels', label: 'In tem', icon: Tag, group: 'stock' },
   { to: '/stocktake', label: 'Kiểm kê', icon: ClipboardList, group: 'stock' },
   { to: '/categories', label: 'Danh mục', icon: FolderOpen, group: 'stock' },
   { to: '/suppliers', label: 'Nhà cung cấp', icon: Truck, group: 'other' },
@@ -66,6 +71,9 @@ export function AppRoutes() {
       <Route path="/reports" element={<ReportsPage />} />
       <Route path="/imports" element={<ImportsPage />} />
       <Route path="/imports/new" element={<ImportFormPage />} />
+      <Route path="/supplier-returns" element={<SupplierReturnsPage />} />
+      <Route path="/supplier-returns/new" element={<SupplierReturnFormPage />} />
+      <Route path="/labels" element={<LabelsPage />} />
       <Route path="/stocktake" element={<StocktakePage />} />
       <Route path="/products" element={<ProductListPage />} />
       <Route path="/categories" element={<CategoriesPage />} />

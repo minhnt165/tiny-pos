@@ -19,7 +19,7 @@ export function resolveClock(c: Clock = {}) {
  */
 export function nextDailyCode(
   tx: DbOrTx,
-  table: 'orders' | 'imports' | 'stocktakes' | 'returns',
+  table: 'orders' | 'imports' | 'stocktakes' | 'returns' | 'supplier_returns',
   prefix: string,
   day: string,
   width: number,

@@ -5,6 +5,7 @@ import { createApp } from './app.js';
 import { createDb } from './db/connection.js';
 import { createBackupScheduler } from './services/backup-scheduler.js';
 import { createBackupService } from './services/backups.js';
+import { createLabelOpener } from './label-window.js';
 
 // server/src → ../.. = gốc repo ; server/dist → ../.. = gốc repo
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -14,7 +15,13 @@ const port = Number(process.env['PORT'] ?? 3000);
 const db = createDb(dbFile);
 const dataDir = path.dirname(dbFile);
 const backups = createBackupService(db, { dir: path.join(dataDir, 'backups'), tmpDir: path.join(dataDir, 'tmp') });
-const app = createApp(db, { clientDist: path.join(repoRoot, 'client', 'dist'), backups });
+// Chỉ bản build trên Windows (máy quầy) mới tự mở cửa sổ in tem; dev (tsx chạy src/) để trình duyệt mở tab mới
+const built = path.basename(path.dirname(fileURLToPath(import.meta.url))) === 'dist';
+const labels =
+  process.platform === 'win32' && built
+    ? { open: createLabelOpener(path.join(dataDir, 'label-browser')), origin: `http://localhost:${port}` }
+    : undefined;
+const app = createApp(db, { clientDist: path.join(repoRoot, 'client', 'dist'), backups, labels });
 
 app.listen(port, '0.0.0.0', () => {
   const lan = Object.values(os.networkInterfaces())

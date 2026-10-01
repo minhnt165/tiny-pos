@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 
-const TYPE_LABEL: Record<MovementType, string> = { sale: 'Bán', return: 'Trả', import: 'Nhập', adjust: 'Điều chỉnh' };
+const TYPE_LABEL: Record<MovementType, string> = { sale: 'Bán', return: 'Trả', import: 'Nhập', adjust: 'Điều chỉnh', supplier_return: 'Trả NCC' };
 const pad = (n: number) => String(n).padStart(2, '0');
 const when = (iso: string) => {
   const d = new Date(iso);

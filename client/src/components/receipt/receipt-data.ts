@@ -1,4 +1,4 @@
-import { cartTotals, lineAmount, type Cart, type CollectMethod, type CustomerPaymentResult, type OrderDebt, type OrderDetail, type PaymentMethod, type ReturnDetail } from '@tiny-pos/shared';
+import { cartTotals, lineAmount, type Cart, type CollectMethod, type CustomerPaymentResult, type OrderDebt, type OrderDetail, type PaymentMethod, type ReturnDetail, type SupplierReturnDetail } from '@tiny-pos/shared';
 
 export interface ReceiptItem {
   name: string;
@@ -93,7 +93,7 @@ export interface DebtReceiptData {
   createdAt: string;
 }
 
-export type PrintData = ReceiptData | DebtReceiptData | ReturnReceiptData;
+export type PrintData = ReceiptData | DebtReceiptData | ReturnReceiptData | SupplierReturnReceiptData;
 
 export function debtReceiptFromPayment(r: CustomerPaymentResult): DebtReceiptData {
   return {
@@ -132,6 +132,35 @@ export function receiptFromReturn(r: ReturnDetail): ReturnReceiptData {
     refund: r.refund,
     debtReduced: r.debtReduced,
     cashRefund: r.cashRefund,
+    cancelled: r.status === 'cancelled',
+  };
+}
+
+/** Phiếu trả hàng NCC 80mm: người giao hàng của NCC ký nhận. */
+export interface SupplierReturnReceiptData {
+  kind: 'supplier-return';
+  code: string;
+  createdAt: string;
+  supplierName: string;
+  items: ReceiptItem[];
+  total: number;
+  debtReduced: number;
+  cashReceived: number;
+  note: string | null;
+  cancelled: boolean;
+}
+
+export function receiptFromSupplierReturn(r: SupplierReturnDetail): SupplierReturnReceiptData {
+  return {
+    kind: 'supplier-return',
+    code: r.code,
+    createdAt: r.createdAt,
+    supplierName: r.supplierName,
+    items: r.items.map((i) => ({ name: i.productName, unit: i.unitName, qty: i.qty, price: i.unitPrice, amount: i.amount })),
+    total: r.total,
+    debtReduced: r.debtReduced,
+    cashReceived: r.cashReceived,
+    note: r.note,
     cancelled: r.status === 'cancelled',
   };
 }

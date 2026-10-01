@@ -1,6 +1,7 @@
-import { Ban } from 'lucide-react';
+import { useNavigate } from 'react-router';
+import { Ban, Tag } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatMoney, formatQty } from '@tiny-pos/shared';
+import { formatLabelItems, formatMoney, formatQty, importLabelRefs } from '@tiny-pos/shared';
 import { useCancelImport, useImport } from '@/api/imports';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +12,7 @@ export function ImportDetailDialog({ id, onClose }: { id: number | null; onClose
   const { data: r } = useImport(id);
   const cancel = useCancelImport();
   const confirm = useConfirm();
+  const navigate = useNavigate();
 
   const onCancel = async () => {
     if (!r) return;
@@ -75,6 +77,12 @@ export function ImportDetailDialog({ id, onClose }: { id: number | null; onClose
             <Button variant="outline" className="h-11 text-base text-destructive" disabled={cancel.isPending} onClick={() => void onCancel()}>
               <Ban data-icon="inline-start" />
               Hủy phiếu
+            </Button>
+          )}
+          {r && (
+            <Button variant="outline" className="h-11 text-base" onClick={() => navigate(`/labels?add=${formatLabelItems(importLabelRefs(r.items))}`)}>
+              <Tag data-icon="inline-start" />
+              In tem
             </Button>
           )}
         </DialogFooter>

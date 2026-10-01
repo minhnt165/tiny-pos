@@ -108,6 +108,13 @@ export const returnListQuerySchema = z.object(returnListFields).superRefine((q, 
 });
 export type ReturnListQuery = z.output<typeof returnListQuerySchema>;
 
+export const supplierReturnListFields = { ...rangeFields, q: search, status: csvEnum(DOC_STATUSES), supplierId: positiveId, page };
+export const supplierReturnListQuerySchema = z.object(supplierReturnListFields).superRefine((q, ctx) => {
+  const message = rangeError(q);
+  if (message) ctx.addIssue({ code: 'custom', message });
+});
+export type SupplierReturnListQuery = z.output<typeof supplierReturnListQuerySchema>;
+
 export const partyListQuerySchema = z.object({ q: search, includeInactive: flag });
 export type PartyListQuery = z.output<typeof partyListQuerySchema>;
 

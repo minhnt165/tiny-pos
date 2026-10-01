@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { LABEL_SIZES } from '../labels.js';
 import { toBankName } from '../text.js';
 
 const text = (max: number, fallback = '') => z.string().trim().max(max).default(fallback);
@@ -21,6 +22,8 @@ export const settingsInputSchema = z.object({
     .default(''),
   bankAccountName: z.string().max(50).transform(toBankName).default(''),
   autoPrint: z.boolean().default(true),
+  labelSize: z.enum(LABEL_SIZES).default('40x30'),
+  labelShowPrice: z.boolean().default(true),
 });
 export type Settings = z.output<typeof settingsInputSchema>;
 

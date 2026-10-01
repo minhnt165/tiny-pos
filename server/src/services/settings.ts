@@ -7,6 +7,7 @@ export function getSettings(db: DbOrTx): Settings {
   const raw: Record<string, unknown> = {};
   for (const row of db.select().from(settings).all()) raw[row.key] = row.value;
   if (typeof raw['autoPrint'] === 'string') raw['autoPrint'] = raw['autoPrint'] === '1';
+  if (typeof raw['labelShowPrice'] === 'string') raw['labelShowPrice'] = raw['labelShowPrice'] === '1';
   const r = settingsInputSchema.safeParse(raw);
   return r.success ? r.data : SETTINGS_DEFAULTS;
 }

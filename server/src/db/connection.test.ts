@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm';
 import { createTestDb } from './test-db.js';
 
 describe('migration', () => {
-  it('tạo đủ 17 bảng nghiệp vụ và bật foreign_keys', () => {
+  it('tạo đủ 19 bảng nghiệp vụ và bật foreign_keys', () => {
     const db = createTestDb();
     const rows = db.all<{ name: string }>(sql`select name from sqlite_master where type='table' order by name`);
     const tables = rows.map((r) => r.name).filter((n) => !n.startsWith('__') && !n.startsWith('sqlite_'));
@@ -23,6 +23,8 @@ describe('migration', () => {
       'stock_movements',
       'stocktake_items',
       'stocktakes',
+      'supplier_return_items',
+      'supplier_returns',
       'supplier_transactions',
       'suppliers',
     ]);

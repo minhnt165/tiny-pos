@@ -5,7 +5,7 @@ Phần mềm bán hàng cho tiệm tạp hóa nhỏ, chạy local trên 1 máy W
 ## Yêu cầu
 
 - Node.js 20 trở lên (máy dev đang dùng 24).
-- Máy quét mã vạch USB (gõ mã rồi Enter), máy in hóa đơn nhiệt 80mm đặt làm máy in mặc định của Windows.
+- Máy quét mã vạch USB (gõ mã rồi Enter), máy in hóa đơn nhiệt 80mm đặt làm máy in mặc định của Windows. Máy in tem decal (tùy chọn) để in tem mã vạch.
 
 ## Cài đặt
 
@@ -33,6 +33,8 @@ Trên máy quầy (Windows 10/11, đã cài Node.js 20+): nhấp đúp `scripts\
 - Điện thoại cùng Wi-Fi: `http://<IP máy>:3000` (install in IP ra cuối).
 - Trang *Tổng quan* (`http://<IP máy>:3000/overview`, mục đầu menu): số liệu hôm nay, 7 ngày, hàng sắp hết, khách nợ lâu, nợ NCC, kiểm kê dở, tình trạng sao lưu; tự làm mới mỗi phút. Máy quầy mở app vẫn vào thẳng Bán hàng.
 - Khách trả hàng: *Hóa đơn* → bấm vào đơn → *Trả hàng*; danh sách phiếu ở *Trả hàng* (menu Bán hàng). Phiếu tính vào ngày trả, hủy được.
+- Trả hàng cho nhà cung cấp: *Trả NCC* (menu Kho hàng) → *Lập phiếu trả*, hoặc *Nhà cung cấp* → mở NCC → *Trả hàng*. Trừ nợ NCC trước, phần dư ghi là NCC trả tiền mặt; hủy phiếu thì tồn và nợ về như cũ.
+- In tem mã vạch: *In tem* (menu Kho hàng), hoặc ⋯ → *In tem* ở Sản phẩm, *In tem* trong phiếu nhập. Hàng chưa có mã được cấp mã nội bộ bắt đầu bằng `20`. Chọn khổ tem trong *Cài đặt → Tem mã vạch*. Tem mở trong một cửa sổ riêng có hộp chọn máy in: lần đầu chọn máy in tem, các lần sau Chrome tự nhớ; hóa đơn vẫn in thẳng ra máy hóa đơn.
 - Log server: `data\server.log` (ghi đè mỗi lần chạy).
 - Cập nhật phiên bản: `scripts\update.cmd` (dừng, `git pull`, build, chạy lại). Gỡ: `scripts\uninstall.cmd` (giữ `data\`).
 - Chạy tay không cài: `npm run build` rồi `scripts\start.cmd` (hoặc `npm start`); dừng: `scripts\stop.cmd`.
@@ -171,3 +173,12 @@ In không hỏi: tạo shortcut `chrome.exe --app=http://localhost:3000 --kiosk-
 4. Đơn còn phiếu trả: nút *Hủy đơn* bị khóa. *Trả hàng* → mở phiếu → *Hủy phiếu* → tồn và nợ về như trước, sổ nợ có *Hủy phiếu trả*; lúc này hủy được hóa đơn.
 5. Trả hàng hôm nay cho đơn hôm qua: *Hóa đơn* hôm nay *Doanh thu*/*Tiền mặt* đã trừ, hint "Bán … · Trả …"; *Báo cáo* hôm qua không đổi, hôm nay có cột *Trả hàng*; *Tổng quan* hôm nay khớp *Hóa đơn*.
 6. *Trả hàng*: lọc ngày / trạng thái / tìm "tui da" ra phiếu có Túi đá; *Xuất Excel* ra 2 sheet *Phiếu trả*, *Chi tiết*.
+
+## Kiểm thử thủ công – Trả NCC và in tem 0.12.0
+
+1. *Nhà cung cấp* → NCC đang nợ → *Trả hàng* → thêm 1 thùng bia → giá trả = giá nhập thùng; lưu → toast "Đã lập TN-…", *In phiếu* ra "PHIẾU TRẢ HÀNG NHÀ CUNG CẤP" có chỗ ký; tồn bia giảm 24 lon; sổ nợ NCC có dòng "Trả NCC TN-…", nợ giảm đúng.
+2. Trả nhiều hơn số nợ → phần dư hiện "NCC trả tiền mặt"; nợ NCC về 0, không âm. Lịch sử tồn của bia có dòng *Trả NCC* kèm mã `TN-…`.
+3. *Trả NCC* → mở phiếu → *Hủy phiếu* → tồn và nợ về như trước, sổ nợ có "Hủy phiếu trả NCC …". Lọc theo NCC / trạng thái / tìm tên hàng; *Xuất Excel* ra 2 sheet *Phiếu trả NCC*, *Chi tiết*.
+4. *Cài đặt → Tem mã vạch*: chọn khổ đúng cuộn decal, *Lưu*, *In thử 1 tem* → cửa sổ in tem mở, hộp in hiện: chọn máy in tem, in. Đóng rồi *In thử* lần nữa → hộp in đã chọn sẵn máy tem. Bán một đơn và in hóa đơn → vẫn ra máy hóa đơn, không hỏi.
+5. *In tem* → thêm một hàng chưa có mã (bánh tự gói) 3 tem → in → tem có tên, giá, mã `20…`; quét tem ở *Bán hàng* ra đúng món. Thêm một thùng chưa có mã → tem thùng có giá thùng, quét ra đúng đơn vị thùng.
+6. Phiếu nhập → *In tem* → trang In tem điền sẵn số tem theo số lon đã nhập; hàng cân chỉ 1 tem.

@@ -193,6 +193,46 @@ export const importItems = sqliteTable('import_items', {
   amount: integer('amount').notNull().default(0),
 });
 
+export const supplierReturns = sqliteTable(
+  'supplier_returns',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    code: text('code').notNull().unique(), // TN-20261001-0001
+    supplierId: integer('supplier_id')
+      .notNull()
+      .references(() => suppliers.id),
+    supplierName: text('supplier_name').notNull(), // snapshot tên NCC lúc lập
+    total: integer('total').notNull(), // Σ supplier_return_items.amount
+    debtReduced: integer('debt_reduced').notNull().default(0), // phần trừ vào nợ NCC
+    cashReceived: integer('cash_received').notNull().default(0), // phần NCC trả tiền mặt
+    note: text('note'),
+    status: text('status', { enum: ['done', 'cancelled'] }).notNull().default('done'),
+    createdAt: createdAt(),
+    cancelledAt: text('cancelled_at'),
+  },
+  (t) => [index('supplier_returns_created_idx').on(t.createdAt), index('supplier_returns_supplier_idx').on(t.supplierId)],
+);
+
+export const supplierReturnItems = sqliteTable(
+  'supplier_return_items',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    returnId: integer('return_id')
+      .notNull()
+      .references(() => supplierReturns.id, { onDelete: 'cascade' }),
+    productId: integer('product_id')
+      .notNull()
+      .references(() => products.id),
+    productName: text('product_name').notNull(),
+    unitName: text('unit_name').notNull(),
+    factor: real('factor').notNull().default(1), // hệ số đơn vị đã chọn
+    qty: real('qty').notNull(), // theo đơn vị đã chọn
+    unitPrice: integer('unit_price').notNull(), // giá trả 1 đơn vị đã chọn
+    amount: integer('amount').notNull(),
+  },
+  (t) => [index('supplier_return_items_return_idx').on(t.returnId)],
+);
+
 export const supplierTransactions = sqliteTable(
   'supplier_transactions',
   {
@@ -216,7 +256,7 @@ export const stockMovements = sqliteTable(
       .notNull()
       .references(() => products.id),
     qty: real('qty').notNull(), // +/- theo đơn vị gốc
-    type: text('type', { enum: ['sale', 'import', 'return', 'adjust'] }).notNull(),
+    type: text('type', { enum: ['sale', 'import', 'return', 'adjust', 'supplier_return'] }).notNull(),
     refId: integer('ref_id'), // order_id / import_id / stocktake_id (adjust do hủy phiếu nhập hoặc chốt kiểm kê)
     note: text('note'),
     createdAt: createdAt(),

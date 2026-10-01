@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { formatMoney, formatQty, type Settings } from '@tiny-pos/shared';
-import type { DebtReceiptData, ReceiptData, ReturnReceiptData } from './receipt-data';
+import type { DebtReceiptData, ReceiptData, ReturnReceiptData, SupplierReturnReceiptData } from './receipt-data';
 
 const METHOD_LABEL = { cash: 'Tiền mặt', transfer: 'Chuyển khoản', debt: 'Ghi nợ' } as const;
 
@@ -138,6 +138,37 @@ export function ReturnReceipt({ data, settings }: { data: ReturnReceiptData; set
       <Row label="Trả tiền mặt" value={formatMoney(data.cashRefund)} />
       <div style={rule} />
       {settings.receiptFooter && <div style={center}>{settings.receiptFooter}</div>}
+    </div>
+  );
+}
+
+/** Phiếu trả hàng NCC 80mm: hai chỗ ký để bên giao (tiệm) và bên nhận (NCC) xác nhận. */
+export function SupplierReturnReceipt({ data, settings }: { data: SupplierReturnReceiptData; settings: Settings }) {
+  return (
+    <div style={page}>
+      <StoreHeader settings={settings} />
+      <div style={rule} />
+      <div style={{ ...center, fontWeight: 700 }}>{data.cancelled ? 'PHIẾU TRẢ HÀNG NCC ĐÃ HỦY' : 'PHIẾU TRẢ HÀNG NHÀ CUNG CẤP'}</div>
+      <div style={center}>{data.code}</div>
+      <div style={center}>{timeLabel(data.createdAt)}</div>
+      <div style={{ ...center, overflowWrap: 'anywhere' }}>NCC: {data.supplierName}</div>
+      <div style={rule} />
+      {data.items.map((it, i) => (
+        <div key={i} style={{ marginBottom: '3px' }}>
+          <div>{it.name}</div>
+          <Row label={`${formatQty(it.qty)} ${it.unit} × ${formatMoney(it.price)}`} value={formatMoney(it.amount)} />
+        </div>
+      ))}
+      <div style={rule} />
+      <Row label="Tổng" value={formatMoney(data.total)} strong />
+      {data.debtReduced > 0 && <Row label="Trừ nợ" value={formatMoney(data.debtReduced)} />}
+      <Row label="NCC trả tiền mặt" value={formatMoney(data.cashReceived)} />
+      {data.note && <div style={{ overflowWrap: 'anywhere' }}>Ghi chú: {data.note}</div>}
+      <div style={rule} />
+      <div style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center', marginTop: '4px', height: '18mm' }}>
+        <span>Bên giao</span>
+        <span>Bên nhận</span>
+      </div>
     </div>
   );
 }

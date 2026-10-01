@@ -43,6 +43,8 @@ describe('settingsInputSchema', () => {
       bankAccount: '',
       bankAccountName: '',
       autoPrint: true,
+      labelSize: '40x30',
+      labelShowPrice: true,
     });
   });
   it('chuẩn hóa tên chủ tài khoản, kiểm tra BIN/số tài khoản', () => {

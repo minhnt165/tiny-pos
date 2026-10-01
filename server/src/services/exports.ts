@@ -12,6 +12,7 @@ import {
   type PaymentMethod,
   type ProductView,
   type ReturnListQuery,
+  type SupplierReturnListQuery,
 } from '@tiny-pos/shared';
 import type { Db } from '../db/connection.js';
 import { addSheet, newWorkbook, toBuffer, type XlsxColumn, type XlsxValue } from '../xlsx/workbook.js';
@@ -21,6 +22,7 @@ import { listImportsForExport } from './imports.js';
 import { listOrdersForExport } from './orders.js';
 import { listProducts } from './products.js';
 import { listReturnsForExport } from './returns.js';
+import { listSupplierReturnsForExport } from './supplier-returns.js';
 import { listSuppliers } from './suppliers.js';
 
 export interface XlsxFile {
@@ -188,6 +190,49 @@ export async function exportReturnsXlsx(db: Db, query: ReturnListQuery, clock?: 
     [
       { name: 'Phiếu trả', columns: RETURN_COLUMNS, rows },
       { name: 'Chi tiết', columns: RETURN_ITEM_COLUMNS, rows: items },
+    ],
+    tz,
+  );
+}
+
+const SUPPLIER_RETURN_COLUMNS = [
+  col('Mã', 18),
+  col('Ngày giờ', 17, 'datetime'),
+  col('NCC', 22),
+  col('Tổng trả', 12, 'money'),
+  col('Trừ nợ', 12, 'money'),
+  col('NCC trả tiền mặt', 14, 'money'),
+  col('Số món', 8, 'qty'),
+  col('Trạng thái', 11),
+  col('Hủy lúc', 17, 'datetime'),
+  col('Ghi chú', 28),
+];
+const SUPPLIER_RETURN_ITEM_COLUMNS = [
+  col('Mã phiếu', 18),
+  col('Ngày giờ', 17, 'datetime'),
+  col('Trạng thái', 11),
+  col('NCC', 22),
+  col('Tên hàng', 32),
+  col('Đơn vị', 12),
+  col('Quy đổi', 9, 'qty'),
+  col('SL', 8, 'qty'),
+  col('Giá trả', 12, 'money'),
+  col('Thành tiền', 12, 'money'),
+];
+
+export async function exportSupplierReturnsXlsx(db: Db, query: SupplierReturnListQuery, clock?: Clock): Promise<XlsxFile> {
+  const { now, tz } = resolveClock(clock);
+  const { from, to, returns } = listSupplierReturnsForExport(db, query, { now, tzOffsetMin: tz });
+  const rows = returns.map((r) => [r.code, r.createdAt, r.supplierName, r.total, r.debtReduced, r.cashReceived, r.itemCount, STATUS_LABEL[r.status],
+    r.cancelledAt, r.note]);
+  const items = returns.flatMap((r) =>
+    r.items.map((it) => [r.code, r.createdAt, STATUS_LABEL[r.status], r.supplierName, it.productName, it.unitName, it.factor, it.qty, it.unitPrice, it.amount]),
+  );
+  return build(
+    rangeName('tra-ncc', from, to),
+    [
+      { name: 'Phiếu trả NCC', columns: SUPPLIER_RETURN_COLUMNS, rows },
+      { name: 'Chi tiết', columns: SUPPLIER_RETURN_ITEM_COLUMNS, rows: items },
     ],
     tz,
   );

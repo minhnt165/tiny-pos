@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import QRCode from 'qrcode';
 import { SETTINGS_DEFAULTS } from '@tiny-pos/shared';
 import { useSettings } from '@/api/settings';
-import { DebtReceipt, Receipt, ReturnReceipt } from './Receipt';
+import { DebtReceipt, Receipt, ReturnReceipt, SupplierReturnReceipt } from './Receipt';
 import type { PrintData } from './receipt-data';
 
 type PrintFn = (data: PrintData) => Promise<void>;
@@ -76,7 +76,9 @@ export function PrintProvider({ children }: { children: ReactNode }) {
         job &&
         createPortal(
           'kind' in job.data ? (
-            job.data.kind === 'return' ? (
+            job.data.kind === 'supplier-return' ? (
+              <SupplierReturnReceipt data={job.data} settings={settings ?? SETTINGS_DEFAULTS} />
+            ) : job.data.kind === 'return' ? (
               <ReturnReceipt data={job.data} settings={settings ?? SETTINGS_DEFAULTS} />
             ) : (
               <DebtReceipt data={job.data} settings={settings ?? SETTINGS_DEFAULTS} />

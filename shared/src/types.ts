@@ -219,7 +219,7 @@ export interface StocktakeDetail extends StocktakeSummary {
   items: StocktakeItem[];
 }
 
-export type MovementType = 'sale' | 'import' | 'return' | 'adjust';
+export type MovementType = 'sale' | 'import' | 'return' | 'adjust' | 'supplier_return';
 
 export interface StockMovement {
   id: number;
@@ -228,7 +228,7 @@ export interface StockMovement {
   qty: number;
   note: string | null;
   createdAt: string;
-  /** Mã chứng từ liên quan: HD-…, PN-…, KK-… hoặc null. */
+  /** Mã chứng từ liên quan: HD-…, PN-…, KK-…, TH-…, TN-… hoặc null. */
   refCode: string | null;
 }
 
@@ -493,4 +493,61 @@ export interface ReturnList {
   total: number;
   page: number;
   pageSize: number;
+}
+
+export interface SupplierReturnItem {
+  id: number;
+  productId: number;
+  productName: string;
+  unitName: string;
+  factor: number;
+  /** Theo đơn vị đã chọn. */
+  qty: number;
+  /** Giá trả 1 đơn vị đã chọn. */
+  unitPrice: number;
+  amount: number;
+}
+
+export interface SupplierReturnSummary {
+  id: number;
+  code: string;
+  supplierId: number;
+  /** Snapshot tên NCC lúc lập phiếu. */
+  supplierName: string;
+  total: number;
+  /** Phần trừ vào nợ NCC. */
+  debtReduced: number;
+  /** Phần NCC trả tiền mặt = total − debtReduced. */
+  cashReceived: number;
+  note: string | null;
+  status: 'done' | 'cancelled';
+  itemCount: number;
+  createdAt: string;
+  cancelledAt: string | null;
+}
+
+export interface SupplierReturnDetail extends SupplierReturnSummary {
+  items: SupplierReturnItem[];
+}
+
+/** Phiếu trả NCC `done` trong khoảng ngày. */
+export interface SupplierReturnTotals {
+  count: number;
+  total: number;
+  debt: number;
+  cash: number;
+}
+
+export interface SupplierReturnList {
+  returns: SupplierReturnSummary[];
+  summary: SupplierReturnTotals;
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/** Kết quả lệnh in tem: server đã mở cửa sổ in ở máy quầy (opened) hay client phải tự mở `url`. */
+export interface LabelPrintResult {
+  opened: boolean;
+  url: string;
 }

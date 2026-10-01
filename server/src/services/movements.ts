@@ -5,7 +5,7 @@ import { orders, products, stockMovements } from '../db/schema.js';
 import { NotFoundError } from '../errors.js';
 
 /** Ghi chú của movement nhập/hủy phiếu/kiểm kê đã chứa mã chứng từ ("Nhập PN-…", "Kiểm kê KK-…"). */
-const CODE_IN_NOTE = /\b(?:HD|PN|KK|TH)-\d{8}-\d+\b/;
+const CODE_IN_NOTE = /\b(?:HD|PN|KK|TH|TN)-\d{8}-\d+\b/;
 
 export function listMovements(db: Db, productId: number, limit: number): StockMovement[] {
   const p = db.select({ id: products.id }).from(products).where(eq(products.id, productId)).get();
