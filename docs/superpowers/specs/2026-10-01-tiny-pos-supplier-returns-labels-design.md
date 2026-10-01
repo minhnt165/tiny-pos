@@ -53,7 +53,7 @@ in của điện thoại, ô trên thanh dưới điện thoại.
 | Tiền mặt NCC trả | Chỉ hiện ở phiếu và trang Trả NCC; **không** cộng vào tiền mặt ở trang Hóa đơn / Báo cáo | Tiền trả NCC khi nhập cũng không trừ ở đó; `daySummary` là số bán hàng |
 | Lãi lỗ | Không đổi | Báo cáo tính từ hóa đơn bán và snapshot giá vốn trên dòng hóa đơn |
 | Mã phiếu | `TN-YYYYMMDD-NNNN` | Theo khuôn `nextDailyCode`; `TH` đã là trả hàng khách |
-| Hủy phiếu | Movement bù `adjust`, bút toán bù `+debtReduced`; phiếu giữ lại, *Đã hủy* | Bất biến "chứng từ không sửa, chỉ hủy" |
+| Hủy phiếu | Movement bù `adjust`, bút toán bù `+debtReduced`; phiếu giữ lại, *Đã hủy*. NCC đã xóa mà phiếu có trừ nợ thì **không** hủy được | Bất biến "chứng từ không sửa, chỉ hủy"; NCC chỉ xóa được khi nợ 0, cộng nợ lại cho NCC đã xóa thành khoản treo (giống phiếu trả khách) |
 | Giấy tem | Máy in decal riêng; khổ chọn trong Cài đặt: `40×30` (mặc định), `50×30`, `35×22` 2 tem/hàng | Người dùng chọn |
 | Đưa tem ra đúng máy | Server mở **cửa sổ trình duyệt thứ hai** với hồ sơ riêng `data/label-browser`, không `--kiosk-printing` | `open.vbs` mở app với `--kiosk-printing` nên mọi lệnh in đi thẳng máy mặc định (máy hóa đơn); hồ sơ riêng hiện hộp in và nhớ máy tem đã chọn |
 | Mã cho hàng chưa có mã | Tự cấp EAN-13 `20` + 10 số thứ tự + số kiểm tra, **ghi vào** sản phẩm/đơn vị khi in | Dải `20–29` dành cho dùng nội bộ, không trùng mã nhà sản xuất; quét ở quầy không cần đổi gì |
@@ -99,7 +99,7 @@ supplier_return_items: {
 ## 5. Hàm thuần ở `shared/`
 
 - `supplier-return-math.ts`:
-  - `lineAmount(qty, unitPrice)` = `round(qty × unitPrice)`.
+  - Thành tiền dòng dùng lại `importLineAmount(qty, unitPrice)` = `round(qty × unitPrice)` (tên `lineAmount` đã là của giỏ hàng).
   - `splitSupplierRefund(total, supplierDebt)`: `debtReduced = min(total, max(supplierDebt, 0))`,
     `cashReceived = total − debtReduced`.
 - `ean.ts`:
@@ -120,18 +120,19 @@ Server luôn tính lại tiền, không tin số client gửi; client dùng cùn
      thuộc sản phẩm (400 "Đơn vị không hợp lệ"); lấy `unitName`, `factor` (đơn vị gốc: tên `products.unit`,
      `factor = 1`). `qty > 0`, `0 ≤ unitPrice ≤ MAX_MONEY` (zod). Không có dòng → 400 "Chưa chọn món nào để trả".
      Cùng sản phẩm + đơn vị nhiều dòng thì cho phép (như phiếu nhập).
-  3. `total = Σ lineAmount`; `total > MAX_MONEY` → 400. Nợ NCC đọc trong transaction rồi `splitSupplierRefund`.
+  3. `total = Σ importLineAmount`; `total > MAX_MONEY` → 400. Nợ NCC đọc trong transaction rồi `splitSupplierRefund`.
   4. `nextDailyCode(tx, 'supplier_returns', 'TN', ngày địa phương, 4)`, chèn phiếu + dòng.
   5. Mỗi dòng: `recordMovement({ qty: −qty × factor, type: 'supplier_return', refId: returnId, note: 'Trả NCC TN-…' })`.
      Không kiểm tra tồn.
   6. `debtReduced > 0`: `recordSupplierTx({ amount: −debtReduced, importId: null, note: 'Trả NCC TN-…' })`.
-- `getSupplierReturn(db, id)`: phiếu + dòng + tên NCC hiện tại.
+- `getSupplierReturn(db, id)`: phiếu + dòng; tên NCC là snapshot lúc lập (như phiếu nhập).
 - `listSupplierReturns(db, query, clock)`: lọc khoảng ngày (mặc định hôm nay), `supplierId`, `status[]`, `q` (bỏ dấu,
   LIKE trên mã phiếu và tên món), phân trang; kèm `summary` `{ count, total, debt, cash }` của phiếu `done` trong khoảng
   ngày (không theo lọc khác, giống phiếu nhập).
 - `cancelSupplierReturn(db, id, clock)`: đã hủy → 409 "Phiếu trả NCC đã hủy"; mỗi dòng movement `adjust`
   `+qty × factor`, note 'Hủy phiếu trả NCC TN-…'; `debtReduced > 0` → `recordSupplierTx({ amount: +debtReduced })`;
-  cập nhật `status`, `cancelledAt`. NCC đã ngừng hoạt động vẫn hủy được.
+  cập nhật `status`, `cancelledAt`. NCC đã ngừng hoạt động: phiếu không trừ nợ thì vẫn hủy được; có trừ nợ → 409
+  "Nhà cung cấp đã xóa, không hủy được phiếu đã trừ nợ".
 - `exportSupplierReturnsXlsx(db, query, clock)`: sheet *Phiếu trả NCC* (mã, ngày, NCC, tổng, trừ nợ, NCC trả tiền mặt,
   trạng thái, ghi chú) và sheet *Dòng* (mã phiếu, tên, đơn vị, số lượng, giá trả, thành tiền), qua `exports.build`.
 
@@ -159,7 +160,7 @@ Server luôn tính lại tiền, không tin số client gửi; client dùng cùn
   `GET /api/supplier-returns/export.xlsx`, `GET /api/supplier-returns/:id`, `POST /api/supplier-returns/:id/cancel`.
   Schema ở `shared/src/schemas/supplier-return.ts`.
 - `routes/labels.ts`: `POST /api/labels/print` body `{ items: [{ productId, unitId | null, copies }] }`
-  (schema `shared/src/schemas/label.ts`).
+  (schema `shared/src/schemas/label.ts`); `POST /api/labels/sample` mở trang in với `?sample=1` (tem mẫu, không cấp mã).
 - Trang in tem đọc dữ liệu qua API sản phẩm có sẵn (`GET /api/products/:id` trả `ProductWithUnits`, mỗi sản phẩm khác
   nhau một lần gọi), không thêm route đọc.
 
@@ -191,8 +192,8 @@ Server luôn tính lại tiền, không tin số client gửi; client dùng cùn
 - **In 80mm**: `PrintProvider` thêm `SupplierReturnReceipt`: tiêu đề "PHIẾU TRẢ HÀNG NHÀ CUNG CẤP", mã, ngày, tên NCC,
   dòng (tên, số lượng × giá, thành tiền), *Tổng*, *Trừ nợ*, *NCC trả tiền mặt*, ghi chú, hai chỗ ký "Bên giao" /
   "Bên nhận"; phiếu đã hủy in "ĐÃ HỦY".
-- **Cài đặt**: thẻ *Tem mã vạch* (`SelectField` khổ tem, `Switch` *In giá trên tem*, nút *In thử 1 tem* in tem của sản
-  phẩm đầu tiên có mã, không có sản phẩm nào thì nút khóa).
+- **Cài đặt**: thẻ *Tem mã vạch* (`SelectField` khổ tem, `Switch` *In giá trên tem*, nút *In thử 1 tem* in một tem mẫu
+  "Nước suối 500ml" mã `2000000000015` theo khổ và công tắc **đã lưu**, không ghi gì vào DB).
 - **Trang In tem** (`pages/labels/LabelsPage.tsx`, route `/labels`): `PageTitle` (nút **In N tem**), ô quét/tìm sản
   phẩm thêm dòng; mỗi dòng: tên, chọn đơn vị (`SelectField`), mã hiện có hoặc nhãn "Sẽ cấp mã mới", ô số tem (1–500),
   nút xóa dòng. Thêm lại cùng sản phẩm + đơn vị thì cộng số tem. Danh sách giữ trong state của trang.
@@ -220,6 +221,7 @@ Server luôn tính lại tiền, không tin số client gửi; client dùng cùn
 | Sản phẩm / đơn vị lạ | 400 | "Sản phẩm không hợp lệ" / "Đơn vị không hợp lệ" |
 | Tổng vượt `MAX_MONEY` | 400 | "Tổng tiền vượt giới hạn" |
 | Hủy phiếu đã hủy | 409 | "Phiếu trả NCC đã hủy" |
+| Hủy phiếu đã trừ nợ của NCC đã xóa | 409 | "Nhà cung cấp đã xóa, không hủy được phiếu đã trừ nợ" |
 | In tem: sản phẩm / đơn vị lạ | 400 | "Sản phẩm không hợp lệ" |
 | In tem: hết dải mã nội bộ | 409 | "Đã hết mã nội bộ để cấp" |
 
@@ -230,7 +232,7 @@ Client hiện lỗi bằng `toast.error(e.message)`; màn lập phiếu giữ ng
 - `shared/ean.test.ts`: số kiểm tra với mã EAN-13 thật đã biết; `internalEan13(1)` = `2000000000015`… hợp lệ;
   `barcodeFormat` cho EAN-13, EAN-8, chuỗi chữ.
 - `shared/supplier-return-math.test.ts`: `splitSupplierRefund` khi nợ lớn hơn / nhỏ hơn / bằng 0 / âm; hàng cân
-  `lineAmount(0.35, 120000)`.
+  `importLineAmount(0.35, 120000)` = 42 000.
 - `server/src/services/supplier-returns.test.ts` (`createTestDb` + `Clock`): mã `TN` theo ngày; movement `−qty × factor`
   loại `supplier_return` cho từng dòng, kể cả sản phẩm ngừng bán; trả quá tồn vẫn lưu (tồn âm); trừ nợ rồi phần dư tiền
   mặt; NCC nợ 0 → toàn bộ tiền mặt; giá vốn sản phẩm không đổi; NCC ngừng hoạt động bị từ chối; đơn vị không thuộc sản
