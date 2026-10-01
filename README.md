@@ -27,21 +27,26 @@ npm run dev
 
 ## Chạy thật (production)
 
-```bash
-npm run build
-npx pm2 start ecosystem.config.cjs
-npx pm2 save
-```
+Trên máy quầy (Windows 10/11, đã cài Node.js 20+): nhấp đúp `scripts\install.cmd`. Script sẽ build, tạo biểu tượng **Tiny POS** trong thư mục Startup (bật máy là tự chạy) và trên Desktop (mở màn hình bán hàng), rồi hỏi quyền quản trị một lần để mở cổng 3000 cho điện thoại.
 
-Mở `http://localhost:3000`. Điện thoại: `http://<IP máy>:3000`. Server phục vụ luôn giao diện đã build từ `client/dist`.
+- Biểu tượng *Tiny POS*: bảo đảm server đang chạy rồi mở Chrome/Edge chế độ ứng dụng với `--kiosk-printing` (in không hỏi).
+- Điện thoại cùng Wi-Fi: `http://<IP máy>:3000` (install in IP ra cuối).
+- Log server: `data\server.log` (ghi đè mỗi lần chạy).
+- Cập nhật phiên bản: `scripts\update.cmd` (dừng, `git pull`, build, chạy lại). Gỡ: `scripts\uninstall.cmd` (giữ `data\`).
+- Chạy tay không cài: `npm run build` rồi `scripts\start.cmd` (hoặc `npm start`); dừng: `scripts\stop.cmd`.
 
 Lưu ý:
 
 - Chỉ dùng trong mạng nhà. Không mở cổng 3000 ra Internet vì chưa có đăng nhập.
-- Đặt thư mục dự án (đặc biệt `data/`) trên ổ cứng của máy, không đặt trên USB hay ổ mạng: SQLite chế độ WAL không an toàn trên đó.
+- Đặt thư mục dự án (đặc biệt `data/`) trên ổ cứng của máy, không đặt trên USB hay ổ mạng: SQLite chế độ WAL không an toàn trên đó. (Bản sao lưu thì chép sang USB được, xem dưới.)
 - Muốn xóa sạch dữ liệu thử nghiệm: dừng server rồi xóa thư mục `data/`.
 
-Tạo shortcut Chrome ở quầy (giai đoạn 5 sẽ có script): `chrome.exe --app=http://localhost:3000 --kiosk-printing`.
+## Sao lưu và khôi phục
+
+- Server tự sao lưu `data/grocery.db` vào `data/backups/grocery-YYYYMMDD-HHMMSS-auto.db` khi khởi động và mỗi ngày một lần (chỉ khi có thay đổi); giữ 30 bản tự động gần nhất. *Cài đặt → Sao lưu dữ liệu* có nút *Sao lưu ngay*.
+- **Nên** điền *Thư mục chép thêm* là USB (`E:\`) hoặc thư mục OneDrive/Google Drive đã cài trên máy: mỗi bản sao được chép thêm sang đó, máy hỏng vẫn còn dữ liệu. USB rút ra thì thẻ hiện cảnh báo, sao lưu chính vẫn chạy.
+- Khôi phục: trong danh sách bản sao bấm *Khôi phục*; dữ liệu hiện tại được tự sao lưu thành bản *Trước khôi phục* rồi mới thay. Không cần dừng server.
+- Mang sang máy mới: cài như trên, rồi *Khôi phục từ file…* chọn file `.db` chép từ máy cũ (hoặc *Tải về* ở máy cũ). Bản sao từ phiên bản phần mềm cũ hơn dùng được; từ phiên bản mới hơn phải cập nhật phần mềm trước.
 
 ## Lệnh khác
 
@@ -51,6 +56,8 @@ Tạo shortcut Chrome ở quầy (giai đoạn 5 sẽ có script): `chrome.exe -
 | `npm test` | Chạy vitest (`shared`, `server`) |
 | `npm run db:generate` | Sinh migration mới sau khi sửa `server/src/db/schema.ts` |
 | `npm run seed` | Nạp dữ liệu mẫu (10 danh mục, ~80 mặt hàng, thùng/lốc, hàng cân, hàng sắp hết; 5 nhà cung cấp, 10 phiếu nhập 12 ngày gần đây có nợ/trả một phần/1 phiếu hủy) vào `data/grocery.db`; chạy lại không tạo trùng. Dữ liệu ở `server/src/seed/seed-data.ts` |
+| `scripts\install.cmd` | Cài trên máy quầy: build, tự chạy cùng Windows, biểu tượng Desktop, mở cổng 3000 |
+| `scripts\update.cmd` | Cập nhật máy quầy: dừng, `git pull`, build, chạy lại |
 
 ## Cấu trúc
 
@@ -136,3 +143,12 @@ In không hỏi: tạo shortcut `chrome.exe --app=http://localhost:3000 --kiosk-
 3. Thẻ *Công nợ*: nợ khách / nợ NCC hiện tại, ghi nợ và thu nợ trong kỳ; bấm một dòng *Khách nợ nhiều nhất* sang *Khách hàng* với tên điền sẵn.
 4. *Xuất Excel* ở mỗi thẻ ra file `bao-cao-…-FROM-TO.xlsx` đúng khoảng đang xem, có dòng Tổng.
 5. Điện thoại: *Thêm* → *Báo cáo*; không cuộn ngang; bảng Lãi lỗ ẩn cột Giá vốn và ba cột hình thức thanh toán, bảng Bán chạy chỉ hiện cột tiền đang xếp theo.
+
+## Kiểm thử thủ công – Sao lưu & cài đặt 0.9.0
+
+1. **Tự sao lưu**: khởi động server → console "Sao lưu tự động: grocery-…-auto.db", file có trong `data/backups`. Khởi động lại trong ngày → không thêm bản.
+2. **Sao lưu ngay**: *Cài đặt → Sao lưu dữ liệu → Sao lưu ngay* → toast xanh, dòng mới "Thủ công" đầu danh sách; *Tải về* tải file đúng tên.
+3. **Thư mục chép thêm**: điền thư mục có thật (ví dụ `D:\sao-luu`) → Lưu → *Sao lưu ngay* → file có ở cả hai nơi. Điền thư mục không có → toast đỏ "Thư mục không tồn tại". Đổi tên thư mục đã lưu rồi *Sao lưu ngay* → dòng vàng "Không chép được sang …", bản vẫn tạo.
+4. **Khôi phục**: bán thêm một đơn sau khi sao lưu → *Khôi phục* bản đó → xác nhận → toast xanh, trang Hóa đơn không còn đơn vừa bán, danh sách có bản "Trước khôi phục"; khôi phục lại bản đó → đơn quay lại.
+5. **Khôi phục từ file**: chọn file `.txt` đổi đuôi `.db` → toast đỏ "File không phải dữ liệu Tiny POS hoặc đã hỏng", dữ liệu không đổi. Chọn file `.db` tải về ở bước 2 → khôi phục được.
+6. **Scripts** (dừng `npm run dev` trước): `scripts\install.cmd` → Startup và Desktop có "Tiny POS", app mở chế độ kiosk; đăng xuất/đăng nhập → server tự chạy; điện thoại mở `http://<IP>:3000`. `scripts\uninstall.cmd` → biểu tượng mất, `data\` còn.
