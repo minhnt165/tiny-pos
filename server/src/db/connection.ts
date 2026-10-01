@@ -11,7 +11,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 // src/db → ../../drizzle ; dist/db → ../../drizzle (cùng độ sâu)
 const migrationsFolder = path.resolve(here, '../../drizzle');
 
-export type Db = BetterSQLite3Database<typeof schema>;
+export type Db = BetterSQLite3Database<typeof schema> & { $client: Database.Database };
 export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
 export type DbOrTx = Db | Tx;
 
