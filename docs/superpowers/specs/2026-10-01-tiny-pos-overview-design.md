@@ -57,7 +57,7 @@ gốc, mục tiêu doanh thu, đăng nhập.
 ## 4. Màn hình
 
 Route `/overview`, tiêu đề "Tổng quan" qua `PageTitle`, chip là ngày hôm nay dạng `formatDateVn`;
-`actions` có một nút *Làm mới* (`RefreshCw`, gọi `refetch`, xoay khi `isFetching`). Trên máy tính
+`actions` có một nút *Làm mới* (`RefreshCw`, gọi `refetch`; khi `isFetching` nhãn thành "Đang tải…" và khóa nút, vì `PageAction` không nhận class để xoay icon). Trên máy tính
 nội dung xếp lưới 2 cột (`grid lg:grid-cols-2`), điện thoại một cột; thứ tự khối: (1) Hôm nay,
 (2) Cần chú ý, (3) 7 ngày gần đây, (4) Hóa đơn gần nhất, (5) Hàng sắp hết, (6) Khách nợ, (7) Nợ nhà
 cung cấp. Khối (1) và (2) chiếm cả hai cột. Đang tải lần đầu: `TableSkeleton` trong từng `ListPanel`
