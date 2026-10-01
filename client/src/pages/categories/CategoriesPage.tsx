@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ArrowDown, ArrowUp, FolderOpen, Info, MoreHorizontal, Package, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
-import type { Category } from '@tiny-pos/shared';
+import { foldText, type Category } from '@tiny-pos/shared';
 import { useCategories, useDeleteCategory, useSaveCategory } from '@/api/categories';
 import { useProducts } from '@/api/products';
 import { useConfirm } from '@/components/ConfirmDialog';
@@ -32,8 +32,8 @@ export function CategoriesPage() {
   const empty = categories.filter((c) => c.productCount === 0);
   const maxCount = Math.max(1, ...categories.map((c) => c.productCount));
   const categorized = Math.max(1, categories.reduce((sum, c) => sum + c.productCount, 0));
-  const term = q.trim().toLowerCase();
-  const shown = term ? categories.filter((c) => c.name.toLowerCase().includes(term)) : categories;
+  const term = foldText(q.trim());
+  const shown = term ? categories.filter((c) => foldText(c.name).includes(term)) : categories;
 
   /** Đổi chỗ với hàng kề rồi gán lại sortOrder = vị trí cho các hàng bị lệch. */
   const move = (index: number, dir: -1 | 1) => {

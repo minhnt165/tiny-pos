@@ -1,7 +1,8 @@
 import { useState, type DragEvent } from 'react';
-import { CircleCheck, FileSpreadsheet, TriangleAlert, Upload } from 'lucide-react';
+import { CircleCheck, Download, FileSpreadsheet, TriangleAlert, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import type { CsvImportResult } from '@tiny-pos/shared';
+import { downloadFile } from '@/api/client';
 import { useImportProducts } from '@/api/products';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -10,6 +11,18 @@ import { cn } from '@/lib/utils';
 export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const importProducts = useImportProducts();
   const [result, setResult] = useState<CsvImportResult | null>(null);
+  const [downloading, setDownloading] = useState(false);
+
+  const downloadTemplate = async () => {
+    setDownloading(true);
+    try {
+      await downloadFile('/products/template.xlsx');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Không tải được file mẫu');
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   const onFile = (file: File | undefined) => {
     if (!file) return;
@@ -46,10 +59,15 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
                   (không đổi tồn), hàng không có mã vạch thì khớp theo tên, chưa có thì tạo mới.
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Muốn sửa hàng loạt: bấm <b>Xuất Excel</b>, sửa trong Excel rồi nhập lại file đó.
+                  Muốn sửa hàng loạt: bấm <b>Xuất Excel</b>, sửa trong Excel rồi nhập lại file đó. Nhập hàng mới lần đầu thì tải file mẫu
+                  bên dưới, điền rồi nhập.
                 </p>
               </div>
             </div>
+            <Button variant="outline" className="mt-4 w-full sm:w-auto" disabled={downloading} onClick={downloadTemplate}>
+              <Download />
+              {downloading ? 'Đang tải…' : 'Tải file mẫu'}
+            </Button>
             <label
               onDragOver={(e) => e.preventDefault()}
               onDrop={onDrop}

@@ -1,11 +1,11 @@
 import { asc, eq, sql } from 'drizzle-orm';
-import type { Supplier, SupplierInput, SupplierListItem, SupplierPayment, SupplierTransaction } from '@tiny-pos/shared';
+import { foldText, type Supplier, type SupplierInput, type SupplierListItem, type SupplierPayment, type SupplierTransaction } from '@tiny-pos/shared';
 import type { Db, DbOrTx } from '../db/connection.js';
 import { imports, supplierTransactions, suppliers } from '../db/schema.js';
 import { BadRequestError, ConflictError, NotFoundError } from '../errors.js';
 import { recordSupplierTx } from './supplier-ledger.js';
 
-/** Lọc bằng JS vì LIKE của SQLite không bỏ hoa/thường với chữ có dấu ("đại" ≠ "Đại"). */
+/** Lọc bằng JS, bỏ dấu và hoa/thường ("dai" khớp "Đại"), vì LIKE của SQLite chỉ bỏ hoa/thường với ASCII. */
 export function listSuppliers(db: Db, q?: string, includeInactive = false): SupplierListItem[] {
   // Viết tên bảng cứng trong subquery (drizzle bỏ tiền tố bảng khi render cột)
   const lastActivityAt = sql<string | null>`(select max(created_at) from supplier_transactions where supplier_transactions.supplier_id = suppliers.id)`;
@@ -16,9 +16,9 @@ export function listSuppliers(db: Db, q?: string, includeInactive = false): Supp
     .orderBy(asc(suppliers.name))
     .all()
     .map((r) => ({ ...r.s, lastActivityAt: r.lastActivityAt }));
-  const t = q?.trim().toLowerCase();
+  const t = q ? foldText(q.trim()) : '';
   if (!t) return rows;
-  return rows.filter((s) => s.name.toLowerCase().includes(t) || (s.phone?.includes(t) ?? false));
+  return rows.filter((s) => foldText(s.name).includes(t) || (s.phone?.includes(t) ?? false));
 }
 
 export function getSupplier(db: DbOrTx, id: number): Supplier {

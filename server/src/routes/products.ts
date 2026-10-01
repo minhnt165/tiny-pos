@@ -11,7 +11,7 @@ import {
 } from '@tiny-pos/shared';
 import type { Db } from '../db/connection.js';
 import { intParam, validateBody, validateQuery } from '../middleware/validate.js';
-import { exportProductsXlsx } from '../services/exports.js';
+import { exportProductsXlsx, exportProductTemplateXlsx } from '../services/exports.js';
 import { importProductsFile } from '../services/product-csv.js';
 import { createUnit, deleteUnit, updateUnit } from '../services/product-units.js';
 import { listMovements } from '../services/movements.js';
@@ -32,6 +32,7 @@ export function productsRouter(db: Db): Router {
   r.get('/export.xlsx', validateQuery(productViewQuerySchema), async (_req, res) =>
     sendXlsx(res, await exportProductsXlsx(db, res.locals['query'] as ProductView)),
   );
+  r.get('/template.xlsx', async (_req, res) => sendXlsx(res, await exportProductTemplateXlsx()));
   // File thô (.xlsx hoặc .csv); client gửi application/octet-stream
   r.post('/import', express.raw({ type: () => true, limit: '10mb' }), async (req, res) => {
     res.json(await importProductsFile(db, Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0)));

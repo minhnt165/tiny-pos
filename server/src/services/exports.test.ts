@@ -16,8 +16,9 @@ import type { Db } from '../db/connection.js';
 import { createTestDb } from '../db/test-db.js';
 import { readWorkbook } from '../xlsx/workbook.js';
 import { createCustomer, deleteCustomer } from './customers.js';
-import { exportCustomersXlsx, exportImportsXlsx, exportOrdersXlsx, exportProductsXlsx, exportSuppliersXlsx } from './exports.js';
+import { exportCustomersXlsx, exportImportsXlsx, exportOrdersXlsx, exportProductsXlsx, exportProductTemplateXlsx, exportSuppliersXlsx } from './exports.js';
 import { createImport } from './imports.js';
+import { importProductsFile } from './product-csv.js';
 import { cancelOrder, createOrder } from './orders.js';
 import { createUnit } from './product-units.js';
 import { createProduct, setProductActive } from './products.js';
@@ -54,6 +55,23 @@ describe('exportProductsXlsx', () => {
     const [all] = await readWorkbook((await exportProductsXlsx(db, productViewQuerySchema.parse({ includeInactive: '1' }), CLOCK)).buffer);
     expect(all!.rows.slice(1).map((r) => r[1])).toEqual(['Bánh', 'Gạo', 'Kẹo', 'Sữa']);
     expect(all!.rows[2]![6]).toBe('Có');
+  });
+});
+
+describe('exportProductTemplateXlsx', () => {
+  it('đúng tiêu đề 9 cột, có dòng ví dụ và sheet hướng dẫn; nhập lại file mẫu không báo lỗi', async () => {
+    const f = await exportProductTemplateXlsx();
+    expect(f.filename).toBe('mau-san-pham.xlsx');
+    const [s, guide] = await readWorkbook(f.buffer);
+    expect(s!.name).toBe('Sản phẩm');
+    expect(s!.rows[0]).toEqual([...PRODUCT_CSV_HEADERS]);
+    expect(s!.rows.length).toBeGreaterThan(1);
+    expect(guide!.name).toBe('Hướng dẫn');
+    expect(guide!.rows.map((r) => r[0])).toEqual(expect.arrayContaining([...PRODUCT_CSV_HEADERS]));
+
+    const result = await importProductsFile(db, f.buffer);
+    expect(result.errors).toEqual([]);
+    expect(result.created).toBe(s!.rows.length - 1);
   });
 });
 

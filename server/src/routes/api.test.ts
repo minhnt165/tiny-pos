@@ -91,6 +91,11 @@ describe('API', () => {
     const again = await fetch(base + '/api/products/import', { method: 'POST', headers: { 'content-type': 'application/octet-stream' }, body: file });
     expect(await again.json()).toMatchObject({ created: 0, errors: [] });
     expect((await call('GET', '/api/products/csv')).status).toBe(400);
+
+    const tpl = await fetch(base + '/api/products/template.xlsx');
+    expect(tpl.status).toBe(200);
+    expect(tpl.headers.get('content-type')).toBe(XLSX);
+    expect(tpl.headers.get('content-disposition')).toBe('attachment; filename="mau-san-pham.xlsx"');
   });
 
   it('xuất Excel: bộ lọc sai → 400 tiếng Việt; nhập file .xls cũ → 400; file quá 10 MB → 413', async () => {

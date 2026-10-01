@@ -1,5 +1,5 @@
 import { and, asc, eq, getTableColumns, sql } from 'drizzle-orm';
-import type { BarcodeLookup, Product, ProductInput, ProductListQuery, ProductWithUnits } from '@tiny-pos/shared';
+import { foldText, type BarcodeLookup, type Product, type ProductInput, type ProductListQuery, type ProductWithUnits } from '@tiny-pos/shared';
 import type { Db, DbOrTx } from '../db/connection.js';
 import { categories, productUnits, products } from '../db/schema.js';
 import { ConflictError, NotFoundError } from '../errors.js';
@@ -13,8 +13,8 @@ function selectProducts(tx: DbOrTx) {
 }
 
 /**
- * Lọc `q` bằng JS vì LIKE của SQLite chỉ bỏ phân biệt hoa/thường với ASCII
- * ("đường" không khớp "Đường"). Danh mục tạp hóa nhỏ nên lọc trong bộ nhớ là đủ.
+ * Lọc `q` bằng JS, bỏ dấu và hoa/thường ("nuoc" khớp "Nước"), vì LIKE của SQLite chỉ bỏ hoa/thường với ASCII.
+ * Danh mục tạp hóa nhỏ nên lọc trong bộ nhớ là đủ.
  */
 export function listProducts(db: Db, query: ProductListQuery): Product[] {
   const rows = selectProducts(db)
@@ -26,9 +26,9 @@ export function listProducts(db: Db, query: ProductListQuery): Product[] {
     )
     .orderBy(asc(products.name))
     .all();
-  const q = query.q?.trim().toLowerCase();
+  const q = query.q ? foldText(query.q.trim()) : '';
   if (!q) return rows;
-  return rows.filter((p) => p.name.toLowerCase().includes(q) || (p.barcode?.toLowerCase().includes(q) ?? false));
+  return rows.filter((p) => foldText(p.name).includes(q) || (p.barcode?.toLowerCase().includes(q) ?? false));
 }
 
 function getProductRow(tx: DbOrTx, id: number): Product {

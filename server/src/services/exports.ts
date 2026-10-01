@@ -67,6 +67,38 @@ export async function exportProductsXlsx(db: Db, view: ProductView, clock?: Cloc
   return build(`san-pham-${compact(localDate(now, tz))}.xlsx`, [{ name: 'Sản phẩm', columns: PRODUCT_COLUMNS, rows }], tz);
 }
 
+// Dòng ví dụ trong file mẫu: một hàng có mã vạch, một hàng cân không mã vạch (khớp theo tên khi nhập)
+const TEMPLATE_ROWS: XlsxValue[][] = [
+  ['8934588012345', 'Nước ngọt Coca 330ml', 'lon', 8000, 10000, 24, null, 'Đồ uống', 6],
+  [null, 'Cà chua', 'kg', 20000, 25000, 5.5, 'Có', 'Rau củ', 1],
+];
+const GUIDE_COLUMNS = [col('Cột', 16), col('Cách điền', 90)];
+const GUIDE_ROWS: XlsxValue[][] = [
+  ['Mã vạch', 'Mã in trên bao bì; để trống nếu hàng không có mã (rau, hàng cân). Trùng mã đã có → cập nhật hàng đó, không đổi tồn.'],
+  ['Tên', 'Bắt buộc. Hàng không mã vạch khớp theo tên: tên đã có → cập nhật, chưa có → tạo mới.'],
+  ['Đơn vị', 'Đơn vị bán nhỏ nhất: cái, lon, gói, kg… Để trống thì là "cái".'],
+  ['Giá nhập', 'Giá mua vào một đơn vị, số nguyên đồng (ví dụ 8000). Để trống thì là 0.'],
+  ['Giá bán', 'Giá bán một đơn vị, số nguyên đồng. Để trống thì là 0.'],
+  ['Tồn', 'Số lượng đang có. Chỉ dùng khi tạo mới; hàng đã có thì giữ tồn hiện tại.'],
+  ['Hàng cân', 'Ghi "Có" với hàng bán theo cân (kg); để trống với hàng đếm cái.'],
+  ['Danh mục', 'Tên danh mục; chưa có sẽ được tạo. Để trống thì không xếp danh mục.'],
+  ['Tồn tối thiểu', 'Dưới mức này thì báo sắp hết. Để trống thì là 0.'],
+  [null, null],
+  ['Lưu ý', 'Giữ nguyên dòng tiêu đề của sheet "Sản phẩm". Hai dòng ví dụ: sửa thành hàng của mình hoặc xóa đi trước khi nhập.'],
+];
+
+/** File mẫu để điền sản phẩm rồi nhập: sheet 1 đúng cột như file xuất, sheet 2 hướng dẫn (khi nhập chỉ đọc sheet 1). */
+export async function exportProductTemplateXlsx(): Promise<XlsxFile> {
+  return build(
+    'mau-san-pham.xlsx',
+    [
+      { name: 'Sản phẩm', columns: PRODUCT_COLUMNS, rows: TEMPLATE_ROWS },
+      { name: 'Hướng dẫn', columns: GUIDE_COLUMNS, rows: GUIDE_ROWS },
+    ],
+    0,
+  );
+}
+
 const ORDER_COLUMNS = [
   col('Mã', 18),
   col('Ngày giờ', 17, 'datetime'),

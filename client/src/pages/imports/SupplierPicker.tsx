@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Check, ChevronsUpDown, Plus, Truck } from 'lucide-react';
-import { formatMoney } from '@tiny-pos/shared';
+import { foldText, formatMoney } from '@tiny-pos/shared';
 import { useSuppliers } from '@/api/suppliers';
 import { Button } from '@/components/ui/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from '@/components/ui/command';
@@ -37,7 +37,7 @@ export function SupplierPicker({ value, onChange }: Props) {
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start">
-          <Command>
+          <Command filter={(value, search) => (foldText(value).includes(foldText(search)) ? 1 : 0)}>
             <CommandInput placeholder="Tìm nhà cung cấp…" className="h-11 text-base" />
             <CommandList>
               <CommandEmpty>Không tìm thấy</CommandEmpty>

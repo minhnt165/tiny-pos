@@ -27,6 +27,7 @@ describe('suppliers', () => {
     expect(a).toMatchObject({ name: 'Đại lý Hùng', phone: '0909', note: null, debt: 0, isActive: true });
     expect(listSuppliers(db).map((s) => s.name)).toEqual(['Bánh kẹo Minh', 'Đại lý Hùng']);
     expect(listSuppliers(db, 'đại').map((s) => s.name)).toEqual(['Đại lý Hùng']);
+    expect(listSuppliers(db, 'dai ly').map((s) => s.name)).toEqual(['Đại lý Hùng']);
     expect(listSuppliers(db, '0909').map((s) => s.id)).toEqual([a.id]);
     expect(updateSupplier(db, a.id, supplierInputSchema.parse({ name: 'Đại lý Hùng 2' })).name).toBe('Đại lý Hùng 2');
   });

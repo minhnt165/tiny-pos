@@ -231,6 +231,18 @@ route danh sách. Bỏ `GET /api/products/csv` và `POST /api/products/csv`.
 - `api/products.ts`: `useImportCsv` → `useImportProducts` gọi `POST /products/import` với `body: file`;
   bỏ `CSV_EXPORT_URL`.
 
+### File mẫu (bổ sung 2026-10-01)
+
+Chủ tiệm nhập hàng lần đầu chưa có gì để "Xuất Excel" rồi sửa, nên hộp thoại nhập có nút **Tải file mẫu**:
+
+- `GET /api/products/template.xlsx` (route tĩnh, trước `/:id`) → `exportProductTemplateXlsx()` trong
+  `services/exports.ts`, file `mau-san-pham.xlsx`, không phụ thuộc DB.
+- Sheet 1 `Sản phẩm`: đúng `PRODUCT_COLUMNS` (9 cột, định dạng cột như file xuất) và 2 dòng ví dụ: một hàng có
+  mã vạch, một hàng cân không mã vạch. Nhập thẳng file mẫu phải chạy được không lỗi (có test).
+- Sheet 2 `Hướng dẫn`: hai cột Cột / Cách điền, giải thích từng cột và dặn sửa hoặc xóa dòng ví dụ. Khi nhập chỉ
+  đọc sheet đầu (`readFirstSheet`) nên sheet này không ảnh hưởng.
+- Client: nút "Tải file mẫu" (icon `Download`) trong `ImportDialog`, gọi `downloadFile`; lỗi → toast.
+
 ## 8. Lỗi
 
 | Tình huống | Server | Người dùng thấy |
