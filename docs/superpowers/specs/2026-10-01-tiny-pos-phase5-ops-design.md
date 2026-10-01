@@ -64,8 +64,9 @@ Windows, trang Tổng quan, đăng nhập.
 ## 4. Màn hình
 
 Trang *Cài đặt* thêm thẻ **Sao lưu** (`pages/settings/BackupCard.tsx`) đặt sau các thẻ cài đặt
-cửa hàng và trước thẻ phiên bản. Thẻ nằm **ngoài** `<form id="settings-form">` (trang bọc form và thẻ
-trong một `div`), vì nút của shadcn mặc định là `submit`; mọi nút trong thẻ không được gửi form.
+cửa hàng và trước thẻ phiên bản. Thẻ nằm **trong** `<form id="settings-form">` (để không thụt lề lại cả trang),
+nên mọi nút trong thẻ đặt `type="button"` (nút shadcn mặc định là `submit`) và Enter trong ô thư mục chép thêm
+chỉ lưu thư mục, không gửi form.
 
 Nội dung thẻ, từ trên xuống:
 
@@ -210,8 +211,8 @@ Khai báo `/extra-dir` và `/restore-upload` trước các route `/:name…`.
   `qc.invalidateQueries()` không tham số. Các mutation còn lại `invalidateQueries({ queryKey:
   ['backups'] })`.
 - Tải về: `downloadFile('/backups/<name>/download')` (đã có, lấy tên từ `Content-Disposition`).
-- `pages/settings/BackupCard.tsx` như mục 4; `SettingsPage.tsx` chỉ đổi: bọc `<form>` và
-  `<BackupCard />` trong `<div className="space-y-(--gap)">`, không đổi dòng nào khác.
+- `pages/settings/BackupCard.tsx` như mục 4; `SettingsPage.tsx` chỉ thêm import và `<BackupCard />` trước thẻ
+  "Thông tin phần mềm", không đổi dòng nào khác.
 - Định dạng dung lượng: hàm nhỏ trong `BackupCard` (`< 1 MB → "x KB"`, còn lại `"x,x MB"`), không
   thêm vào shared.
 

@@ -13,6 +13,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { APP_VERSION, BUILD_DATE } from '@/lib/version';
 import { AppearanceCard } from './AppearanceCard';
+import { BackupCard } from './BackupCard';
 
 type TextKey = 'storeName' | 'storeAddress' | 'storePhone' | 'receiptFooter';
 const bankOptions = BANKS.map((b) => ({ value: b.bin, label: `${b.shortName} – ${b.name}` }));
@@ -86,6 +87,7 @@ export function SettingsPage() {
           <p className="text-sm text-muted-foreground">In thử dùng thông tin đã lưu. Máy quầy mở Chrome với --kiosk-printing để in không cần hỏi.</p>
         </CardContent>
       </Card>
+      <BackupCard />
       <Card>
         <CardContent className="space-y-2">
           <SectionTitle>Thông tin phần mềm</SectionTitle>
