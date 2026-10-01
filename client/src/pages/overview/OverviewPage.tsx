@@ -1,5 +1,6 @@
 import { LayoutDashboard, RefreshCw, Truck, Users } from 'lucide-react';
 import { formatDateVn } from '@tiny-pos/shared';
+import { ApiError } from '@/api/client';
 import { useOverview } from '@/api/overview';
 import { EmptyState } from '@/components/EmptyState';
 import { PageTitle } from '@/components/layout/PageTitle';
@@ -21,6 +22,8 @@ export function OverviewPage() {
   const { data, isLoading, isFetching, isError, error, refetch } = useOverview();
   const today = data?.today ?? todayOf();
   const loading = isLoading || !data;
+  // fetch ném TypeError tiếng Anh ("Failed to fetch") khi server tắt / mất Wi-Fi: chủ tiệm cần câu tiếng Việt
+  const reason = error instanceof ApiError ? error.message : 'Mất kết nối với máy quầy';
   const title = (
     <PageTitle
       title="Tổng quan"
@@ -35,7 +38,7 @@ export function OverviewPage() {
         <EmptyState
           icon={LayoutDashboard}
           title="Không tải được tổng quan"
-          description={error.message}
+          description={reason}
           action={
             <Button className="h-11 text-base" onClick={() => void refetch()}>
               <RefreshCw data-icon="inline-start" />
@@ -48,7 +51,7 @@ export function OverviewPage() {
   return (
     <>
       {title}
-      {isError && <p className="mb-(--gap) text-sm text-destructive">Không tải được số liệu mới ({error.message}). Số đang hiện là của lần tải trước.</p>}
+      {isError && <p className="mb-(--gap) text-sm text-destructive">Không tải được số liệu mới ({reason}). Số đang hiện là của lần tải trước.</p>}
       <TodayStats week={data?.week} outCount={data?.lowStock.outCount} />
       <AlertsCard data={data} today={today} loading={loading} />
       <div className="grid gap-(--gap) lg:grid-cols-2">

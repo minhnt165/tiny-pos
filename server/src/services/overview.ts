@@ -50,17 +50,25 @@ function debtSummary<T extends DebtPartyRow>(owing: T[], limit: number): { total
   return { total: sorted.reduce((s, x) => s + x.debt, 0), count: sorted.length, top: sorted.slice(0, limit) };
 }
 
-/** Khách đang nợ; nợ lâu = giao dịch sổ nợ gần nhất (ghi nợ hay trả nợ) cách hôm nay ≥ DEBT_OVERDUE_DAYS. */
+/**
+ * Khách đang nợ; nợ lâu = khoản nợ chưa trả đã ≥ DEBT_OVERDUE_DAYS: mốc là khoản ghi nợ sớm nhất sau lần trả gần nhất,
+ * không có thì là chính lần trả đó. Mua chịu thêm không làm mới mốc, nên khách cứ mua chịu mà không trả vẫn bị cờ.
+ */
 function customerDebt(db: Db, today: string, tz: number, limit: number): Overview['customers'] {
   // Viết tên bảng cứng trong subquery (drizzle bỏ tiền tố bảng khi render cột), như listCustomers
-  const lastActivityAt = sql<string | null>`(select max(created_at) from debt_transactions where debt_transactions.customer_id = customers.id)`;
+  const lastPaymentAt = sql<string | null>`(select max(created_at) from debt_transactions where debt_transactions.customer_id = customers.id and kind = 'payment')`;
+  const owingSince = sql<string | null>`(select min(created_at) from debt_transactions where debt_transactions.customer_id = customers.id and amount > 0
+    and created_at > coalesce((select max(created_at) from debt_transactions where debt_transactions.customer_id = customers.id and kind = 'payment'), ''))`;
   const cutoff = shiftDate(today, -DEBT_OVERDUE_DAYS);
   const owing: OverdueCustomerRow[] = db
-    .select({ id: customers.id, name: customers.name, phone: customers.phone, debt: customers.debt, lastActivityAt })
+    .select({ id: customers.id, name: customers.name, phone: customers.phone, debt: customers.debt, lastPaymentAt, owingSince })
     .from(customers)
     .where(and(eq(customers.isActive, true), gt(customers.debt, 0)))
     .all()
-    .map((c) => ({ ...c, overdue: c.lastActivityAt === null || localDate(new Date(c.lastActivityAt), tz) <= cutoff }));
+    .map((c) => {
+      const since = c.owingSince ?? c.lastPaymentAt;
+      return { ...c, overdue: since === null || localDate(new Date(since), tz) <= cutoff };
+    });
   const overdue = owing.filter((c) => c.overdue);
   return { ...debtSummary(owing, limit), overdueCount: overdue.length, overdueTotal: overdue.reduce((s, c) => s + c.debt, 0) };
 }

@@ -46,7 +46,7 @@ gốc, mục tiêu doanh thu, đăng nhập.
 | Thanh dưới điện thoại | *Tổng quan*, *Bán hàng*, *Hóa đơn*, *Sản phẩm*; *Kiểm kê* chuyển vào nút *Thêm* | Thanh chỉ có 4 ô; kiểm kê làm vài lần một tháng |
 | Nguồn số liệu | Một API `GET /api/overview` gom hết, service dùng lại `profitReport`, `daySummary`, quy tắc tồn thấp, nợ | Một request trên điện thoại; mọi số cùng một thời điểm; test bằng `createTestDb` + `Clock`; "nợ lâu" cần cột ngày giao dịch gần nhất, client không tự tính được |
 | Khoảng của khối 7 ngày | `last7` của `datePresetRange` (hôm nay và 6 ngày trước), gom theo ngày | Dùng lại `profitReport`; hôm nay là dòng đầu, hôm qua dòng thứ hai nên không cần API riêng cho "hôm nay" |
-| Nợ lâu | Khách `debt > 0` và giao dịch sổ nợ gần nhất (`max(created_at)` của `debt_transactions`) cách hôm nay **≥ 30 ngày** (`DEBT_OVERDUE_DAYS`, hằng số ở shared); khách chưa có giao dịch nào mà vẫn nợ (không xảy ra vì nợ chỉ sinh qua bút toán) coi là lâu | Người dùng chọn ngưỡng cố định; "giao dịch gần nhất" đã có sẵn trong `listCustomers` (`lastActivityAt`), không cần phân biệt ghi nợ hay trả nợ |
+| Nợ lâu | Khách `debt > 0` và **khoản nợ chưa trả** đã **≥ 30 ngày** (`DEBT_OVERDUE_DAYS`, hằng số ở shared): mốc = khoản ghi nợ sớm nhất (`amount > 0`) sau lần trả nợ gần nhất (`kind = 'payment'`); sau lần trả không ghi nợ thêm thì mốc là chính lần trả đó; chưa có giao dịch nào mà vẫn nợ coi là lâu | Người dùng chọn ngưỡng cố định. Không lấy "giao dịch gần nhất" vì mua chịu thêm sẽ làm mới mốc: khách cứ mua chịu mà không trả đồng nào sẽ không bao giờ bị cờ, trái với câu cảnh báo "chưa trả" |
 | Số dòng mỗi khối | Hóa đơn 5, hàng sắp hết 10, khách nợ 5, NCC 5; mỗi khối ghi tổng số và nút "Xem tất cả" | Trang nhìn một màn điện thoại là hết; chi tiết ở trang riêng |
 | Hóa đơn gần nhất | 5 đơn mới nhất **hôm nay**, kể cả đơn hủy (gạch ngang, nhãn *Đã hủy*) | Chủ tiệm cần thấy quầy vừa hủy đơn |
 | Hàng sắp hết | `isActive` và `stock < minStock` (= `stock=low` của trang Sản phẩm); hết hàng `stock ≤ 0` đếm riêng; danh sách sắp theo `stock / minStock` tăng dần rồi tên | Cùng định nghĩa với Báo cáo 0.8.0 và bộ lọc 0.6.0 nên bấm sang là khớp số |
@@ -112,7 +112,7 @@ Tối đa 10 dòng, dưới là "và n mặt hàng nữa" khi `count > 10`. Nút
 ### 4.6 Khách nợ · 4.7 Nợ nhà cung cấp
 
 Hai `ListPanel` cùng khuôn: header ghi tổng nợ và "n người". Dòng: tên, SĐT nhỏ, **Đang nợ** /
-**Còn nợ**. Khách có `overdue` thêm hint "Giao dịch gần nhất dd/mm" tone `warning`. Bấm dòng →
+**Còn nợ**. Khách có `overdue` thêm hint "Nợ từ dd/mm · trả gần nhất dd/mm" (chưa trả lần nào: "· chưa trả lần nào") tone `warning`. Bấm dòng →
 `/customers?q=<tên>` / `/suppliers?q=<tên>` như Báo cáo. Nút header → `/customers` / `/suppliers`.
 Không ai nợ → `EmptyState` "Không ai đang nợ" / "Không nợ nhà cung cấp nào".
 
@@ -128,9 +128,10 @@ Không ai nợ → `EmptyState` "Không ai đang nợ" / "Không nợ nhà cung 
   `stock ≤ 0`; `items` = các dòng `stock < minStock` sắp theo tỉ lệ `stock / minStock` tăng dần
   (tồn âm với `minStock = 0` cũng thỏa `stock < minStock`; coi tỉ lệ là −∞ nên xếp đầu), hòa thì
   theo tên; cắt 10.
-- **Khách nợ**: khách `isActive`, `debt > 0`; `total` = Σ `debt`; `count`; `lastActivityAt` =
-  `max(created_at)` của `debt_transactions` theo khách (cùng subquery với `listCustomers`);
-  `overdue` = `lastActivityAt` null hoặc `localDate(lastActivityAt) ≤ shiftDate(today, −30)`;
+- **Khách nợ**: khách `isActive`, `debt > 0`; `total` = Σ `debt`; `count`; `lastPaymentAt` =
+  `max(created_at)` của bút toán `kind = 'payment'`; `owingSince` = `min(created_at)` của bút toán `amount > 0` có
+  `created_at > lastPaymentAt` (null nếu không có); mốc `since = owingSince ?? lastPaymentAt`;
+  `overdue` = `since` null hoặc `localDate(since) ≤ shiftDate(today, −30)`;
   `overdueCount`, `overdueTotal` = Σ `debt` của khách `overdue`; `top` 5 theo `debt` giảm dần rồi tên.
 - **Nợ NCC**: NCC `isActive`, `debt > 0`; `total`, `count`, `top` 5 (như `debtReport`).
 - **Kiểm kê**: phiếu `status = 'open'` (tối đa một) → `StocktakeSummary` (cùng cách tính
@@ -155,7 +156,7 @@ export const BACKUP_STALE_DAYS = 2;
 
 ```ts
 export interface LowStockRow { productId: number; name: string; unit: string; stock: number; minStock: number }
-export interface OverdueCustomerRow extends DebtPartyRow { lastActivityAt: string | null; overdue: boolean }
+export interface OverdueCustomerRow extends DebtPartyRow { lastPaymentAt: string | null; owingSince: string | null; overdue: boolean }
 export interface OverviewBackup { lastBackupAt: string | null; lastAutoAt: string | null; lastError: string | null; extraError: string | null }
 export interface Overview {
   /** Ngày địa phương hôm nay theo đồng hồ server, "YYYY-MM-DD". */
@@ -196,7 +197,7 @@ deps.backups))` trong `apiRouter`. Không query param; không cache header (đã
   60_000`, `placeholderData: prev`.
 - `pages/overview/OverviewPage.tsx` lắp các khối; mỗi khối một file nhỏ cùng thư mục:
   `TodayStats.tsx`, `AlertsCard.tsx`, `WeekTable.tsx`, `RecentOrders.tsx`, `LowStockList.tsx`,
-  `DebtLists.tsx` (dùng chung cho khách và NCC qua props). Dùng `Stat`/`StatStrip`, `ListPanel`,
+  `DebtPanel.tsx` (dùng chung cho khách và NCC qua props). Dùng `Stat`/`StatStrip`, `ListPanel`,
   `EmptyState`, `TableSkeleton`, `Badge`, `Button`, `Card` có sẵn; `ProductAvatar` cho hàng.
 - `router.tsx`: `NAV` thêm `{ to: '/overview', label: 'Tổng quan', icon: LayoutDashboard, group:
   'sell', mobile: 1 }` ở đầu; đổi `mobile` của *Bán hàng* → 2, *Hóa đơn* → 3, *Sản phẩm* → 4; bỏ
@@ -223,19 +224,20 @@ Vitest `server/src/services/overview.test.ts` (DB `:memory:`, `Clock` cố đị
 - `lowStock`: hàng `stock < minStock` vào danh sách, hàng ngừng bán không vào, `outCount` đếm
   `stock ≤ 0`, sắp theo tỉ lệ tăng dần, cắt theo `limits.lowStock`; `count` đếm cả ngoài giới hạn;
   `count` = `filterProducts(listProducts(...), { stock: 'low' }).length` trên cùng dữ liệu.
-- `customers`: khách trả nợ 31 ngày trước → `overdue = true`; 29 ngày → `false`; khách `debt ≤ 0`
-  không tính; `overdueTotal` đúng; `top` cắt 5 theo nợ giảm dần; `total` = `listCustomers().totalDebt`.
+- `customers`: nợ từ 31 ngày trước chưa trả → `overdue = true`; trả gần nhất 29 ngày trước → `false`; mua chịu
+  thêm 5 ngày trước nhưng chưa trả từ 60 ngày → `true`; trả hết rồi mua chịu lại 3 ngày trước → `false`; khách
+  `debt ≤ 0` không tính; `overdueTotal` đúng; `top` cắt 5 theo nợ giảm dần; `total` = `listCustomers().totalDebt`.
 - `suppliers`: như `debtReport`.
 - `stocktake`: không có phiếu mở → null; mở phiếu, đếm 2 món → `itemCount = 2`, không có `items`.
 - Tiệm mới (DB trống) → không ném lỗi, mọi số 0.
 
-`server/src/routes/api.test.ts`: `GET /api/overview` trả đủ khóa, `backup: null` khi `createApp`
+`server/src/routes/overview-api.test.ts`: `GET /api/overview` trả đủ khóa, `backup: null` khi `createApp`
 không có service sao lưu; `backups-api.test.ts` thêm một case: có service → `backup.lastBackupAt`
 khớp bản sao vừa tạo.
 
 Trình duyệt (skill `browser-verify`, chặn request ghi), cỡ máy tính và điện thoại: mở `/overview`
 thấy đủ 7 khối, không cuộn ngang; thanh dưới điện thoại có 4 ô mới và *Kiểm kê* trong *Thêm*; bấm
-*Sắp hết* sang Sản phẩm có bộ lọc đúng; bấm dòng khách sang Khách hàng; bấm *Làm mới* xoay icon; nút
+*Sắp hết* sang Sản phẩm có bộ lọc đúng; bấm dòng khách sang Khách hàng; bấm *Làm mới* nhãn thành "Đang tải…"; nút
 *Tiếp tục* kiểm kê đúng khi có phiếu mở (dùng DB seed, không ghi); đường dẫn gốc vẫn vào Bán hàng.
 
 ## 11. Phiên bản và tài liệu

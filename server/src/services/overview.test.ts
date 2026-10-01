@@ -14,7 +14,7 @@ import {
 import type { Db } from '../db/connection.js';
 import { debtTransactions } from '../db/schema.js';
 import { createTestDb } from '../db/test-db.js';
-import { collectDebt, createCustomer, listCustomers } from './customers.js';
+import { addManualDebt, collectDebt, createCustomer, listCustomers, listCustomerTransactions } from './customers.js';
 import { createImport } from './imports.js';
 import { cancelOrder, createOrder, listOrders } from './orders.js';
 import { overview } from './overview.js';
@@ -39,6 +39,11 @@ const order = (o: Record<string, unknown>, clock = NOON) =>
 /** createCustomer không nhận Clock (nợ đầu kỳ ghi giờ máy): lùi ngày mọi bút toán hiện có của khách để giả "nợ từ lâu". */
 const backdate = (customerId: number, clock: { now: Date }) =>
   db.update(debtTransactions).set({ createdAt: clock.now.toISOString() }).where(eq(debtTransactions.customerId, customerId)).run();
+/** Lùi ngày bút toán ghi nợ tay (addManualDebt không nhận Clock) mới nhất của khách. */
+const backdateManual = (customerId: number, clock: { now: Date }) => {
+  const tx = listCustomerTransactions(db, customerId).find((t) => t.kind === 'manual')!;
+  db.update(debtTransactions).set({ createdAt: clock.now.toISOString() }).where(eq(debtTransactions.id, tx.id)).run();
+};
 
 describe('overview – hôm nay, 7 ngày, hóa đơn', () => {
   it('today theo giờ địa phương; week đủ 7 dòng mới nhất trước; rows[0] bằng summary trang Hóa đơn hôm nay; total = Σ rows', () => {
@@ -100,7 +105,7 @@ describe('overview – hàng sắp hết', () => {
 });
 
 describe('overview – công nợ và kiểm kê', () => {
-  it('khách: chỉ đang theo dõi có nợ > 0; nợ lâu khi giao dịch gần nhất ≥ 30 ngày; top cắt theo limits.parties; total = listCustomers().totalDebt', () => {
+  it('khách: chỉ đang theo dõi có nợ > 0; nợ lâu khi khoản nợ chưa trả đã ≥ 30 ngày (mua chịu thêm không làm mới); top cắt theo limits.parties; total = listCustomers().totalDebt', () => {
     const ba = createCustomer(db, customerCreateSchema.parse({ name: 'Cô Ba', openingDebt: 350000 }));
     backdate(ba.id, daysAgo(31)); // 31 ngày: lâu
     const lan = createCustomer(db, customerCreateSchema.parse({ name: 'Chị Lan', openingDebt: 100000 }));
@@ -112,18 +117,31 @@ describe('overview – công nợ và kiểm kê', () => {
     collectDebt(db, nam.id, customerPaymentSchema.parse({ amount: 20000, method: 'cash' }), daysAgo(60)); // hết nợ: không tính
     backdate(nam.id, daysAgo(60));
     createCustomer(db, customerCreateSchema.parse({ name: 'Chị Sáu', openingDebt: 1000 })); // nợ 1.000 hôm nay (giờ máy)
+    const bay = createCustomer(db, customerCreateSchema.parse({ name: 'Chú Bảy', openingDebt: 30000 }));
+    backdate(bay.id, daysAgo(60));
+    addManualDebt(db, bay.id, { amount: 20000, note: 'Mua chịu thêm' });
+    backdateManual(bay.id, daysAgo(5)); // cứ mua chịu thêm mà chưa trả lần nào từ 60 ngày: lâu
+    const tam = createCustomer(db, customerCreateSchema.parse({ name: 'Anh Tám', openingDebt: 70000 }));
+    backdate(tam.id, daysAgo(50));
+    collectDebt(db, tam.id, customerPaymentSchema.parse({ amount: 70000, method: 'cash' }), daysAgo(40)); // trả hết 40 ngày trước
+    addManualDebt(db, tam.id, { amount: 10000, note: 'Mua chịu mới' });
+    backdateManual(tam.id, daysAgo(3)); // khoản nợ mới chỉ 3 ngày: chưa lâu
 
     const o = overview(db, NOON, { parties: 3 });
     expect(o.customers.total).toBe(listCustomers(db).totalDebt);
-    expect(o.customers).toMatchObject({ total: 491000, count: 4, overdueCount: 2, overdueTotal: 400000 });
+    expect(o.customers).toMatchObject({ total: 551000, count: 6, overdueCount: 3, overdueTotal: 450000 });
     expect(o.customers.top.map((c) => [c.name, c.debt, c.overdue])).toEqual([
       ['Cô Ba', 350000, true],
       ['Chị Lan', 90000, false],
       ['Anh Tư', 50000, true],
     ]);
-    expect(o.customers.top[0]).toMatchObject({ id: ba.id, phone: null, lastActivityAt: expect.stringMatching(/^2026-08-29T/) });
+    expect(o.customers.top[0]).toMatchObject({ id: ba.id, phone: null, owingSince: expect.stringMatching(/^2026-08-29T/), lastPaymentAt: null });
+    expect(o.customers.top[1]).toMatchObject({ owingSince: null, lastPaymentAt: expect.stringMatching(/^2026-08-31T/) });
     expect(o.customers.top[2].id).toBe(tu.id);
-    expect(overview(db, NOON).customers.top).toHaveLength(4);
+    const all = overview(db, NOON, { parties: 10 }).customers.top;
+    expect(all).toHaveLength(6);
+    expect(all.find((c) => c.id === bay.id)).toMatchObject({ debt: 50000, overdue: true, owingSince: expect.stringMatching(/^2026-07-31T/), lastPaymentAt: null });
+    expect(all.find((c) => c.id === tam.id)).toMatchObject({ debt: 10000, overdue: false, owingSince: expect.stringMatching(/^2026-09-26T/), lastPaymentAt: expect.stringMatching(/^2026-08-20T/) });
   });
 
   it('NCC: nợ > 0 đang theo dõi, top giảm dần cắt theo limits.parties', () => {

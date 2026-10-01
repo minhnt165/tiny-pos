@@ -391,9 +391,11 @@ export interface LowStockRow {
 }
 
 export interface OverdueCustomerRow extends DebtPartyRow {
-  /** Giao dịch sổ nợ gần nhất (ghi nợ hoặc trả nợ), null nếu chưa có. */
-  lastActivityAt: string | null;
-  /** Còn nợ và lastActivityAt cách hôm nay ≥ DEBT_OVERDUE_DAYS (hoặc null). */
+  /** Lần trả nợ gần nhất; null nếu chưa trả lần nào. */
+  lastPaymentAt: string | null;
+  /** Khoản ghi nợ sớm nhất sau lần trả gần nhất (nợ "từ ngày"); null nếu sau lần trả không ghi nợ thêm. */
+  owingSince: string | null;
+  /** Còn nợ và (owingSince ?? lastPaymentAt) cách hôm nay ≥ DEBT_OVERDUE_DAYS: mua chịu thêm không làm mới mốc. */
   overdue: boolean;
 }
 

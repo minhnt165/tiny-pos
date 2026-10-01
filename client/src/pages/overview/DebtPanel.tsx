@@ -7,9 +7,16 @@ import { TableSkeleton } from '@/components/TableSkeleton';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
-type Row = DebtPartyRow & Partial<Pick<OverdueCustomerRow, 'lastActivityAt' | 'overdue'>>;
+type Row = DebtPartyRow & Partial<Pick<OverdueCustomerRow, 'lastPaymentAt' | 'owingSince' | 'overdue'>>;
 const CELL = 'px-3 py-3 md:px-4';
-const lastDay = (iso: string) => formatDateVn(localDate(new Date(iso), currentTzOffset())).slice(0, 5);
+const day = (iso: string) => formatDateVn(localDate(new Date(iso), currentTzOffset())).slice(0, 5);
+
+/** Hint khách nợ lâu: "Nợ từ dd/mm" (khoản chưa trả sớm nhất), kèm lần trả gần nhất nếu có. */
+function overdueHint(r: Row): string {
+  const since = r.owingSince ?? r.lastPaymentAt;
+  const from = since ? `Nợ từ ${day(since)}` : 'Chưa có giao dịch';
+  return r.lastPaymentAt ? `${from} · trả gần nhất ${day(r.lastPaymentAt)}` : `${from} · chưa trả lần nào`;
+}
 
 /** Khách nợ / nợ NCC dùng chung: header tổng + số người + nút sang trang; khách nợ lâu có hint vàng dưới tên; bấm dòng mở trang với tên điền sẵn. */
 export function DebtPanel({
@@ -69,8 +76,7 @@ export function DebtPanel({
               <TableRow key={r.id} className="cursor-pointer" onClick={() => navigate(`${listPath}?q=${encodeURIComponent(r.name)}`)}>
                 <TableCell className={`${CELL} font-medium`}>
                   <div className="truncate">{r.name}</div>
-                  {r.overdue && r.lastActivityAt && <div className="text-xs font-normal text-warning">Giao dịch gần nhất {lastDay(r.lastActivityAt)}</div>}
-                  {r.overdue && !r.lastActivityAt && <div className="text-xs font-normal text-warning">Chưa có giao dịch</div>}
+                  {r.overdue && <div className="text-xs font-normal text-warning">{overdueHint(r)}</div>}
                 </TableCell>
                 <TableCell className={`${CELL} hidden tabular-nums text-muted-foreground md:table-cell`}>{r.phone ?? '—'}</TableCell>
                 <TableCell className={`${CELL} text-right font-semibold tabular-nums`}>{formatMoney(r.debt)}</TableCell>
