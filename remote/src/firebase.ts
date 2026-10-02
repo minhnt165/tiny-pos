@@ -11,7 +11,12 @@ export function initFirebase(): Promise<FirebaseApp> {
     let options: FirebaseOptions | null = null;
     try {
       const res = await fetch('/__/firebase/init.json');
-      if (res.ok && res.headers.get('content-type')?.includes('json')) options = (await res.json()) as FirebaseOptions;
+      if (res.ok && res.headers.get('content-type')?.includes('json')) {
+        options = (await res.json()) as FirebaseOptions;
+        // init.json ghi authDomain = <project>.firebaseapp.com, nhưng trang chạy ở <project>.web.app. Hosting phục vụ /__/auth/* trên
+        // mọi domain của nó, nên dùng chính domain đang mở để popup/redirect cùng origin (Safari/iOS PWA chặn storage bên thứ ba).
+        options.authDomain = location.host;
+      }
     } catch {
       /* không phải Hosting */
     }

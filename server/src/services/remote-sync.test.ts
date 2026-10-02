@@ -10,6 +10,7 @@ import { createRemoteSync, type RemoteSync, type RemoteWriter } from './remote-s
 import { saveSettings, getSettings } from './settings.js';
 
 const NOW = new Date('2026-10-02T03:00:00Z'); // 10:00 giờ VN
+const MIN = 60_000;
 const TZ = 420;
 const DAY = 86_400_000;
 
@@ -20,6 +21,8 @@ interface Fake extends RemoteWriter {
   closes: number;
   fail: Error | null;
   hang: boolean;
+  /** setOverview chờ promise này xong mới chạy (giả lập lệnh đang bay). */
+  wait: Promise<void> | null;
 }
 function fakeWriter(): Fake {
   const f: Fake = {
@@ -29,8 +32,10 @@ function fakeWriter(): Fake {
     closes: 0,
     fail: null,
     hang: false,
+    wait: null,
     async setOverview(doc) {
       if (f.hang) return new Promise(() => undefined);
+      if (f.wait) await f.wait;
       if (f.fail) throw f.fail;
       f.overviews.push(doc);
     },
@@ -278,5 +283,48 @@ describe('push', () => {
     const st = await s.push();
     expect(writer.overviews).toHaveLength(2);
     expect(st.lastError).toBeNull();
+  });
+});
+
+describe('tắt và nhịp tim (đợt sửa sau review)', () => {
+  it('tắt khi đang có lệnh đẩy bay → đẩy xong thì xóa tài liệu, không để sống lại', async () => {
+    writeKey();
+    const s = make();
+    await s.save({ enabled: true, emails: [] });
+    let release!: () => void;
+    writer.wait = new Promise<void>((r) => (release = r));
+    touch(dbFile, new Date(NOW.getTime() + 10_000));
+    const inflight = s.tick(new Date(NOW.getTime() + MIN));
+    const st = await s.save({ enabled: false, emails: [] }); // đang bận → chỉ lưu cấu hình
+    expect(st.enabled).toBe(false);
+    expect(writer.deletes).toBe(0);
+    release();
+    await inflight;
+    expect(writer.deletes).toBe(1);
+  });
+
+  it('xóa lỗi lúc tắt → tick sau thử xóa lại, không đẩy', async () => {
+    writeKey();
+    const s = make();
+    await s.save({ enabled: true, emails: [] });
+    writer.fail = new Error('14 UNAVAILABLE');
+    await s.save({ enabled: false, emails: [] });
+    expect(writer.deletes).toBe(0);
+    expect(s.status().lastError).toBe('Không kết nối được Firebase');
+    writer.fail = null;
+    await s.tick(new Date(NOW.getTime() + MIN));
+    expect(writer.deletes).toBe(1);
+    expect(s.status().lastError).toBeNull();
+    expect(writer.overviews).toHaveLength(1);
+  });
+
+  it('DB không đổi nhưng quá REMOTE_HEARTBEAT_MS → vẫn đẩy để trang xem biết máy quầy còn sống', async () => {
+    writeKey();
+    const s = make();
+    await s.save({ enabled: true, emails: [] });
+    await s.tick(new Date(NOW.getTime() + 4 * MIN));
+    expect(writer.overviews).toHaveLength(1);
+    await s.tick(new Date(NOW.getTime() + 5 * MIN));
+    expect(writer.overviews).toHaveLength(2);
   });
 });

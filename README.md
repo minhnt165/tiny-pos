@@ -68,8 +68,9 @@ Cài cho một tiệm (người triển khai làm, một lần):
 4. *Project settings* → *Service accounts* → *Generate new private key*; chép file thành
    `data\remote\service-account.json` trên máy quầy (thư mục `data\remote` được tạo sẵn khi server chạy).
    Không cần khởi động lại.
-5. Trên máy của người triển khai: `npm install`, `npx firebase login` (một lần), `cd remote && npx firebase use <project-id>`,
-   rồi `npm run deploy -w remote` (build + deploy Hosting và rules). Mạng công ty chặn TLS thì đặt `NODE_EXTRA_CA_CERTS`.
+5. Trên máy của người triển khai (`firebase-tools` không nằm trong `npm install` để máy quầy không phải tải CLI): `npm install`,
+   `cd remote`, `npx -y firebase-tools@15 login` (một lần), `npx -y firebase-tools@15 use <project-id>`, rồi `npm run deploy`
+   (build + deploy Hosting và rules; từ gốc repo là `npm run deploy -w remote`). Mạng công ty chặn TLS thì đặt `NODE_EXTRA_CA_CERTS`.
 6. Trên máy quầy: Cài đặt → Xem từ xa → thêm email Google của chủ tiệm → bật → *Gửi ngay*. Chủ tiệm quét mã QR trên
    thẻ, đăng nhập Google, chọn *Thêm vào màn hình chính*.
 

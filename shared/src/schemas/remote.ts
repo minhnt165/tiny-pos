@@ -4,6 +4,8 @@ import { z } from 'zod';
 export const REMOTE_MAX_EMAILS = 5;
 /** Quá khoảng này chưa có bản đẩy mới thì trang xem cảnh báo máy quầy có thể đang tắt / mất mạng. */
 export const REMOTE_STALE_MS = 10 * 60_000;
+/** Server đẩy lại dù DB không đổi sau khoảng này (nhịp tim), để vắng khách không bị báo nhầm là máy tắt. Phải < REMOTE_STALE_MS. */
+export const REMOTE_HEARTBEAT_MS = 5 * 60_000;
 
 const email = z.email();
 

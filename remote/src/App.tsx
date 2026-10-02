@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { LogIn, LogOut, ShieldX, Store } from 'lucide-react';
+import { LogIn, LogOut, ShieldX, Store, WifiOff } from 'lucide-react';
 import { signIn, signOutUser, useUser } from './auth';
 import { useRemoteOverview } from './overview';
 import { Button } from './components/ui/button';
@@ -40,6 +40,15 @@ function Dashboard({ uid, email }: { uid: string; email: string }) {
           <LogOut data-icon="inline-start" />
           Đăng xuất
         </Button>
+      </Centered>
+    );
+  // Ngoại tuyến mà chưa có bản cache: Firestore trả snapshot rỗng fromCache → không được nói "máy quầy chưa gửi"
+  if (state.status === 'missing' && state.fromCache)
+    return (
+      <Centered>
+        <WifiOff className="size-12 text-muted-foreground" />
+        <h1 className="text-xl font-semibold">Điện thoại đang ngoại tuyến</h1>
+        <p className="text-muted-foreground">Chưa tải được số liệu. Có mạng lại trang sẽ tự cập nhật.</p>
       </Centered>
     );
   if (state.status === 'missing')

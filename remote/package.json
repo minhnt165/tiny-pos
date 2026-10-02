@@ -7,7 +7,7 @@
     "dev": "vite --host --port 5181 --strictPort",
     "build": "tsc -p tsconfig.json --noEmit && vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "deploy": "npm run build && firebase deploy --only hosting,firestore:rules"
+    "deploy": "npm run build && npx -y firebase-tools@15 deploy --only hosting,firestore:rules"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
@@ -27,7 +27,6 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^5.0.0",
-    "firebase-tools": "^15.32.1",
     "tailwindcss": "^4.1.0",
     "typescript": "^5.9.0",
     "vite": "^7.0.0"

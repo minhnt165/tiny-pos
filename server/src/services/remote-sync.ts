@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { inArray } from 'drizzle-orm';
-import { localDate, type RemoteConfigInput, type RemoteOverviewDoc, type RemoteStatus } from '@tiny-pos/shared';
+import { localDate, REMOTE_HEARTBEAT_MS, type RemoteConfigInput, type RemoteOverviewDoc, type RemoteStatus } from '@tiny-pos/shared';
 import type { Db } from '../db/connection.js';
 import { settings } from '../db/schema.js';
 import { BadRequestError, HttpError } from '../errors.js';
@@ -137,6 +137,8 @@ export function createRemoteSync(o: RemoteSyncOpts): RemoteSync {
   let lastPushAt: string | null = null;
   let lastError: string | null = null;
   let busy = false;
+  /** Đã tắt nhưng chưa xóa được remote/overview (đang bận lúc tắt, hoặc xóa lỗi): tick sẽ xóa lại. */
+  let pendingDelete = false;
   let writer: RemoteWriter | null = null;
   let writerMtime = 0;
   /** JSON danh sách email đã ghi lên remote/access bằng writer hiện tại; null = chưa ghi. */
@@ -160,6 +162,22 @@ export function createRemoteSync(o: RemoteSyncOpts): RemoteSync {
     return { storeName: getSettings(o.db).storeName, updatedAt: at.toISOString(), appVersion: o.appVersion, data: JSON.parse(JSON.stringify(data)) };
   };
 
+  /** Xóa remote/overview; thành công thì hết pendingDelete, lỗi thì giữ cờ để tick thử lại. Ném lỗi để nơi gọi ghi lastError. */
+  const doDelete = async (): Promise<void> => {
+    busy = true;
+    try {
+      const w = await getWriter();
+      await withTimeout(w.deleteOverview(), timeoutMs);
+      pendingDelete = false;
+      lastError = null;
+    } catch (e) {
+      pendingDelete = true;
+      throw e;
+    } finally {
+      busy = false;
+    }
+  };
+
   /** Đẩy thật: access (nếu đổi) rồi overview. Ném lỗi để nơi gọi quyết định. */
   const doPush = async (at: Date): Promise<void> => {
     busy = true;
@@ -177,6 +195,8 @@ export function createRemoteSync(o: RemoteSyncOpts): RemoteSync {
     } finally {
       busy = false;
     }
+    // Bị tắt trong lúc lệnh trên đang bay: tài liệu vừa ghi phải xóa ngay, không để sống lại trên Google
+    if (!readConfig(o.db).enabled) await doDelete();
   };
 
   const status = (): RemoteStatus => {
@@ -197,13 +217,17 @@ export function createRemoteSync(o: RemoteSyncOpts): RemoteSync {
     // Mọi lỗi bắt ở đây: tick chạy trong setInterval, reject sẽ thành unhandled rejection làm chết server
     try {
       if (busy) return;
-      if (!readConfig(o.db).enabled) return;
       if (!readKey(o.keyFile).projectId) return; // status() đã báo lỗi file; không log mỗi phút
+      if (!readConfig(o.db).enabled) {
+        if (pendingDelete) await doDelete();
+        return;
+      }
       const { now: at, tz } = resolveClock({ ...o.clock, ...(now ? { now } : {}) });
       if (lastPushAt !== null) {
         const lastMs = Date.parse(lastPushAt);
         const changed = mtime(o.dbFile) > lastMs || mtime(`${o.dbFile}-wal`) > lastMs;
-        if (!changed && localDate(new Date(lastPushAt), tz) === localDate(at, tz)) return;
+        const heartbeat = at.getTime() - lastMs >= REMOTE_HEARTBEAT_MS;
+        if (!changed && !heartbeat && localDate(new Date(lastPushAt), tz) === localDate(at, tz)) return;
       }
       await doPush(at);
     } catch (e) {
@@ -221,13 +245,14 @@ export function createRemoteSync(o: RemoteSyncOpts): RemoteSync {
       if (input.enabled && !key.projectId) throw new BadRequestError(key.error ?? NO_KEY);
       writeConfig(o.db, { enabled: input.enabled, emails: input.emails });
       const { now } = resolveClock(o.clock);
+      // Đang có lệnh bay: chỉ lưu cấu hình. doPush đang chạy sẽ tự xóa nếu vừa tắt; tick kế sẽ đẩy nếu vừa bật.
+      if (busy) {
+        if (!input.enabled) pendingDelete = true;
+        return status();
+      }
       try {
         if (input.enabled) await doPush(now);
-        else if (key.projectId) {
-          const w = await getWriter();
-          await withTimeout(w.deleteOverview(), timeoutMs);
-          lastError = null;
-        }
+        else if (key.projectId) await doDelete();
       } catch (e) {
         lastError = describeError(e);
       }
