@@ -7,7 +7,7 @@
     "dev": "vite --host --port 5181 --strictPort",
     "build": "tsc -p tsconfig.json --noEmit && vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "deploy": "npm run build && npx -y firebase-tools@15 deploy --only hosting,firestore:rules"
+    "deploy": "npm run build && node scripts/deploy.mjs"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
