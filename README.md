@@ -75,6 +75,8 @@ Cài cho một tiệm (người triển khai làm, một lần):
    thẻ, đăng nhập Google, chọn *Thêm vào màn hình chính*.
 
 Gỡ: tắt công tắc (xóa dữ liệu trên Firestore), xóa file khóa; xóa project Firebase nếu muốn sạch hẳn.
+Máy dev trong mạng công ty chặn TLS: chạy server dev với `NODE_EXTRA_CA_CERTS` trỏ tới CA công ty, nếu không thẻ Xem từ xa báo
+"mạng chặn chứng chỉ TLS". Máy quầy ở nhà không cần.
 Dev trang xem tại máy mình: chép `remote/.env.example` thành `remote/.env.local`, dán web config, `npm run dev -w remote`
 (cổng 5181).
 

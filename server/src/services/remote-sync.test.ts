@@ -328,3 +328,12 @@ describe('tắt và nhịp tim (đợt sửa sau review)', () => {
     expect(writer.overviews).toHaveLength(2);
   });
 });
+
+describe('lỗi chứng chỉ TLS (mạng chặn TLS, thiếu NODE_EXTRA_CA_CERTS)', () => {
+  it('message self-signed certificate → câu tiếng Việt chỉ rõ nguyên nhân', async () => {
+    writeKey();
+    writer.fail = new Error('request to https://firestore.googleapis.com/v1/x failed, reason: self-signed certificate in certificate chain');
+    const st = await make().save({ enabled: true, emails: [] });
+    expect(st.lastError).toBe('Không kết nối được Firebase: mạng chặn chứng chỉ TLS (máy dev cần NODE_EXTRA_CA_CERTS)');
+  });
+});

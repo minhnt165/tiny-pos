@@ -127,6 +127,8 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 function describeError(e: unknown): string {
   if (e instanceof TimeoutError) return e.message;
   const message = e instanceof Error ? e.message : String(e);
+  if (/self[- ]signed certificate|SELF_SIGNED_CERT|UNABLE_TO_GET_ISSUER|UNABLE_TO_VERIFY_LEAF/i.test(message))
+    return 'Không kết nối được Firebase: mạng chặn chứng chỉ TLS (máy dev cần NODE_EXTRA_CA_CERTS)';
   if (/UNAVAILABLE|DEADLINE_EXCEEDED|ENOTFOUND|ECONN|EAI_AGAIN|ETIMEDOUT|getaddrinfo/i.test(message)) return 'Không kết nối được Firebase';
   return `Lỗi Firebase: ${message}`;
 }

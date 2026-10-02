@@ -61,6 +61,6 @@ npm workspaces, TypeScript ESM:
 
 ## Môi trường
 
-- Mạng công ty chặn TLS bằng CA riêng: lỗi `self-signed certificate`/`UNABLE_TO_GET_ISSUER_CERT` khi `npm install`, `npx shadcn` … thì đặt `NODE_EXTRA_CA_CERTS=<repo>/.certs/corp-root.pem`. Không bao giờ tắt kiểm tra TLS (`NODE_TLS_REJECT_UNAUTHORIZED=0`, `strict-ssl=false`).
+- Mạng công ty chặn TLS bằng CA riêng: lỗi `self-signed certificate`/`UNABLE_TO_GET_ISSUER_CERT` khi `npm install`, `npx shadcn` … thì đặt `NODE_EXTRA_CA_CERTS=<repo>/.certs/corp-root.pem`. Server dev cũng cần biến này mới đẩy được Xem từ xa lên Firestore (`$env:NODE_EXTRA_CA_CERTS = "<repo>.certsrp-root.pem"; npm run dev`); gRPC bị proxy chặn nên `remote-writer.ts` dùng REST (`preferRest`). Không bao giờ tắt kiểm tra TLS (`NODE_TLS_REJECT_UNAUTHORIZED=0`, `strict-ssl=false`).
 - `.npmrc`, `.certs/`, `data/` không đưa vào git.
 - Windows: shell là PowerShell/Git Bash; máy không có Python, script phụ viết bằng Node.

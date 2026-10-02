@@ -12,6 +12,8 @@ export async function createFirebaseWriter(keyFile: string): Promise<RemoteWrite
   const key = JSON.parse(fs.readFileSync(keyFile, 'utf8')) as ServiceAccount;
   const app = initializeApp({ credential: cert(key) }, `remote-${Date.now()}`);
   const store = getFirestore(app);
+  // REST thay vì gRPC: nhẹ hơn, lỗi mạng báo ngay thay vì treo, và đi lọt proxy chặn HTTP/2 (mạng công ty)
+  store.settings({ preferRest: true });
   const overviewRef = store.doc('remote/overview');
   const accessRef = store.doc('remote/access');
   return {
