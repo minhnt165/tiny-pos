@@ -554,3 +554,26 @@ export interface LabelPrintResult {
   opened: boolean;
   url: string;
 }
+
+/** Trạng thái Xem từ xa (GET /api/remote). `configured` = có file khóa data/remote/service-account.json. */
+export interface RemoteStatus {
+  configured: boolean;
+  /** `project_id` trong file khóa; null khi chưa có / file hỏng. */
+  projectId: string | null;
+  /** https://<projectId>.web.app */
+  url: string | null;
+  enabled: boolean;
+  emails: string[];
+  /** Lần đẩy thành công gần nhất trong phiên server; null khi chưa đẩy. */
+  lastPushAt: string | null;
+  lastError: string | null;
+}
+
+/** Tài liệu Firestore remote/overview: server ghi, trang remote/ đọc. */
+export interface RemoteOverviewDoc {
+  storeName: string;
+  /** ISO, theo đồng hồ server lúc đẩy. */
+  updatedAt: string;
+  appVersion: string;
+  data: Overview;
+}

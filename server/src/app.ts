@@ -6,16 +6,17 @@ import { errorHandler } from './middleware/error.js';
 import { apiRouter } from './routes/index.js';
 import type { BackupService } from './services/backups.js';
 import type { LabelDeps } from './services/labels.js';
+import type { RemoteSync } from './services/remote-sync.js';
 
 /** Tạo app Express; tách khỏi listen() để test bằng cổng ngẫu nhiên. */
 export function createApp(
   db: Db,
-  opts: { clientDist?: string; backups?: BackupService; labels?: LabelDeps; imagesDir?: string } = {},
+  opts: { clientDist?: string; backups?: BackupService; labels?: LabelDeps; imagesDir?: string; remote?: RemoteSync } = {},
 ): Express {
   const app = express();
   app.disable('x-powered-by');
   app.use(express.json({ limit: '1mb' }));
-  app.use('/api', apiRouter(db, { backups: opts.backups, labels: opts.labels, images: opts.imagesDir ? { dir: opts.imagesDir } : undefined }));
+  app.use('/api', apiRouter(db, { backups: opts.backups, labels: opts.labels, images: opts.imagesDir ? { dir: opts.imagesDir } : undefined, remote: opts.remote }));
 
   // Ảnh sản phẩm: tên file đổi mỗi lần thay ảnh nên cache được vĩnh viễn; tên lạ → 404, không rơi xuống SPA fallback
   if (opts.imagesDir) {

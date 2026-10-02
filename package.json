@@ -1,12 +1,13 @@
 {
   "name": "tiny-pos",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "private": true,
   "type": "module",
   "workspaces": [
     "shared",
     "server",
-    "client"
+    "client",
+    "remote"
   ],
   "scripts": {
     "dev": "npm run build -w shared && concurrently -n shared,server,client -c blue,green,magenta \"npm run dev -w shared\" \"npm run dev -w server\" \"npm run dev -w client\"",

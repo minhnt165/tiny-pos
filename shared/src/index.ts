@@ -36,5 +36,6 @@ export * from './schemas/overview.js';
 export * from './schemas/return.js';
 export * from './schemas/supplier-return.js';
 export * from './schemas/label.js';
+export * from './schemas/remote.js';
 export * from './list-filters.js';
 export * from './product-csv.js';

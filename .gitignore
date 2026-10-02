@@ -8,3 +8,6 @@ data/
 .playwright-mcp/
 .vite/
 .superpowers/
+remote/.firebaserc
+remote/.env.local
+remote/.firebase/

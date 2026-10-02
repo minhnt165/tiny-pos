@@ -1,6 +1,6 @@
 {
   "name": "@tiny-pos/server",
-  "version": "0.1.0",
+  "version": "0.14.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -17,6 +17,7 @@
     "drizzle-orm": "^0.45.3",
     "exceljs": "^4.4.0",
     "express": "^5.1.0",
+    "firebase-admin": "^14.5.0",
     "zod": "^4.1.0"
   },
   "devDependencies": {

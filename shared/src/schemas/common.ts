@@ -55,4 +55,5 @@ export const FIELD_LABELS: Record<string, string> = {
   customerId: 'Khách hàng',
   openingDebt: 'Nợ đầu kỳ',
   method: 'Hình thức',
+  emails: 'Email được xem',
 };

@@ -12,8 +12,10 @@ import {
   type LowStockRow,
   type OverdueCustomerRow,
   type Overview,
+  type OverviewBackup,
 } from '@tiny-pos/shared';
 import type { Db } from '../db/connection.js';
+import type { BackupService } from './backups.js';
 import { customers, products, suppliers } from '../db/schema.js';
 import { resolveClock, type Clock } from './daily-code.js';
 import { recentOrders } from './orders.js';
@@ -89,6 +91,12 @@ function openStocktakeSummary(db: Db): Overview['stocktake'] {
   if (!cur) return null;
   const { items: _items, ...summary } = cur;
   return summary;
+}
+
+/** Phần sao lưu của Tổng quan: bản mới nhất bất kỳ loại nào + lỗi gần nhất. Route và remote-sync dùng chung. */
+export function backupSummary(backups: BackupService): OverviewBackup {
+  const s = backups.status();
+  return { lastBackupAt: s.items[0]?.createdAt ?? null, lastAutoAt: s.lastAutoAt, lastError: s.lastError, extraError: s.extraError };
 }
 
 /** Tổng quan tại thời điểm xem: chỉ đọc, không transaction. Giới hạn dòng truyền vào để test. */

@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Chỉ email trong remote/access (server tiny-pos ghi) mới đọc được Tổng quan; trình duyệt không ghi được gì
+    match /remote/overview {
+      allow read: if request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in get(/databases/$(database)/documents/remote/access).data.emails;
+      allow write: if false;
+    }
+    match /remote/access {
+      allow read, write: if false;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

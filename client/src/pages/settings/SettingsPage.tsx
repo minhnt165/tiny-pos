@@ -15,6 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { APP_VERSION, BUILD_DATE } from '@/lib/version';
 import { AppearanceCard } from './AppearanceCard';
 import { BackupCard } from './BackupCard';
+import { RemoteCard } from './RemoteCard';
 
 type TextKey = 'storeName' | 'storeAddress' | 'storePhone' | 'receiptFooter';
 const bankOptions = BANKS.map((b) => ({ value: b.bin, label: `${b.shortName} – ${b.name}` }));
@@ -117,6 +118,7 @@ export function SettingsPage() {
         </CardContent>
       </Card>
       <BackupCard />
+      <RemoteCard />
       <Card>
         <CardContent className="space-y-2">
           <SectionTitle>Thông tin phần mềm</SectionTitle>

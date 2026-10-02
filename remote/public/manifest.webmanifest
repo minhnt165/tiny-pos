@@ -1,0 +1,10 @@
+{
+  "name": "Tạp hóa – Xem từ xa",
+  "short_name": "Tạp hóa",
+  "lang": "vi",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#2563eb",
+  "background_color": "#ffffff",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

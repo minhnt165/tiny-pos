@@ -53,6 +53,30 @@ Lưu ý:
 - Khôi phục: trong danh sách bản sao bấm *Khôi phục*; dữ liệu hiện tại được tự sao lưu thành bản *Trước khôi phục* rồi mới thay. Không cần dừng server.
 - Mang sang máy mới: cài như trên, rồi *Khôi phục từ file…* chọn file `.db` chép từ máy cũ (hoặc *Tải về* ở máy cũ). Bản sao từ phiên bản phần mềm cũ hơn dùng được; từ phiên bản mới hơn phải cập nhật phần mềm trước. Ảnh sản phẩm không nằm trong file `.db`: chép thư mục `images` (ở `data\images` máy cũ, hoặc trong thư mục chép thêm) vào `data\images` máy mới.
 
+## Xem từ xa (0.14.0)
+
+Chủ tiệm ở ngoài tiệm mở điện thoại xem được trang Tổng quan (doanh thu, lãi, hóa đơn hôm nay, hàng sắp hết, công nợ,
+sao lưu). **Chỉ xem**, không bán hàng, không sửa gì. Máy quầy đẩy một bản tổng hợp (vài KB) lên Firebase của **chính
+tiệm** mỗi khi có chứng từ mới (tối đa mỗi phút một lần); mất Internet thì tự thử lại, không ảnh hưởng bán hàng.
+Dữ liệu này nằm trên máy chủ Google trong tài khoản của chủ tiệm; tắt tính năng trong Cài đặt là xóa ngay.
+
+Cài cho một tiệm (người triển khai làm, một lần):
+
+1. Vào https://console.firebase.google.com bằng tài khoản Google của chủ tiệm, tạo project (tắt Analytics).
+2. *Firestore Database* → tạo, chế độ production, vùng `asia-southeast1`.
+3. *Authentication* → *Sign-in method* → bật *Google*.
+4. *Project settings* → *Service accounts* → *Generate new private key*; chép file thành
+   `data\remote\service-account.json` trên máy quầy (thư mục `data\remote` được tạo sẵn khi server chạy).
+   Không cần khởi động lại.
+5. Trên máy của người triển khai: `npm install`, `npx firebase login` (một lần), `cd remote && npx firebase use <project-id>`,
+   rồi `npm run deploy -w remote` (build + deploy Hosting và rules). Mạng công ty chặn TLS thì đặt `NODE_EXTRA_CA_CERTS`.
+6. Trên máy quầy: Cài đặt → Xem từ xa → thêm email Google của chủ tiệm → bật → *Gửi ngay*. Chủ tiệm quét mã QR trên
+   thẻ, đăng nhập Google, chọn *Thêm vào màn hình chính*.
+
+Gỡ: tắt công tắc (xóa dữ liệu trên Firestore), xóa file khóa; xóa project Firebase nếu muốn sạch hẳn.
+Dev trang xem tại máy mình: chép `remote/.env.example` thành `remote/.env.local`, dán web config, `npm run dev -w remote`
+(cổng 5181).
+
 ## Lệnh khác
 
 | Lệnh | Việc |
@@ -183,3 +207,14 @@ In không hỏi: tạo shortcut `chrome.exe --app=http://localhost:3000 --kiosk-
 4. *Cài đặt → Tem mã vạch*: chọn khổ đúng cuộn decal, *Lưu*, *In thử 1 tem* → cửa sổ in tem mở, hộp in hiện: chọn máy in tem, in. Đóng rồi *In thử* lần nữa → hộp in đã chọn sẵn máy tem. Bán một đơn và in hóa đơn → vẫn ra máy hóa đơn, không hỏi.
 5. *In tem* → thêm một hàng chưa có mã (bánh tự gói) 3 tem → in → tem có tên, giá, mã `20…`; quét tem ở *Bán hàng* ra đúng món. Thêm một thùng chưa có mã → tem thùng có giá thùng, quét ra đúng đơn vị thùng.
 6. Phiếu nhập → *In tem* → trang In tem điền sẵn số tem theo số lon đã nhập; hàng cân chỉ 1 tem.
+
+## Kiểm thử thủ công – Xem từ xa 0.14.0
+
+1. Chưa có file khóa: Cài đặt → thẻ *Xem từ xa* chỉ hiện hướng dẫn, không có công tắc.
+2. Chép file khóa vào `data\remote\` → tải lại Cài đặt: có công tắc, tên project, QR. Bật khi chưa có email → dòng vàng
+   "Chưa có email nào được xem".
+3. Thêm email ` ChuTiem@Gmail.com ` → hiện `chutiem@gmail.com`; thêm lần nữa → "Email này đã có"; `abc` → "Email không hợp lệ".
+4. *Gửi ngay* → "Gửi lần cuối HH:mm". Rút mạng máy quầy, *Gửi ngay* → lỗi đỏ "Không gửi được: …"; cắm lại, chờ 1 phút → hết lỗi.
+5. Điện thoại 4G quét QR, đăng nhập email trên → thấy đúng số Tổng quan; bán một đơn → ≤ 1 phút điện thoại đổi.
+   Email khác → "Chưa được cấp quyền xem". Xóa email đang xem → điện thoại chuyển sang bị từ chối.
+6. Tắt công tắc → điện thoại "Máy quầy chưa gửi số liệu lần nào". Tắt server 10 phút khi đang bật → dòng vàng "chưa gửi số mới từ…".

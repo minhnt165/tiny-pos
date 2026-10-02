@@ -14,11 +14,13 @@ import { customersRouter } from './customers.js';
 import { reportsRouter } from './reports.js';
 import { backupsRouter } from './backups.js';
 import { overviewRouter } from './overview.js';
+import { remoteRouter } from './remote.js';
 import type { BackupService } from '../services/backups.js';
 import { NO_LABEL_WINDOW, type LabelDeps } from '../services/labels.js';
 import { NO_IMAGES, type ImageDeps } from '../services/product-images.js';
+import type { RemoteSync } from '../services/remote-sync.js';
 
-export function apiRouter(db: Db, deps: { backups?: BackupService; labels?: LabelDeps; images?: ImageDeps } = {}): Router {
+export function apiRouter(db: Db, deps: { backups?: BackupService; labels?: LabelDeps; images?: ImageDeps; remote?: RemoteSync } = {}): Router {
   const r = Router();
   r.use('/categories', categoriesRouter(db));
   r.use('/products', productsRouter(db, deps.images ?? NO_IMAGES));
@@ -33,6 +35,7 @@ export function apiRouter(db: Db, deps: { backups?: BackupService; labels?: Labe
   r.use('/stocktakes', stocktakesRouter(db));
   r.use('/reports', reportsRouter(db));
   r.use('/overview', overviewRouter(db, deps.backups));
+  r.use('/remote', remoteRouter(deps.remote));
   if (deps.backups) r.use('/backups', backupsRouter(deps.backups));
   r.use((_req, res) => res.status(404).json({ error: 'Không tìm thấy' }));
   return r;
