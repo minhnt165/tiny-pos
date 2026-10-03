@@ -29,7 +29,7 @@ export function ProductSearch({ inputRef, onScan, onPick, includeInactive }: Pro
   }, [q]);
   useEffect(() => setActive(-1), [term]);
 
-  const searching = term.length >= 2 && /\D/.test(term);
+  const searching = term.length >= 1 && /\D/.test(term);
   const { data = [] } = useProductSuggestions(searching ? term : '', includeInactive);
   const items = searching && q.trim() ? data.slice(0, 8) : [];
 
