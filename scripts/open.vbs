@@ -5,7 +5,7 @@ Dim sh, fso, dir, url, i, candidates, p, browser
 Set sh = CreateObject("WScript.Shell")
 Set fso = CreateObject("Scripting.FileSystemObject")
 dir = fso.GetParentFolderName(WScript.ScriptFullName)
-url = "http://localhost:3000"
+url = "http://localhost:7869"
 
 Function Alive()
   Dim http

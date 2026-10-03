@@ -1,7 +1,7 @@
 @echo off
-rem Dừng server Tiny POS đang nghe cổng 3000.
+rem Dừng server Tiny POS đang nghe cổng 7869.
 set found=
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":3000 " ^| findstr "LISTENING"') do (
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":7869 " ^| findstr "LISTENING"') do (
   taskkill /PID %%p /F >nul 2>&1
   set found=1
 )

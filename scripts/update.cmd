@@ -6,6 +6,8 @@ if exist ".certs\corp-root.pem" set NODE_EXTRA_CA_CERTS=%CD%\.certs\corp-root.pe
 git pull || goto :err
 call npm install --no-audit --no-fund || goto :err
 call npm run build || goto :err
+rem Bản cũ mở cổng 3000: sửa rule tường lửa sang cổng mới (chỉ hỏi UAC khi phải sửa)
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0firewall.ps1"
 start "" wscript.exe "%~dp0open.vbs"
 echo Da cap nhat xong.
 pause

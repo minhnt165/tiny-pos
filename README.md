@@ -27,14 +27,14 @@ npm run dev
 
 ## Chạy thật (production)
 
-Trên máy quầy (Windows 10/11, đã cài Node.js 20+): nhấp đúp `scripts\install.cmd`. Script sẽ build, tạo biểu tượng **Tiny POS** trong thư mục Startup (bật máy là tự chạy) và trên Desktop (mở màn hình bán hàng), rồi hỏi quyền quản trị một lần để mở cổng 3000 cho điện thoại.
+Trên máy quầy (Windows 10/11, đã cài Node.js 20+): nhấp đúp `scripts\install.cmd`. Script sẽ build, tạo biểu tượng **Tiny POS** trong thư mục Startup (bật máy là tự chạy) và trên Desktop (mở màn hình bán hàng), rồi hỏi quyền quản trị một lần để mở cổng 7869 cho điện thoại. Bản chạy thật dùng cổng **7869** (dev vẫn 3000).
 
 - Biểu tượng *Tiny POS*: bảo đảm server đang chạy rồi mở Chrome/Edge chế độ ứng dụng với `--kiosk-printing` (in không hỏi).
-- Điện thoại cùng Wi-Fi: `http://<IP máy>:3000` (install in IP ra cuối).
+- Điện thoại cùng Wi-Fi: `http://<IP máy>:7869` (install in IP ra cuối).
 - Ghép thiết bị: điện thoại (hay máy khác) trong Wi‑Fi lần đầu mở sẽ thấy màn *Điện thoại này chưa được ghép*. Trên máy quầy vào *Cài đặt → Thiết bị → Ghép điện thoại*, điện thoại quét mã QR (hoặc gõ mã 6 số, hết hạn sau 5 phút) là xong, từ đó không hỏi lại. Máy quầy luôn dùng được, không cần ghép. Mất điện thoại hay không dùng nữa: *Thiết bị* → ⋯ → *Gỡ*.
-- **Giữ IP cố định cho máy quầy** (trong trang quản lý router: DHCP reservation / IP tĩnh theo MAC). Trình duyệt gắn việc ghép với đúng địa chỉ `http://<IP>:3000`; IP đổi thì điện thoại phải ghép lại và link đã lưu trên màn hình chính cũng hỏng.
+- **Giữ IP cố định cho máy quầy** (trong trang quản lý router: DHCP reservation / IP tĩnh theo MAC). Trình duyệt gắn việc ghép với đúng địa chỉ `http://<IP>:7869`; IP đổi thì điện thoại phải ghép lại và link đã lưu trên màn hình chính cũng hỏng.
 - iPhone: app đã *Thêm vào màn hình chính* có bộ nhớ riêng với Safari, nên ghép lại một lần trong app đó bằng cách gõ mã 6 số.
-- Trang *Tổng quan* (`http://<IP máy>:3000/overview`, mục đầu menu): số liệu hôm nay, 7 ngày, hàng sắp hết, khách nợ lâu, nợ NCC, kiểm kê dở, tình trạng sao lưu; tự làm mới mỗi phút. Máy quầy mở app vẫn vào thẳng Bán hàng.
+- Trang *Tổng quan* (`http://<IP máy>:7869/overview`, mục đầu menu): số liệu hôm nay, 7 ngày, hàng sắp hết, khách nợ lâu, nợ NCC, kiểm kê dở, tình trạng sao lưu; tự làm mới mỗi phút. Máy quầy mở app vẫn vào thẳng Bán hàng.
 - Cửa sổ quầy: trên *Bán hàng* bấm *Cửa sổ quầy* → mở cửa sổ chỉ có màn bán hàng (không menu), vẫn in không hỏi, dùng chung giỏ và đơn chờ; cửa sổ cũ chuyển sang *Tổng quan*. Nút *Quản lý* trên cùng quay về màn có menu. Muốn bật máy là vào thẳng cửa sổ quầy: *Cài đặt → Giao diện (trên máy này)* → bật *Mở phần mềm vào thẳng cửa sổ quầy*.
 - Khách trả hàng: *Hóa đơn* → bấm vào đơn → *Trả hàng*; danh sách phiếu ở *Trả hàng* (menu Bán hàng). Phiếu tính vào ngày trả, hủy được.
 - Trả hàng cho nhà cung cấp: *Trả NCC* (menu Kho hàng) → *Lập phiếu trả*, hoặc *Nhà cung cấp* → mở NCC → *Trả hàng*. Trừ nợ NCC trước, phần dư ghi là NCC trả tiền mặt; hủy phiếu thì tồn và nợ về như cũ.
@@ -42,11 +42,12 @@ Trên máy quầy (Windows 10/11, đã cài Node.js 20+): nhấp đúp `scripts\
 - Ảnh sản phẩm: mở sản phẩm → *Chọn ảnh*; trên điện thoại chụp trực tiếp, ảnh được thu nhỏ trước khi gửi. Ảnh hiện ở danh sách, gợi ý tìm khi bán, Tổng quan; bấm vào ảnh để xem to. File ảnh ở `data\images` (không nằm trong bản sao `.db`).
 - Log server: `data\server.log` (ghi đè mỗi lần chạy).
 - Cập nhật phiên bản: `scripts\update.cmd` (dừng, `git pull`, build, chạy lại). Gỡ: `scripts\uninstall.cmd` (giữ `data\`).
+- Máy cài từ bản dùng cổng 3000: `update.cmd` tự sửa rule tường lửa sang 7869 (hỏi quyền quản trị một lần). Điện thoại vẫn còn ghép, chỉ cần mở địa chỉ mới `:7869` và thêm lại vào màn hình chính. Giỏ đang bán, đơn chờ, phiếu nhập/trả NCC nháp và tùy chọn giao diện lưu theo địa chỉ nên không sang cổng mới: bán xong, lưu phiếu trước khi cập nhật rồi chỉnh lại giao diện.
 - Chạy tay không cài: `npm run build` rồi `scripts\start.cmd` (hoặc `npm start`); dừng: `scripts\stop.cmd`.
 
 Lưu ý:
 
-- Chỉ dùng trong mạng nhà. Không mở cổng 3000 ra Internet: máy lạ trong Wi‑Fi đã bị chặn nhờ ghép thiết bị, nhưng app chạy HTTP thường, không có đăng nhập.
+- Chỉ dùng trong mạng nhà. Không mở cổng 7869 ra Internet: máy lạ trong Wi‑Fi đã bị chặn nhờ ghép thiết bị, nhưng app chạy HTTP thường, không có đăng nhập.
 - Đặt thư mục dự án (đặc biệt `data/`) trên ổ cứng của máy, không đặt trên USB hay ổ mạng: SQLite chế độ WAL không an toàn trên đó. (Bản sao lưu thì chép sang USB được, xem dưới.)
 - Muốn xóa sạch dữ liệu thử nghiệm: dừng server rồi xóa thư mục `data/`.
 
@@ -92,7 +93,7 @@ Dev trang xem tại máy mình: chép `remote/.env.example` thành `remote/.env.
 | `npm test` | Chạy vitest (`shared`, `server`) |
 | `npm run db:generate` | Sinh migration mới sau khi sửa `server/src/db/schema.ts` |
 | `npm run seed` | Nạp dữ liệu mẫu (10 danh mục, ~80 mặt hàng, thùng/lốc, hàng cân, hàng sắp hết; 5 nhà cung cấp, 10 phiếu nhập 12 ngày gần đây có nợ/trả một phần/1 phiếu hủy) vào `data/grocery.db`; chạy lại không tạo trùng. Dữ liệu ở `server/src/seed/seed-data.ts` |
-| `scripts\install.cmd` | Cài trên máy quầy: build, tự chạy cùng Windows, biểu tượng Desktop, mở cổng 3000 |
+| `scripts\install.cmd` | Cài trên máy quầy: build, tự chạy cùng Windows, biểu tượng Desktop, mở cổng 7869 |
 | `scripts\update.cmd` | Cập nhật máy quầy: dừng, `git pull`, build, chạy lại |
 
 ## Cấu trúc
@@ -110,13 +111,13 @@ Dev trang xem tại máy mình: chép `remote/.env.example` thành `remote/.env.
 4. **Nhập sai**: sửa giá bán thành chữ "abc" → toast đỏ có chữ "Giá bán".
 5. **Nhập nhanh**: vào *Nhập nhanh*, gõ mã lạ + Enter → form mở với mã điền sẵn, con trỏ ở ô Tên; gõ tên, Enter → toast xanh, form đóng, ô quét lại có focus. Quét lại mã đó → thẻ thông tin. Quét mã thùng → ghi rõ "Mã của Thùng (= 24 …)". Khi form đang mở, gõ mã + Enter không mở tra cứu mới.
 6. **Excel**: ở *Sản phẩm* bấm *Xuất Excel* → file `san-pham-YYYYMMDD.xlsx` mở bằng Excel thấy tiếng Việt, tiền dạng `15.000`, lọc được. Sửa giá, thêm 1 dòng mới, để trống Tên ở 1 dòng, lưu rồi *Nhập từ Excel* chọn file đó → báo số tạo / cập nhật / lỗi theo dòng; tồn của hàng cũ không đổi, hàng không mã vạch không bị tạo trùng. File `.csv` cũ vẫn nhập được. Chưa có hàng nào thì trong hộp thoại nhập bấm *Tải file mẫu* (`mau-san-pham.xlsx`, có sheet hướng dẫn), điền rồi nhập. Hóa đơn, Nhập hàng, Khách hàng, NCC cũng có *Xuất Excel* theo đúng bộ lọc đang bật.
-7. **Điện thoại**: mở `http://<IP máy>:5180` (dev) hoặc `:3000` (prod), menu chuyển thành thanh dưới.
+7. **Điện thoại**: mở `http://<IP máy>:5180` (dev) hoặc `:7869` (prod), menu chuyển thành thanh dưới.
 
 ## Kiểm thử thủ công Giai đoạn 2
 
 Chuẩn bị: `npm run seed`, rồi vào *Cài đặt* nhập tên cửa hàng, chọn ngân hàng, số tài khoản, tên chủ tài khoản → *Lưu* → *In thử* (hóa đơn rộng 80mm, chữ không bị cắt).
 
-In không hỏi: tạo shortcut `chrome.exe --app=http://localhost:3000 --kiosk-printing` và đặt máy in nhiệt làm máy in mặc định; khi in, khổ giấy do CSS `@page { size: 80mm auto }` quyết định.
+In không hỏi: tạo shortcut `chrome.exe --app=http://localhost:7869 --kiosk-printing` và đặt máy in nhiệt làm máy in mặc định; khi in, khổ giấy do CSS `@page { size: 80mm auto }` quyết định.
 
 1. **Quét**: vào *Bán hàng*, quét một mã → món vào giỏ; quét lại → số lượng 2; quét mã thùng → dòng riêng "· Thùng". Quét mã lạ → toast đỏ "Không có mã …". Quét hàng đã ngừng bán → toast đỏ, không thêm.
 2. **Tìm**: gõ "mì" → gợi ý; ↓ + Enter thêm món. Gõ mã số rồi Enter vẫn tra mã vạch.
@@ -127,7 +128,7 @@ In không hỏi: tạo shortcut `chrome.exe --app=http://localhost:3000 --kiosk-
 7. **Tiền mặt (F9)**: bấm gợi ý 100.000 → tiền thối đúng; Enter → toast mã `HD-YYYYMMDD-0001`, in hóa đơn, khung "Tiền thối" chữ lớn. Nhấn Enter liên tục chỉ tạo 1 đơn.
 8. **Chuyển khoản**: QR hiện đúng số tiền (quét thử bằng app ngân hàng); *In tạm tính kèm QR* in phiếu "TẠM TÍNH"; *Đã nhận tiền* tạo đơn.
 9. **Hóa đơn**: vào *Hóa đơn* thấy các đơn hôm nay và tổng tiền mặt / chuyển khoản; mở một đơn → *In lại*; *Hủy đơn* → badge "Đã hủy", tổng giảm, tồn ở *Sản phẩm* được cộng lại.
-10. **Điện thoại**: mở `http://<IP máy>:3000/sell` → thêm món được (không lỗi secure context), thanh "Phải trả / Thanh toán" dính đáy màn hình.
+10. **Điện thoại**: mở `http://<IP máy>:7869/sell` → thêm món được (không lỗi secure context), thanh "Phải trả / Thanh toán" dính đáy màn hình.
 
 ## Kiểm thử thủ công Giai đoạn 3
 
@@ -187,7 +188,7 @@ In không hỏi: tạo shortcut `chrome.exe --app=http://localhost:3000 --kiosk-
 3. **Thư mục chép thêm**: điền thư mục có thật (ví dụ `D:\sao-luu`) → Lưu → *Sao lưu ngay* → file có ở cả hai nơi. Điền thư mục không có → toast đỏ "Thư mục không tồn tại". Đổi tên thư mục đã lưu rồi *Sao lưu ngay* → dòng vàng "Không chép được sang …", bản vẫn tạo.
 4. **Khôi phục**: bán thêm một đơn sau khi sao lưu → *Khôi phục* bản đó → xác nhận → toast xanh, trang Hóa đơn không còn đơn vừa bán, danh sách có bản "Trước khôi phục"; khôi phục lại bản đó → đơn quay lại.
 5. **Khôi phục từ file**: chọn file `.txt` đổi đuôi `.db` → toast đỏ "File không phải dữ liệu Tiny POS hoặc đã hỏng", dữ liệu không đổi. Chọn file `.db` tải về ở bước 2 → khôi phục được.
-6. **Scripts** (dừng `npm run dev` trước): `scripts\install.cmd` → Startup và Desktop có "Tiny POS", app mở chế độ kiosk; đăng xuất/đăng nhập → server tự chạy; điện thoại mở `http://<IP>:3000`. `scripts\uninstall.cmd` → biểu tượng mất, `data\` còn.
+6. **Scripts** (dừng `npm run dev` trước): `scripts\install.cmd` → Startup và Desktop có "Tiny POS", app mở chế độ kiosk; đăng xuất/đăng nhập → server tự chạy; điện thoại mở `http://<IP>:7869`. `scripts\uninstall.cmd` → biểu tượng mất, `data\` còn.
 
 ## Kiểm thử thủ công – Tổng quan 0.10.0
 
@@ -230,16 +231,16 @@ In không hỏi: tạo shortcut `chrome.exe --app=http://localhost:3000 --kiosk-
 
 1. *Bán hàng* → *Cửa sổ quầy* → cửa sổ mới chỉ có thanh trên (tên tiệm, ngày, nút *Quản lý*); cửa sổ cũ chuyển sang *Tổng quan*. Giỏ đang dở vẫn còn ở cửa sổ mới.
 2. Bán một đơn tiền mặt trong cửa sổ quầy → hóa đơn in thẳng, không hỏi. *Quản lý* → về *Tổng quan* có menu.
-3. *Cài đặt → Giao diện (trên máy này)* bật *Mở phần mềm vào thẳng cửa sổ quầy* → mở `http://localhost:3000` vào thẳng `/pos`; tắt thì về *Bán hàng* có menu.
+3. *Cài đặt → Giao diện (trên máy này)* bật *Mở phần mềm vào thẳng cửa sổ quầy* → mở `http://localhost:7869` vào thẳng `/pos`; tắt thì về *Bán hàng* có menu.
 4. Điện thoại: ở `/pos` thanh *Thanh toán* bám sát đáy; ở `/sell` thanh *Thanh toán* nằm trên thanh dưới.
 
 ## Kiểm thử thủ công – Ghép thiết bị 0.16.0
 
 1. Máy quầy mở biểu tượng Tiny POS → dùng bình thường, không hỏi gì. *Cài đặt → Thiết bị*: "Chưa có điện thoại nào được ghép".
-2. Điện thoại cùng Wi‑Fi mở `http://<IP máy>:3000` → màn *Điện thoại này chưa được ghép*.
+2. Điện thoại cùng Wi‑Fi mở `http://<IP máy>:7869` → màn *Điện thoại này chưa được ghép*.
 3. Máy quầy *Ghép điện thoại* → QR, mã 6 số, đếm lùi 5 phút. Điện thoại gõ sai → "Mã không đúng, còn 4 lần thử"; sai 5 lần → "Mã đã hết hiệu lực…", máy quầy *Tạo mã mới*.
 4. Điện thoại quét QR bằng camera → mở app, đã ghép; hộp thoại ở máy quầy tự đóng, báo "Đã ghép iPhone · Safari". Tắt mở lại trình duyệt điện thoại → không hỏi lại.
 5. Máy quầy *Đổi tên* thành "Điện thoại chị Lan". Điện thoại vào *Cài đặt* → thẻ *Thiết bị* ghi đúng tên đó, không có nút ghép hay gỡ.
 6. Máy quầy *Gỡ* → điện thoại bấm bất kỳ đâu → về màn ghép.
 7. Sao lưu ngay → ghép thêm một máy → khôi phục bản vừa sao → danh sách thiết bị vẫn có máy vừa ghép.
-8. Máy tính khác trong Wi‑Fi (chưa ghép) mở `http://<IP máy>:3000/api/products` → `{"error":"Thiết bị chưa được ghép",…}`.
+8. Máy tính khác trong Wi‑Fi (chưa ghép) mở `http://<IP máy>:7869/api/products` → `{"error":"Thiết bị chưa được ghép",…}`.

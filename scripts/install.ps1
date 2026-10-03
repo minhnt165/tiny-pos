@@ -1,4 +1,4 @@
-# Cài Tiny POS trên máy quầy: build, biểu tượng tự chạy khi đăng nhập + trên Desktop, mở cổng 3000 cho điện thoại.
+# Cài Tiny POS trên máy quầy: build, biểu tượng tự chạy khi đăng nhập + trên Desktop, mở cổng 7869 cho điện thoại.
 # Chạy qua install.cmd (không cần quyền quản trị; chỉ bước tường lửa hỏi UAC).
 $ErrorActionPreference = 'Stop'
 $Repo = Split-Path -Parent $PSScriptRoot
@@ -43,23 +43,13 @@ foreach ($dir in @($startup, $desktop)) {
   Write-Host "    $dir\Tiny POS.lnk"
 }
 
-Write-Host '[4/6] Mo cong 3000 tren tuong lua (Windows se hoi quyen quan tri)...'
-$null = & netsh advfirewall firewall show rule name="Tiny POS"
-if ($LASTEXITCODE -eq 0) {
-  Write-Host '    Da co rule.'
-} else {
-  try {
-    Start-Process netsh -ArgumentList 'advfirewall firewall add rule name="Tiny POS" dir=in action=allow protocol=TCP localport=3000' -Verb RunAs -Wait
-    Write-Host '    Da them rule.'
-  } catch {
-    Write-Host '    Bo qua: dien thoai se khong vao duoc. Chay lai install.cmd hoac tu mo cong 3000 trong Windows Defender Firewall.'
-  }
-}
+Write-Host '[4/6] Mo cong 7869 tren tuong lua (Windows se hoi quyen quan tri)...'
+& "$PSScriptRoot\firewall.ps1"
 
 Write-Host '[5/6] Bat Tiny POS...'
 Start-Process wscript.exe -ArgumentList "`"$Repo\scripts\open.vbs`""
 
 Write-Host '[6/6] Xong.'
 $ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } | Select-Object -First 1).IPAddress
-if ($ip) { Write-Host "Dien thoai cung Wi-Fi mo: http://${ip}:3000" }
+if ($ip) { Write-Host "Dien thoai cung Wi-Fi mo: http://${ip}:7869" }
 Write-Host 'Tu nay bat may la Tiny POS tu chay. Bieu tuong "Tiny POS" tren Desktop mo man hinh ban hang.'

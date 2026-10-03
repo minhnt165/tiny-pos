@@ -9,7 +9,7 @@ Phần mềm bán hàng cho tiệm tạp hóa nhỏ: chạy local trên 1 máy W
 | `npm run dev` | shared (watch) + server `:3000` + client Vite `:5180` (proxy `/api` → 3000) |
 | `npm run typecheck` | tsc cả 3 workspace (build `shared` trước) |
 | `npm test` | vitest `shared` + `server` (client chưa có test) |
-| `npm run build` | build production; server phục vụ luôn `client/dist` ở `:3000` |
+| `npm run build` | build production; server phục vụ luôn `client/dist` ở `:7869` (bản build mặc định 7869, dev 3000; `PORT` ghi đè) |
 | `npm run db:generate` | sinh migration sau khi sửa `server/src/db/schema.ts` |
 | `npm run seed` | nạp dữ liệu mẫu vào `data/grocery.db`, chạy lại không tạo trùng |
 | `scripts\install.cmd` | cài trên máy quầy (build, tự chạy cùng Windows, biểu tượng, tường lửa); `update.cmd`, `uninstall.cmd`, `start.cmd`, `stop.cmd` cùng thư mục |
