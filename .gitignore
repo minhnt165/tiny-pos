@@ -11,3 +11,4 @@ data/
 remote/.firebaserc
 remote/.env.local
 remote/.firebase/
+service-account.json
