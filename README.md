@@ -31,7 +31,11 @@ Trên máy quầy (Windows 10/11, đã cài Node.js 20+): nhấp đúp `scripts\
 
 - Biểu tượng *Tiny POS*: bảo đảm server đang chạy rồi mở Chrome/Edge chế độ ứng dụng với `--kiosk-printing` (in không hỏi).
 - Điện thoại cùng Wi-Fi: `http://<IP máy>:3000` (install in IP ra cuối).
+- Ghép thiết bị: điện thoại (hay máy khác) trong Wi‑Fi lần đầu mở sẽ thấy màn *Điện thoại này chưa được ghép*. Trên máy quầy vào *Cài đặt → Thiết bị → Ghép điện thoại*, điện thoại quét mã QR (hoặc gõ mã 6 số, hết hạn sau 5 phút) là xong, từ đó không hỏi lại. Máy quầy luôn dùng được, không cần ghép. Mất điện thoại hay không dùng nữa: *Thiết bị* → ⋯ → *Gỡ*.
+- **Giữ IP cố định cho máy quầy** (trong trang quản lý router: DHCP reservation / IP tĩnh theo MAC). Trình duyệt gắn việc ghép với đúng địa chỉ `http://<IP>:3000`; IP đổi thì điện thoại phải ghép lại và link đã lưu trên màn hình chính cũng hỏng.
+- iPhone: app đã *Thêm vào màn hình chính* có bộ nhớ riêng với Safari, nên ghép lại một lần trong app đó bằng cách gõ mã 6 số.
 - Trang *Tổng quan* (`http://<IP máy>:3000/overview`, mục đầu menu): số liệu hôm nay, 7 ngày, hàng sắp hết, khách nợ lâu, nợ NCC, kiểm kê dở, tình trạng sao lưu; tự làm mới mỗi phút. Máy quầy mở app vẫn vào thẳng Bán hàng.
+- Cửa sổ quầy: trên *Bán hàng* bấm *Cửa sổ quầy* → mở cửa sổ chỉ có màn bán hàng (không menu), vẫn in không hỏi, dùng chung giỏ và đơn chờ; cửa sổ cũ chuyển sang *Tổng quan*. Nút *Quản lý* trên cùng quay về màn có menu. Muốn bật máy là vào thẳng cửa sổ quầy: *Cài đặt → Giao diện (trên máy này)* → bật *Mở phần mềm vào thẳng cửa sổ quầy*.
 - Khách trả hàng: *Hóa đơn* → bấm vào đơn → *Trả hàng*; danh sách phiếu ở *Trả hàng* (menu Bán hàng). Phiếu tính vào ngày trả, hủy được.
 - Trả hàng cho nhà cung cấp: *Trả NCC* (menu Kho hàng) → *Lập phiếu trả*, hoặc *Nhà cung cấp* → mở NCC → *Trả hàng*. Trừ nợ NCC trước, phần dư ghi là NCC trả tiền mặt; hủy phiếu thì tồn và nợ về như cũ.
 - In tem mã vạch: *In tem* (menu Kho hàng), hoặc ⋯ → *In tem* ở Sản phẩm, *In tem* trong phiếu nhập. Hàng chưa có mã được cấp mã nội bộ bắt đầu bằng `20`. Chọn khổ tem trong *Cài đặt → Tem mã vạch*. Tem mở trong một cửa sổ riêng có hộp chọn máy in: lần đầu chọn máy in tem, các lần sau Chrome tự nhớ; hóa đơn vẫn in thẳng ra máy hóa đơn.
@@ -42,7 +46,7 @@ Trên máy quầy (Windows 10/11, đã cài Node.js 20+): nhấp đúp `scripts\
 
 Lưu ý:
 
-- Chỉ dùng trong mạng nhà. Không mở cổng 3000 ra Internet vì chưa có đăng nhập.
+- Chỉ dùng trong mạng nhà. Không mở cổng 3000 ra Internet: máy lạ trong Wi‑Fi đã bị chặn nhờ ghép thiết bị, nhưng app chạy HTTP thường, không có đăng nhập.
 - Đặt thư mục dự án (đặc biệt `data/`) trên ổ cứng của máy, không đặt trên USB hay ổ mạng: SQLite chế độ WAL không an toàn trên đó. (Bản sao lưu thì chép sang USB được, xem dưới.)
 - Muốn xóa sạch dữ liệu thử nghiệm: dừng server rồi xóa thư mục `data/`.
 
@@ -221,3 +225,21 @@ In không hỏi: tạo shortcut `chrome.exe --app=http://localhost:3000 --kiosk-
 5. Điện thoại 4G quét QR, đăng nhập email trên → thấy đúng số Tổng quan; bán một đơn → ≤ 1 phút điện thoại đổi.
    Email khác → "Chưa được cấp quyền xem". Xóa email đang xem → điện thoại chuyển sang bị từ chối.
 6. Tắt công tắc → điện thoại "Máy quầy chưa gửi số liệu lần nào". Tắt server 10 phút khi đang bật → dòng vàng "chưa gửi số mới từ…".
+
+## Kiểm thử thủ công – Cửa sổ quầy 0.15.0
+
+1. *Bán hàng* → *Cửa sổ quầy* → cửa sổ mới chỉ có thanh trên (tên tiệm, ngày, nút *Quản lý*); cửa sổ cũ chuyển sang *Tổng quan*. Giỏ đang dở vẫn còn ở cửa sổ mới.
+2. Bán một đơn tiền mặt trong cửa sổ quầy → hóa đơn in thẳng, không hỏi. *Quản lý* → về *Tổng quan* có menu.
+3. *Cài đặt → Giao diện (trên máy này)* bật *Mở phần mềm vào thẳng cửa sổ quầy* → mở `http://localhost:3000` vào thẳng `/pos`; tắt thì về *Bán hàng* có menu.
+4. Điện thoại: ở `/pos` thanh *Thanh toán* bám sát đáy; ở `/sell` thanh *Thanh toán* nằm trên thanh dưới.
+
+## Kiểm thử thủ công – Ghép thiết bị 0.16.0
+
+1. Máy quầy mở biểu tượng Tiny POS → dùng bình thường, không hỏi gì. *Cài đặt → Thiết bị*: "Chưa có điện thoại nào được ghép".
+2. Điện thoại cùng Wi‑Fi mở `http://<IP máy>:3000` → màn *Điện thoại này chưa được ghép*.
+3. Máy quầy *Ghép điện thoại* → QR, mã 6 số, đếm lùi 5 phút. Điện thoại gõ sai → "Mã không đúng, còn 4 lần thử"; sai 5 lần → "Mã đã hết hiệu lực…", máy quầy *Tạo mã mới*.
+4. Điện thoại quét QR bằng camera → mở app, đã ghép; hộp thoại ở máy quầy tự đóng, báo "Đã ghép iPhone · Safari". Tắt mở lại trình duyệt điện thoại → không hỏi lại.
+5. Máy quầy *Đổi tên* thành "Điện thoại chị Lan". Điện thoại vào *Cài đặt* → thẻ *Thiết bị* ghi đúng tên đó, không có nút ghép hay gỡ.
+6. Máy quầy *Gỡ* → điện thoại bấm bất kỳ đâu → về màn ghép.
+7. Sao lưu ngay → ghép thêm một máy → khôi phục bản vừa sao → danh sách thiết bị vẫn có máy vừa ghép.
+8. Máy tính khác trong Wi‑Fi (chưa ghép) mở `http://<IP máy>:3000/api/products` → `{"error":"Thiết bị chưa được ghép",…}`.

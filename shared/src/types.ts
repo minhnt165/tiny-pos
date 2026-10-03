@@ -577,3 +577,21 @@ export interface RemoteOverviewDoc {
   appVersion: string;
   data: Overview;
 }
+
+/** Thiết bị trong LAN đã ghép (GET /api/devices, chỉ máy quầy). `lastSeenOn` = ngày địa phương YYYY-MM-DD, null nếu chưa dùng. */
+export interface Device {
+  id: number;
+  name: string;
+  createdAt: string;
+  lastSeenOn: string | null;
+}
+
+/** GET /api/device: máy đang gọi là máy quầy, thiết bị đã ghép, hay chưa ghép. */
+export type DeviceStatus = { kind: 'counter' } | { kind: 'paired'; device: { id: number; name: string } } | { kind: 'unpaired' };
+
+/** POST /api/devices/pairing: mã 6 số, link cho QR (`http://<IP LAN>:<cổng>/pair?code=…`), giờ hết hạn ISO. */
+export interface PairingInfo {
+  code: string;
+  url: string;
+  expiresAt: string;
+}

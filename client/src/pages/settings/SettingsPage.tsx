@@ -15,6 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { APP_VERSION, BUILD_DATE } from '@/lib/version';
 import { AppearanceCard } from './AppearanceCard';
 import { BackupCard } from './BackupCard';
+import { DevicesCard } from './DevicesCard';
 import { RemoteCard } from './RemoteCard';
 
 type TextKey = 'storeName' | 'storeAddress' | 'storePhone' | 'receiptFooter';
@@ -119,6 +120,7 @@ export function SettingsPage() {
       </Card>
       <BackupCard />
       <RemoteCard />
+      <DevicesCard />
       <Card>
         <CardContent className="space-y-2">
           <SectionTitle>Thông tin phần mềm</SectionTitle>

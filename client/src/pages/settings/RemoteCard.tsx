@@ -1,11 +1,11 @@
-import { useEffect, useState, type KeyboardEvent } from 'react';
+import { useState, type KeyboardEvent } from 'react';
 import { ExternalLink, Plus, Send, Smartphone, X } from 'lucide-react';
-import QRCode from 'qrcode';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { REMOTE_MAX_EMAILS, type RemoteStatus } from '@tiny-pos/shared';
 import { usePushRemote, useRemoteStatus, useSaveRemote } from '@/api/remote';
 import { SectionTitle, TextField } from '@/components/TextField';
+import { UrlQr } from '@/components/UrlQr';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -13,21 +13,6 @@ import { Switch } from '@/components/ui/switch';
 const KEY_PATH = 'data\\remote\\service-account.json';
 const when = (iso: string) => new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
 const emailSchema = z.email();
-
-/** Mã QR của địa chỉ trang xem để chủ tiệm quét bằng điện thoại thay vì gõ. */
-function UrlQr({ url }: { url: string }) {
-  const [src, setSrc] = useState<string | null>(null);
-  useEffect(() => {
-    let alive = true;
-    QRCode.toDataURL(url, { margin: 1, width: 240 })
-      .then((u) => alive && setSrc(u))
-      .catch(() => alive && setSrc(null));
-    return () => {
-      alive = false;
-    };
-  }, [url]);
-  return src ? <img src={src} alt="Mã QR địa chỉ trang xem" className="size-40 rounded-lg border bg-white p-1" /> : <div className="size-40 animate-pulse rounded-lg bg-muted" />;
-}
 
 /** Dòng trạng thái gửi: lỗi đỏ (kèm nhắc tự thử lại), chưa gửi, hoặc giờ gửi gần nhất. */
 function PushStatus({ s }: { s: RemoteStatus }) {
@@ -145,7 +130,7 @@ export function RemoteCard() {
             </div>
             {data.url && (
               <div className="flex flex-wrap items-start gap-4">
-                <UrlQr url={data.url} />
+                <UrlQr url={data.url} alt="Mã QR địa chỉ trang xem" />
                 <div className="space-y-2 text-sm">
                   <p className="flex items-center gap-2 font-medium">
                     <Smartphone className="size-4" />

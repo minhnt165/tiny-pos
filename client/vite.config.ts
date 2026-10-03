@@ -8,6 +8,9 @@ import { VitePWA } from 'vite-plugin-pwa';
 // Version duy nhất của app nằm ở package.json gốc; chèn vào client lúc build
 const { version } = JSON.parse(readFileSync(path.resolve(import.meta.dirname, '../package.json'), 'utf8')) as { version: string };
 
+// Giữ nguyên Host khi proxy (dạng chuỗi bật changeOrigin): server dựa vào Host để nhận ra máy quầy, đổi thành localhost thì mọi máy LAN thành máy quầy
+const backend = { target: 'http://localhost:3000', changeOrigin: false };
+
 export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(version),
@@ -32,5 +35,5 @@ export default defineConfig({
     }),
   ],
   resolve: { alias: { '@': path.resolve(import.meta.dirname, 'src') } },
-  server: { host: true, port: 5180, strictPort: true, proxy: { '/api': 'http://localhost:3000', '/images': 'http://localhost:3000' } },
+  server: { host: true, port: 5180, strictPort: true, proxy: { '/api': backend, '/images': backend } },
 });

@@ -195,6 +195,9 @@ export function createBackupService(db: Db, opts: BackupOpts): BackupService {
     }
   };
 
+  /** Bảng thuộc máy hiện tại, không thuộc bản sao: khôi phục bản cũ không được làm sống lại thiết bị đã gỡ. */
+  const KEEP_TABLES = new Set(['devices']);
+
   /** Chép toàn bộ bảng từ file vào DB đang mở trong một transaction; cột chỉ có ở DB hiện tại nhận mặc định. */
   const copyTables = (file: string) => {
     // File có thể bị xóa/dọn trong lúc tạo before-restore; ATTACH đường dẫn thiếu sẽ tạo DB rỗng → không được xóa dữ liệu
@@ -205,7 +208,7 @@ export function createBackupService(db: Db, opts: BackupOpts): BackupService {
       try {
         if (!hasTable('src', 'products')) throw new NotFoundError('Không tìm thấy bản sao');
         sqlite.transaction(() => {
-          const tables = tableNames('main');
+          const tables = tableNames('main').filter((t) => !KEEP_TABLES.has(t));
           const srcTables = new Set(tableNames('src'));
           for (const t of tables) {
             sqlite.prepare(`delete from main."${t}"`).run();
@@ -218,9 +221,9 @@ export function createBackupService(db: Db, opts: BackupOpts): BackupService {
             if (cols) sqlite.prepare(`insert into main."${t}" (${cols}) select ${cols} from src."${t}"`).run();
           }
           if (hasTable('main', 'sqlite_sequence')) {
-            sqlite.prepare('delete from main.sqlite_sequence').run();
+            const list = tables.map((t) => `'${t}'`).join(', ');
+            sqlite.prepare(`delete from main.sqlite_sequence where name in (${list})`).run();
             if (hasTable('src', 'sqlite_sequence')) {
-              const list = tables.map((t) => `'${t}'`).join(', ');
               sqlite.prepare(`insert into main.sqlite_sequence (name, seq) select name, seq from src.sqlite_sequence where name in (${list})`).run();
             }
           }

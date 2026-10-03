@@ -296,3 +296,12 @@ export const stocktakeItems = sqliteTable(
   },
   (t) => [uniqueIndex('stocktake_items_uq').on(t.stocktakeId, t.productId)],
 );
+
+/** Điện thoại/máy trong LAN đã ghép (máy quầy không cần). Chỉ đổi qua services/devices.ts; khôi phục bản sao không đụng bảng này. */
+export const devices = sqliteTable('devices', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  tokenHash: text('token_hash').notNull().unique(), // SHA-256 hex của token trong cookie
+  createdAt: createdAt(),
+  lastSeenOn: text('last_seen_on'), // ngày địa phương YYYY-MM-DD lần dùng gần nhất
+});

@@ -13,6 +13,7 @@ export const nullableText = (max: number) =>
 export const FIELD_LABELS: Record<string, string> = {
   name: 'Tên',
   barcode: 'Mã vạch',
+  code: 'Mã ghép',
   unit: 'Đơn vị',
   costPrice: 'Giá nhập',
   sellPrice: 'Giá bán',

@@ -12,6 +12,7 @@ import { categories, productUnits, settings } from '../db/schema.js';
 import { createCategory } from './categories.js';
 import { createProduct, listProducts } from './products.js';
 import { createBackupService, type BackupService } from './backups.js';
+import { createDevicesService } from './devices.js';
 
 const CLOCK = { now: new Date('2026-10-01T02:31:05.000Z'), tzOffsetMin: 420 }; // 09:31:05 giờ VN
 let db: Db;
@@ -246,6 +247,23 @@ describe('backups: khôi phục', () => {
     await expect(svc.restoreUpload(Buffer.from('rác'))).rejects.toThrow(/không phải dữ liệu/);
     expect(fs.readdirSync(tmp())).toEqual([]);
     await expect(svc.restoreUpload(Buffer.alloc(0))).rejects.toThrow('Chưa có file');
+  });
+
+  it('khôi phục không đụng danh sách thiết bị: máy đã gỡ không sống lại, id mới không trùng', async () => {
+    const devs = createDevicesService(db, { lanUrl: () => 'http://192.168.1.5:3000' });
+    const pairOne = (ua: string) => devs.pair(devs.startPairing().code, ua).device;
+    const a = pairOne('iPhone Safari/604.1');
+    product('Coca', '1');
+    const snap = await svc.create('manual');
+
+    devs.revoke(a.id);
+    const b = pairOne('Android Chrome/129.0');
+    await svc.restore(snap.name);
+
+    expect(devs.list().map((d) => d.id)).toEqual([b.id]);
+    expect(listProducts(db, { includeInactive: true }).map((p) => p.name)).toEqual(['Coca']);
+    // sqlite_sequence của devices giữ nguyên → thiết bị mới không nhận lại id của máy đã gỡ
+    expect(pairOne('Windows Edg/129.0').id).toBeGreaterThan(b.id);
   });
 });
 

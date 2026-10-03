@@ -9,11 +9,17 @@ import { createBackupService } from './services/backups.js';
 import { createLabelOpener } from './label-window.js';
 import { createFirebaseWriter } from './services/remote-writer.js';
 import { createRemoteSync } from './services/remote-sync.js';
+import { createDevicesService } from './services/devices.js';
 
 // server/src → ../.. = gốc repo ; server/dist → ../.. = gốc repo
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const dbFile = process.env['DB_FILE'] ?? path.join(repoRoot, 'data', 'grocery.db');
 const port = Number(process.env['PORT'] ?? 3000);
+/** IPv4 LAN đầu tiên của máy (bỏ loopback); không có mạng thì undefined. Gọi lại mỗi lần để IP đổi thì QR ghép vẫn đúng. */
+const lanAddress = () =>
+  Object.values(os.networkInterfaces())
+    .flat()
+    .find((i) => i && i.family === 'IPv4' && !i.internal)?.address;
 
 const db = createDb(dbFile);
 const dataDir = path.dirname(dbFile);
@@ -31,12 +37,11 @@ const labels =
   process.platform === 'win32' && built
     ? { open: createLabelOpener(path.join(dataDir, 'label-browser')), origin: `http://localhost:${port}` }
     : undefined;
-const app = createApp(db, { clientDist: path.join(repoRoot, 'client', 'dist'), backups, labels, imagesDir, remote });
+const devices = createDevicesService(db, { lanUrl: () => `http://${lanAddress() ?? 'localhost'}:${port}` });
+const app = createApp(db, { clientDist: path.join(repoRoot, 'client', 'dist'), backups, labels, imagesDir, remote, devices });
 
 app.listen(port, '0.0.0.0', () => {
-  const lan = Object.values(os.networkInterfaces())
-    .flat()
-    .find((i) => i && i.family === 'IPv4' && !i.internal)?.address;
+  const lan = lanAddress();
   console.log(`Tiny POS chạy tại http://localhost:${port}` + (lan ? ` (LAN: http://${lan}:${port})` : ''));
   console.log(`DB: ${dbFile}`);
   console.log(`Sao lưu: ${path.join(dataDir, 'backups')}`);
