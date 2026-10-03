@@ -1,5 +1,6 @@
 import { BarChart3, ClipboardList, FolderOpen, LayoutDashboard, Package, PackageMinus, PackageOpen, ReceiptText, Settings, ShoppingCart, Tag, Truck, Undo2, Users, type LucideIcon } from 'lucide-react';
 import { Navigate, Route, Routes } from 'react-router';
+import { readUiPrefs } from './lib/ui-prefs';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { CategoriesPage } from './pages/categories/CategoriesPage';
 import { CustomersPage } from './pages/customers/CustomersPage';
@@ -63,7 +64,7 @@ export function activeNav(pathname: string): NavItem | undefined {
 export function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/sell" replace />} />
+      <Route path="/" element={<Navigate to={readUiPrefs().startPos ? '/pos' : '/sell'} replace />} />
       <Route path="/overview" element={<OverviewPage />} />
       <Route path="/sell" element={<SellPage />} />
       <Route path="/orders" element={<OrdersPage />} />

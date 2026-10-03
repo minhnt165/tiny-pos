@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { AppWindow } from 'lucide-react';
+import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { lineFromProduct, type CartLine, type NewCartLine, type OrderDetail, type Product, type ProductUnit } from '@tiny-pos/shared';
 import { ApiError } from '@/api/client';
@@ -10,6 +12,7 @@ import { receiptFromOrder } from '@/components/receipt/receipt-data';
 import { PageTitle } from '@/components/layout/PageTitle';
 import { Kbd } from '@/components/ui/kbd';
 import { useScanInput } from '@/hooks/useScanInput';
+import { openPosWindow } from '@/lib/pos-window';
 import { CartTable } from './CartTable';
 import { CheckoutDialog } from './CheckoutDialog';
 import { CheckoutPanel } from './CheckoutPanel';
@@ -30,7 +33,9 @@ const SHORTCUTS = [
   ['Esc', 'Đóng hộp thoại'],
 ] as const;
 
-export function SellPage() {
+/** standalone: đang ở cửa sổ quầy /pos (không có nút mở cửa sổ quầy). */
+export function SellPage({ standalone = false }: { standalone?: boolean }) {
+  const navigate = useNavigate();
   const { cart, dispatch, totals, shortages } = useCart();
   const heldCarts = useHeldCarts();
   const { data: settings } = useSettings();
@@ -100,6 +105,9 @@ export function SellPage() {
     if (await ask({ title: 'Xóa toàn bộ giỏ hàng?', confirmText: 'Xóa giỏ', destructive: true })) dispatch({ type: 'clear' });
   };
 
+  // Giỏ lưu chung localStorage: không để hai màn Bán hàng mở cùng lúc ghi đè nhau, cửa sổ này chuyển sang Tổng quan
+  const openPos = () => navigate(openPosWindow() ? '/overview' : '/pos');
+
   const onPaid = (order: OrderDetail) => {
     setCheckoutOpen(false);
     dispatch({ type: 'clear' });
@@ -129,7 +137,7 @@ export function SellPage() {
   return (
     // Máy tính: hết chiều cao dưới topbar 3rem (+ đệm main 2rem); giỏ cuộn bên trong, cột phải cố định
     <div className="grid gap-3 pb-20 md:pb-0 lg:h-[calc(100dvh-5rem)] lg:grid-cols-[1fr_20rem]">
-      <PageTitle title="Bán hàng" />
+      <PageTitle title="Bán hàng" actions={standalone ? [] : [{ label: 'Cửa sổ quầy', icon: AppWindow, onClick: openPos }]} />
       <div className="flex min-h-0 min-w-0 flex-col gap-3">
         <ProductSearch inputRef={scan.ref} onScan={(c) => void onScan(c)} onPick={(p) => addProduct(p, null)} />
         <HeldCarts held={heldCarts.held} currentCount={cart.lines.length} onOpen={openHeld} onDrop={(id) => void dropHeld(id)} />

@@ -3,6 +3,7 @@ import { useTheme } from 'next-themes';
 import { SectionTitle } from '@/components/TextField';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
 import { ACCENTS, DENSITIES, FONT_SIZES, RADII, useUiPrefs } from '@/lib/ui-prefs';
 import { cn } from '@/lib/utils';
 
@@ -98,6 +99,13 @@ export function AppearanceCard() {
         <Segmented label="Cỡ chữ" options={FONT_SIZES} value={prefs.font} onChange={(font) => update({ font })} />
         <Segmented label="Mật độ" options={DENSITIES} value={prefs.density} onChange={(density) => update({ density })} />
         <Segmented label="Bo góc" options={RADII} value={prefs.radius} onChange={(radius) => update({ radius })} />
+        <label className="flex items-center justify-between gap-3">
+          <span>
+            <span className="block font-medium">Mở phần mềm vào thẳng cửa sổ quầy</span>
+            <span className="block text-sm text-muted-foreground">Bán hàng toàn màn hình, không menu. Bấm Quản lý trên cùng để vào các trang khác.</span>
+          </span>
+          <Switch checked={prefs.startPos} onCheckedChange={(startPos) => update({ startPos })} />
+        </label>
       </CardContent>
     </Card>
   );

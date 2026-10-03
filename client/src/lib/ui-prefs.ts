@@ -35,9 +35,11 @@ export interface UiPrefs {
   font: FontSize;
   density: Density;
   radius: Radius;
+  /** Mở phần mềm (đường dẫn gốc) vào thẳng cửa sổ quầy /pos thay vì Bán hàng có menu. */
+  startPos: boolean;
 }
 
-export const DEFAULT_UI_PREFS: UiPrefs = { accent: 'blue', font: 'md', density: 'compact', radius: 'md' };
+export const DEFAULT_UI_PREFS: UiPrefs = { accent: 'blue', font: 'md', density: 'compact', radius: 'md', startPos: false };
 const KEY = 'tiny-pos:ui';
 
 /** Giá trị lạ (bản cũ, sửa tay) thì dùng mặc định của khóa đó. */
@@ -58,6 +60,7 @@ export function readUiPrefs(): UiPrefs {
     font: pick(FONT_SIZES, o.font, DEFAULT_UI_PREFS.font),
     density: pick(DENSITIES, o.density, DEFAULT_UI_PREFS.density),
     radius: pick(RADII, o.radius, DEFAULT_UI_PREFS.radius),
+    startPos: o.startPos === true,
   };
 }
 

@@ -8,7 +8,7 @@ import { activeNav, NAV } from '@/router';
 import { AppSidebar } from './AppSidebar';
 import { TitleSlotContext } from './PageTitle';
 
-function todayLabel(): string {
+export function todayLabel(): string {
   const s = new Intl.DateTimeFormat('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date());
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
@@ -21,7 +21,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const fullBleed = pathname === '/sell';
 
   return (
-    <SidebarProvider style={{ '--sidebar-width': '14rem' } as CSSProperties}>
+    <SidebarProvider style={{ '--sidebar-width': '14rem', '--bottom-nav': '68px' } as CSSProperties}>
       <AppSidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur md:h-12 md:px-(--page-p)">
