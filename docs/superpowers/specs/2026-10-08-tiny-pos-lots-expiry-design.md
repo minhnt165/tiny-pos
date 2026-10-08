@@ -57,7 +57,7 @@ tem, hạn dùng trong file nhập sản phẩm Excel/CSV, xuất Excel danh sá
 | Giá vốn dòng hóa đơn | `round(Σ qty_lô × cost_lô / qty_bán)` theo đơn vị bán, giữ cột `order_items.cost_price` | Báo cáo và trả hàng không đổi cách tính; sai số làm tròn ≤ 0,5 đồng/dòng |
 | `products.cost_price` | Vẫn = giá nhập gần nhất (quy về đơn vị gốc) | Dùng hiện lãi % khi nhập, giá vốn lô tồn đầu; không còn dùng khi bán |
 | Kiểm kê | Đếm tổng theo sản phẩm; thiếu trừ FEFO, thừa bù âm rồi cộng lô mới nhất | Không bắt chủ tiệm đếm từng lô |
-| Trả NCC | Chọn lô tùy chọn, mặc định lô FEFO đầu tiên; trả quá số còn thì lô âm, giao diện cảnh báo | Trả đúng lô cận date; vẫn không chặn |
+| Trả NCC | Chọn lô tùy chọn, mặc định *Tự động* (server trừ FEFO như bán hàng); trả quá số còn thì lô âm, giao diện cảnh báo | Trả đúng lô cận date; vẫn không chặn |
 | Trả hàng khách nhập lại kho | Cộng ngược đúng tỷ lệ vào các lô dòng hóa đơn đã trừ | Hàng về đúng lô, giá vốn báo cáo khớp |
 | Hủy phiếu nhập | Trừ đúng lô của phiếu; đã bán bớt thì lô âm | Không chặn hủy; lô âm tự bù khi nhập tiếp |
 | Bỏ hàng | `POST /api/lots/:id/dispose`, movement `adjust` trừ hết số còn của lô, ghi chú "Bỏ hàng …" | Không phải mở kiểm kê để bỏ vài món hết hạn |
@@ -286,7 +286,8 @@ Route chịu `deviceGate` như mọi `/api`.
   `useConfirm` sẵn có, không có ô ghi chú; API vẫn nhận `note`). Điện thoại: cùng bảng, ẩn cột phiếu và giá vốn.
 - **Sản phẩm**: không có trang chi tiết sản phẩm, nên menu ⋯ của dòng sản phẩm thêm mục *Lô hàng* mở
   `/lots?productId=…` (chip lọc hiện tên sản phẩm). `ProductLot[]` chỉ dùng cho ô chọn lô khi trả NCC.
-- **Trả NCC** (`pages/supplier-returns`): dòng có `Select` lô, mặc định lô FEFO đầu; mỗi option
+- **Trả NCC** (`pages/supplier-returns`): dòng có `Select` lô, mặc định *Tự động (hết hạn sớm trước)*, server trừ FEFO
+  như bán hàng; chọn lô khi cần trả đúng lô; mỗi option
   "PN-… · HSD dd/mm/yyyy · còn n"; `qty > remaining` hiện chữ nhỏ `warning` "vượt số còn của lô".
 - **Tổng quan**: thẻ *Sắp hết hạn* kiểu như *Tồn thấp*: số lô quá hạn (đỏ) và sắp hết hạn, vài dòng đầu,
   bấm sang `/lots?state=expired,expiring`.

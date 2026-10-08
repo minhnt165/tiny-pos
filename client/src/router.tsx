@@ -1,4 +1,4 @@
-import { BarChart3, ClipboardList, FolderOpen, LayoutDashboard, Package, PackageMinus, PackageOpen, ReceiptText, Settings, ShoppingCart, Tag, Truck, Undo2, Users, type LucideIcon } from 'lucide-react';
+import { BarChart3, ClipboardList, FolderOpen, LayoutDashboard, Layers, Package, PackageMinus, PackageOpen, ReceiptText, Settings, ShoppingCart, Tag, Truck, Undo2, Users, type LucideIcon } from 'lucide-react';
 import { Navigate, Route, Routes } from 'react-router';
 import { readUiPrefs } from './lib/ui-prefs';
 import { PlaceholderPage } from './pages/PlaceholderPage';
@@ -6,6 +6,7 @@ import { CategoriesPage } from './pages/categories/CategoriesPage';
 import { CustomersPage } from './pages/customers/CustomersPage';
 import { ImportFormPage } from './pages/imports/ImportFormPage';
 import { ImportsPage } from './pages/imports/ImportsPage';
+import { LotsPage } from './pages/lots/LotsPage';
 import { LabelsPage } from './pages/labels/LabelsPage';
 import { OrdersPage } from './pages/orders/OrdersPage';
 import { OverviewPage } from './pages/overview/OverviewPage';
@@ -47,6 +48,7 @@ export const NAV: NavItem[] = [
   { to: '/customers', label: 'Khách hàng', icon: Users, group: 'sell' },
   { to: '/products', label: 'Sản phẩm', icon: Package, group: 'stock', mobile: 4 },
   { to: '/imports', label: 'Nhập hàng', icon: PackageOpen, group: 'stock' },
+  { to: '/lots', label: 'Lô hàng', icon: Layers, group: 'stock' },
   { to: '/supplier-returns', label: 'Trả NCC', icon: PackageMinus, group: 'stock' },
   { to: '/labels', label: 'In tem', icon: Tag, group: 'stock' },
   { to: '/stocktake', label: 'Kiểm kê', icon: ClipboardList, group: 'stock' },
@@ -72,6 +74,7 @@ export function AppRoutes() {
       <Route path="/reports" element={<ReportsPage />} />
       <Route path="/imports" element={<ImportsPage />} />
       <Route path="/imports/new" element={<ImportFormPage />} />
+      <Route path="/lots" element={<LotsPage />} />
       <Route path="/supplier-returns" element={<SupplierReturnsPage />} />
       <Route path="/supplier-returns/new" element={<SupplierReturnFormPage />} />
       <Route path="/labels" element={<LabelsPage />} />

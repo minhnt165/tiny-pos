@@ -18,11 +18,11 @@ interface Props {
   'aria-label'?: string;
 }
 
-const toDate = (s: string) => {
+export const toDate = (s: string) => {
   const [y, m, d] = s.split('-').map(Number);
   return new Date(y!, m! - 1, d!);
 };
-const toYmd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+export const toYmd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 /** Ô ngày kiểu Việt Nam (dd/mm/yyyy, tuần bắt đầu Thứ Hai) thay cho <input type="date"> hiện theo locale máy. */
 export function DateField({ value, onChange, max, id, className, 'aria-label': ariaLabel }: Props) {

@@ -2,6 +2,7 @@ import type { Dispatch } from 'react';
 import { Trash2 } from 'lucide-react';
 import { currentOption, formatMoney, importLineAmount, marginPercent, type DraftAction, type DraftLine } from '@tiny-pos/shared';
 import { CommitInput } from '@/components/CommitInput';
+import { OptionalDateField } from '@/components/OptionalDateField';
 import { UnitSelect } from '@/components/UnitSelect';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,7 @@ interface Props {
 export function ImportLineRow({ line, dispatch, onDone }: Props) {
   const opt = currentOption(line);
   const margin = marginPercent(line.sellPrice, line.unitCost);
-  const update = (patch: Partial<Pick<DraftLine, 'qty' | 'unitCost' | 'sellPrice'>>) => dispatch({ type: 'update', key: line.key, patch });
+  const update = (patch: Partial<Pick<DraftLine, 'qty' | 'unitCost' | 'sellPrice' | 'expiresOn'>>) => dispatch({ type: 'update', key: line.key, patch });
 
   return (
     <TableRow>
@@ -41,6 +42,9 @@ export function ImportLineRow({ line, dispatch, onDone }: Props) {
           {margin === null ? 'chưa có giá nhập' : `lãi ${String(margin).replace('.', ',')}%`}
           {line.sellPrice !== opt.sellPrice && ' · giá mới'}
         </div>
+      </TableCell>
+      <TableCell className="px-2 py-2">
+        <OptionalDateField aria-label="Hạn dùng" value={line.expiresOn} onChange={(expiresOn) => update({ expiresOn })} className="w-44" />
       </TableCell>
       <TableCell className="py-2 pr-2">
         <Button variant="ghost" size="icon-lg" className="size-11" aria-label="Xóa dòng" onClick={() => dispatch({ type: 'remove', key: line.key })}>

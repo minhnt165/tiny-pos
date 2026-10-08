@@ -103,6 +103,14 @@ Dev trang xem tại máy mình: chép `remote/.env.example` thành `remote/.env.
 - `client/` – React 19 + Vite + Tailwind v4 + TanStack Query, PWA. (Đề bài ghi React 18, nhưng shadcn/ui v4 viết cho React 19: component không dùng `forwardRef` nên với React 18 mọi chỗ `asChild` bị mất `ref`, ví dụ menu thao tác của bảng sản phẩm không định vị được.) Giao diện dùng [shadcn/ui](https://ui.shadcn.com) (thư mục `src/components/ui`, alias `@/`) và icon `lucide-react`; thêm component mới bằng `npx shadcn@latest add <tên>` trong thư mục `client/`. Font Geist tự host (gói `@fontsource-variable/geist`) nên chạy được offline.
 - `docs/superpowers/` – spec và kế hoạch từng giai đoạn.
 
+## Lô hàng và hạn sử dụng (0.17.0)
+
+- Mỗi dòng trên phiếu nhập là một **lô**: ghi hạn dùng ở cột *Hạn dùng* (để trống nếu hàng không có hạn).
+- Khi bán, phần mềm tự trừ lô **hết hạn sớm nhất trước**; lãi lỗ tính theo giá nhập thật của lô đã bán.
+- Trang **Kho hàng → Lô hàng** liệt kê lô còn hàng, lọc *Sắp hết hạn* / *Đã hết hạn*; nút thùng rác để **bỏ hàng** hết hạn.
+- Tổng quan có thẻ *Sắp hết hạn*; đổi ngưỡng ngày ở *Cài đặt → Cửa hàng → Báo hết hạn trước*.
+- Trả hàng cho nhà cung cấp có thể chọn đúng lô cần trả.
+
 ## Kiểm thử thủ công Giai đoạn 1
 
 1. **Danh mục**: vào *Danh mục*, thêm "Đồ uống" và "Bánh kẹo"; bấm vào tên để đổi tên; dùng ↑↓ đổi thứ tự; F5 vẫn đúng thứ tự; xóa một danh mục có sản phẩm → sản phẩm về "Không danh mục".
@@ -244,3 +252,12 @@ In không hỏi: tạo shortcut `chrome.exe --app=http://localhost:7869 --kiosk-
 6. Máy quầy *Gỡ* → điện thoại bấm bất kỳ đâu → về màn ghép.
 7. Sao lưu ngay → ghép thêm một máy → khôi phục bản vừa sao → danh sách thiết bị vẫn có máy vừa ghép.
 8. Máy tính khác trong Wi‑Fi (chưa ghép) mở `http://<IP máy>:7869/api/products` → `{"error":"Thiết bị chưa được ghép",…}`.
+
+## Kiểm thử thủ công – Lô hàng & hạn sử dụng 0.17.0
+
+1. Nhập 2 dòng cùng sản phẩm, một dòng có hạn gần, một không hạn → `/lots` hiện 2 lô (+ lô Tồn đầu nếu sản phẩm đã có tồn).
+2. Bán quá số lô hạn gần → lô đó về 0 trước, lô không hạn bị trừ tiếp; chi tiết hóa đơn có giá vốn bình quân.
+3. Hủy hóa đơn → các lô cộng lại đúng số đã trừ.
+4. Hủy phiếu nhập đã bán bớt → lô âm; nhập lại → lô âm về 0, lô mới nhận phần dư.
+5. Bỏ hàng lô hết hạn → tồn giảm, lịch sử tồn có dòng "Bỏ hàng PN-…".
+6. Khôi phục bản sao cũ (trước 0.17.0) → mỗi sản phẩm có tồn có một lô Tồn đầu.

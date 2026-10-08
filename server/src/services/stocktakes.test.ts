@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
-import { orderInputSchema, productInputSchema } from '@tiny-pos/shared';
+import { importInputSchema, orderInputSchema, productInputSchema } from '@tiny-pos/shared';
 import type { Db } from '../db/connection.js';
-import { stockMovements } from '../db/schema.js';
+import { lots, stockMovements } from '../db/schema.js';
 import { createTestDb } from '../db/test-db.js';
+import { createImport } from './imports.js';
 import { createOrder } from './orders.js';
 import { createProduct, getProduct } from './products.js';
+import { assertLotInvariant } from './stock.js';
 import {
   cancelStocktake,
   countItem,
@@ -112,5 +114,36 @@ describe('stocktakes', () => {
       [s2.id, 'cancelled', 0, 0],
       [s1.id, 'done', 1, 2000],
     ]);
+  });
+
+  it('chốt kiểm kê theo lô: thiếu trừ lô hết hạn gần trước (FEFO), thừa bù lô âm rồi vào lô mới nhất; Σ lô = tồn', () => {
+    const p = product({ name: 'Sữa', stock: 5, costPrice: 8000 });
+    // Phiếu nhập không NCC phải trả đủ: 10 × 8000
+    const items = [{ productId: p.id, qty: 10, unitCost: 8000, expiresOn: '2026-12-31' }];
+    createImport(db, importInputSchema.parse({ paid: 80000, items }), MORNING);
+    const remaining = () => db.select().from(lots).where(eq(lots.productId, p.id)).orderBy(lots.id).all().map((l) => l.remaining);
+    expect(remaining()).toEqual([5, 10]);
+
+    const s1 = openStocktake(db, { note: null }, MORNING);
+    countItem(db, s1.id, p.id, { counted: 12 }, MORNING);
+    finishStocktake(db, s1.id, MORNING);
+    // thiếu 3: lô có hạn 31/12 trừ trước, lô Tồn đầu (không hạn) giữ nguyên
+    expect(remaining()).toEqual([5, 7]);
+    expect(getProduct(db, p.id).stock).toBe(12);
+    assertLotInvariant(db, p.id);
+
+    // bán quá tồn 2 → một lô âm 2
+    sell(p.id, 14);
+    expect(getProduct(db, p.id).stock).toBe(-2);
+    expect(Math.min(...remaining())).toBe(-2);
+    assertLotInvariant(db, p.id);
+
+    const s2 = openStocktake(db, { note: null }, MORNING);
+    countItem(db, s2.id, p.id, { counted: 2 }, MORNING);
+    finishStocktake(db, s2.id, MORNING);
+    // thừa 4: bù 2 cho lô âm, 2 còn lại vào lô mới nhất (lô của phiếu nhập)
+    expect(remaining()).toEqual([0, 2]);
+    expect(getProduct(db, p.id).stock).toBe(2);
+    assertLotInvariant(db, p.id);
   });
 });

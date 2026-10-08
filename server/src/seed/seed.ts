@@ -158,7 +158,7 @@ function seedInventory(db: Db, now: Date, result: SeedResult): void {
         if (!u) throw new Error(`Seed: "${it.product}" không có đơn vị "${it.unit}"`);
         unitId = u.id;
       }
-      return { productId: p.id, unitId, qty: it.qty, unitCost: it.unitCost, sellPrice: null };
+      return { productId: p.id, unitId, qty: it.qty, unitCost: it.unitCost, sellPrice: null, expiresOn: null };
     });
     const total = items.reduce((s, it) => s + importLineAmount(it.qty, it.unitCost), 0);
     const createdAt = at(now, im.daysAgo, im.hour);

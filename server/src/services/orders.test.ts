@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { eq, sql } from 'drizzle-orm';
-import { customerCreateSchema, orderInputSchema, orderListQuerySchema, productInputSchema, productUnitInputSchema } from '@tiny-pos/shared';
+import { customerCreateSchema, importInputSchema, orderInputSchema, orderListQuerySchema, productInputSchema, productUnitInputSchema } from '@tiny-pos/shared';
 import type { Db } from '../db/connection.js';
-import { stockMovements } from '../db/schema.js';
+import { lots, stockMovements } from '../db/schema.js';
 import { createTestDb } from '../db/test-db.js';
+import { createImport } from './imports.js';
 import { cancelOrder, createOrder, getOrder, listOrders, listOrdersForExport } from './orders.js';
 import { createUnit, deleteUnit } from './product-units.js';
 import { createProduct, getProduct, setProductActive, updateProduct } from './products.js';
 import { collectDebt, createCustomer, deleteCustomer, getCustomer, listCustomerTransactions } from './customers.js';
+import { assertLotInvariant, recordMovement } from './stock.js';
 
 const VN = 420;
 const at = (iso: string) => ({ now: new Date(iso), tzOffsetMin: VN });
@@ -144,6 +146,29 @@ describe('cancelOrder', () => {
 
   it('không có hóa đơn → 404', () => {
     expect(() => cancelOrder(db, 42)).toThrow('Không tìm thấy hóa đơn');
+  });
+
+  it('giá vốn dòng theo lô đã trừ (gối hai lô); hủy đơn cộng lại đúng lô kể cả lô đã bị bỏ hàng', () => {
+    const p = product({ name: 'Sữa', costPrice: 8000, sellPrice: 10000, stock: 3 }); // Tồn đầu 3 @8000
+    createImport(db, importInputSchema.parse({ paid: 18000, items: [{ productId: p.id, qty: 2, unitCost: 9000, expiresOn: '2026-10-20' }] }), MORNING);
+    const o = createOrder(db, order({ items: [{ productId: p.id, qty: 5, price: 10000 }] }), MORNING); // lô hạn 2 @9000 + Tồn đầu 3 @8000
+    expect(o.items[0]).toMatchObject({ costPrice: 8400, amount: 50000 });
+    const lotRows = () => db.select({ remaining: lots.remaining }).from(lots).where(eq(lots.productId, p.id)).orderBy(lots.id).all().map((l) => l.remaining);
+    expect(lotRows()).toEqual([0, 0]);
+    // bỏ hàng lô hạn (giả lập): trừ thêm 1 → -1 ; hủy đơn vẫn cộng lại đúng 2 vào lô đó
+    recordMovement(db, { productId: p.id, qty: -1, type: 'adjust', lotId: 2 });
+    cancelOrder(db, o.id);
+    expect(lotRows()).toEqual([3, 1]);
+    expect(getProduct(db, p.id).stock).toBe(4);
+    assertLotInvariant(db, p.id);
+  });
+
+  it('bán khi chưa có lô: vẫn bán, giá vốn = giá nhập gần nhất, lô Tồn đầu âm', () => {
+    const p = product({ name: 'Đường', costPrice: 20000, sellPrice: 25000 });
+    const o = createOrder(db, order({ items: [{ productId: p.id, qty: 2, price: 25000 }] }), MORNING);
+    expect(o.items[0]!.costPrice).toBe(20000);
+    expect(getProduct(db, p.id).stock).toBe(-2);
+    assertLotInvariant(db, p.id);
   });
 });
 

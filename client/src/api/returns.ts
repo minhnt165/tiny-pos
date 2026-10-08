@@ -20,7 +20,7 @@ export const useReturn = (id: number | null) =>
 function useInvalidateReturns() {
   const qc = useQueryClient();
   return () => {
-    for (const key of ['returns', 'orders', 'products', 'customers', 'reports']) void qc.invalidateQueries({ queryKey: [key] });
+    for (const key of ['returns', 'orders', 'products', 'customers', 'reports', 'lots']) void qc.invalidateQueries({ queryKey: [key] });
   };
 }
 

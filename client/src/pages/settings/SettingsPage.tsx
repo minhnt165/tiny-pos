@@ -21,6 +21,12 @@ import { RemoteCard } from './RemoteCard';
 type TextKey = 'storeName' | 'storeAddress' | 'storePhone' | 'receiptFooter';
 const bankOptions = BANKS.map((b) => ({ value: b.bin, label: `${b.shortName} – ${b.name}` }));
 const labelSizeOptions = LABEL_SIZES.map((s) => ({ value: s, label: LABEL_LAYOUT[s].label }));
+const WARN_DAYS_ERROR = 'Nhập số từ 1 đến 365';
+/** Số ngày báo hết hạn hợp lệ (số nguyên 1–365) hoặc null. */
+const parseWarnDays = (t: string) => {
+  const n = Number(t);
+  return t !== '' && Number.isInteger(n) && n >= 1 && n <= 365 ? n : null;
+};
 
 export function SettingsPage() {
   const { data } = useSettings();
@@ -28,8 +34,14 @@ export function SettingsPage() {
   const print = usePrint();
   const sample = useSampleLabel();
   const [form, setForm] = useState<Settings>(SETTINGS_DEFAULTS);
+  // Chuỗi đang gõ dở của ô ngưỡng ngày: để xóa hết rồi gõ lại không bị nhảy về giá trị mặc định
+  const [warnText, setWarnText] = useState(String(SETTINGS_DEFAULTS.expiryWarnDays));
+  const [warnError, setWarnError] = useState<string>();
   useEffect(() => {
-    if (data) setForm(data);
+    if (!data) return;
+    setForm(data);
+    setWarnText(String(data.expiryWarnDays));
+    setWarnError(undefined);
   }, [data]);
 
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setForm((f) => ({ ...f, [k]: v }));
@@ -37,9 +49,29 @@ export function SettingsPage() {
     <TextField id={`st-${k}`} label={label} hint={hint} value={form[k]} onChange={(e) => set(k, e.target.value)} />
   );
 
+  const commitWarn = () => {
+    const n = parseWarnDays(warnText);
+    if (n === null) {
+      set('expiryWarnDays', data?.expiryWarnDays ?? SETTINGS_DEFAULTS.expiryWarnDays);
+      setWarnError(WARN_DAYS_ERROR);
+    } else {
+      set('expiryWarnDays', n);
+      setWarnError(undefined);
+    }
+    return n;
+  };
+
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    save.mutate(form, { onSuccess: () => toast.success('Đã lưu cài đặt'), onError: (err) => toast.error(err.message) });
+    const warnDays = commitWarn();
+    if (warnDays === null) {
+      toast.error(`Báo hết hạn trước: ${WARN_DAYS_ERROR.toLowerCase()}`);
+      return;
+    }
+    save.mutate(
+      { ...form, expiryWarnDays: warnDays },
+      { onSuccess: () => toast.success('Đã lưu cài đặt'), onError: (err) => toast.error(err.message) },
+    );
   };
 
   return (
@@ -53,6 +85,22 @@ export function SettingsPage() {
           {text('storeAddress', 'Địa chỉ')}
           {text('storePhone', 'Số điện thoại')}
           {text('receiptFooter', 'Lời chào cuối hóa đơn')}
+          <TextField
+            id="st-expiry-warn"
+            label="Báo hết hạn trước"
+            inputMode="numeric"
+            suffix="ngày"
+            hint="Lô có hạn dùng trong khoảng này hiện ở thẻ Sắp hết hạn trên Tổng quan"
+            error={warnError}
+            value={warnText}
+            onChange={(e) => {
+              const t = e.target.value.replace(/\D/g, '');
+              setWarnText(t);
+              // Đang báo lỗi thì gỡ ngay khi gõ lại hợp lệ
+              if (warnError && parseWarnDays(t) !== null) setWarnError(undefined);
+            }}
+            onBlur={commitWarn}
+          />
         </CardContent>
       </Card>
       <Card>

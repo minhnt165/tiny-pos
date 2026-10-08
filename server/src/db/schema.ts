@@ -193,6 +193,7 @@ export const importItems = sqliteTable('import_items', {
   unitCost: integer('unit_cost').notNull().default(0), // giá nhập 1 đơn vị đã chọn
   costPrice: integer('cost_price').notNull(), // giá vốn 1 đơn vị gốc
   amount: integer('amount').notNull().default(0),
+  expiresOn: text('expires_on'), // hạn dùng của lô tạo từ dòng này, 'YYYY-MM-DD'; null = không hạn
 });
 
 export const supplierReturns = sqliteTable(
@@ -231,6 +232,7 @@ export const supplierReturnItems = sqliteTable(
     qty: real('qty').notNull(), // theo đơn vị đã chọn
     unitPrice: integer('unit_price').notNull(), // giá trả 1 đơn vị đã chọn
     amount: integer('amount').notNull(),
+    lotId: integer('lot_id').references(() => lots.id), // lô người dùng chọn; null = trừ tự động
   },
   (t) => [index('supplier_return_items_return_idx').on(t.returnId)],
 );
@@ -264,6 +266,44 @@ export const stockMovements = sqliteTable(
     createdAt: createdAt(),
   },
   (t) => [index('stock_movements_product_idx').on(t.productId, t.createdAt)],
+);
+
+/**
+ * Lô hàng: mỗi dòng phiếu nhập một lô; lô "Tồn đầu" (import_item_id null) cho tồn có trước 0.17.0 hoặc sản phẩm chưa nhập qua phiếu.
+ * Chỉ đổi qua recordMovement (services/stock.ts); Σ remaining của một sản phẩm luôn = products.stock.
+ */
+export const lots = sqliteTable(
+  'lots',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    productId: integer('product_id')
+      .notNull()
+      .references(() => products.id),
+    importItemId: integer('import_item_id').references(() => importItems.id),
+    qtyIn: real('qty_in').notNull(), // số nhập, đơn vị gốc
+    remaining: real('remaining').notNull(), // số còn, đơn vị gốc, có thể âm
+    costPrice: integer('cost_price').notNull(), // giá vốn 1 đơn vị gốc
+    expiresOn: text('expires_on'), // 'YYYY-MM-DD'; null = không hạn
+    note: text('note'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('lots_product_idx').on(t.productId, t.expiresOn, t.id), index('lots_expires_idx').on(t.expiresOn)],
+);
+
+/** Một movement tách theo lô; qty cùng dấu với movement. */
+export const lotMovements = sqliteTable(
+  'lot_movements',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    movementId: integer('movement_id')
+      .notNull()
+      .references(() => stockMovements.id, { onDelete: 'cascade' }),
+    lotId: integer('lot_id')
+      .notNull()
+      .references(() => lots.id),
+    qty: real('qty').notNull(),
+  },
+  (t) => [index('lot_movements_movement_idx').on(t.movementId), index('lot_movements_lot_idx').on(t.lotId)],
 );
 
 export const settings = sqliteTable('settings', {

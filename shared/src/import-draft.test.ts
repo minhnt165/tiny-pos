@@ -86,10 +86,19 @@ describe('draftTotals / toImportInput', () => {
       note: null,
       paid: 250000,
       items: [
-        { productId: 1, unitId: 7, qty: 1, unitCost: 240000, sellPrice: 290000 },
-        { productId: 1, unitId: null, qty: 1, unitCost: 10000, sellPrice: null },
+        { productId: 1, unitId: 7, qty: 1, unitCost: 240000, sellPrice: 290000, expiresOn: null },
+        { productId: 1, unitId: null, qty: 1, unitCost: 10000, sellPrice: null, expiresOn: null },
       ],
     });
+  });
+  it('update expiresOn: lưu trên dòng và gửi theo body; null = không hạn', () => {
+    let d = importDraftReducer(EMPTY_IMPORT_DRAFT, { type: 'add', product: beer, unitId: null });
+    const key = d.lines[0]!.key;
+    d = importDraftReducer(d, { type: 'update', key, patch: { expiresOn: '2026-12-31' } });
+    expect(d.lines[0]!.expiresOn).toBe('2026-12-31');
+    expect(toImportInput(d).items[0]!.expiresOn).toBe('2026-12-31');
+    d = importDraftReducer(d, { type: 'update', key, patch: { expiresOn: null } });
+    expect(toImportInput(d).items[0]!.expiresOn).toBeNull();
   });
 });
 
@@ -100,5 +109,12 @@ describe('parseImportDraft', () => {
     expect(parseImportDraft('{"lines":[{"name":"x"}]}')).toEqual(EMPTY_IMPORT_DRAFT);
     const d = add(EMPTY_IMPORT_DRAFT, 7);
     expect(parseImportDraft(JSON.stringify(d))).toEqual(d);
+  });
+  it('nháp cũ chưa có expiresOn vẫn đọc được, nhận null', () => {
+    const d = add(EMPTY_IMPORT_DRAFT, 7);
+    const old = { ...d, lines: d.lines.map(({ expiresOn: _omit, ...rest }) => rest) };
+    const r = parseImportDraft(JSON.stringify(old));
+    expect(r.lines).toHaveLength(1);
+    expect(r.lines[0]!.expiresOn).toBeNull();
   });
 });

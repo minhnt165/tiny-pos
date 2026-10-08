@@ -24,6 +24,7 @@ describe('API tổng quan', () => {
     expect(o).toMatchObject({
       recentOrders: [],
       lowStock: { count: 0, outCount: 0, items: [] },
+      expiring: { count: 0, expiredCount: 0, items: [] },
       customers: { total: 0, count: 0, overdueCount: 0, overdueTotal: 0, top: [] },
       suppliers: { total: 0, count: 0, top: [] },
       stocktake: null,

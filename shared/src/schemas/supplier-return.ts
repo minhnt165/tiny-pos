@@ -8,6 +8,8 @@ export const supplierReturnItemInputSchema = z.object({
   unitId: optionalId,
   qty: z.number().positive().max(100_000),
   unitPrice: z.number().int().min(0).max(MAX_MONEY),
+  /** Lô muốn trừ; null = tự động (hết hạn sớm trước). */
+  lotId: optionalId,
 });
 
 export const supplierReturnInputSchema = z.object({

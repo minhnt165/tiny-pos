@@ -1,6 +1,6 @@
 import { Ban, Printer } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatMoney, formatQty } from '@tiny-pos/shared';
+import { formatDateVn, formatMoney, formatQty } from '@tiny-pos/shared';
 import { useCancelSupplierReturn, useSupplierReturn } from '@/api/supplier-returns';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { MoneyLine } from '@/components/MoneyLine';
@@ -51,6 +51,7 @@ export function SupplierReturnDetailDialog({ id, onClose }: { id: number | null;
                     <div className="font-medium">{it.productName}</div>
                     <div className="text-sm text-muted-foreground tabular-nums">
                       {formatQty(it.qty)} {it.unitName} × {formatMoney(it.unitPrice)}
+                      {it.lotExpiresOn && ` · lô HSD ${formatDateVn(it.lotExpiresOn)}`}
                     </div>
                   </div>
                   <div className="font-semibold tabular-nums">{formatMoney(it.amount)}</div>

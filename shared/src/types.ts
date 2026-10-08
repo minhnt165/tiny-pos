@@ -162,6 +162,8 @@ export interface ImportItem {
   /** Giá vốn 1 đơn vị gốc. */
   costPrice: number;
   amount: number;
+  /** Hạn dùng của lô tạo từ dòng này, "YYYY-MM-DD" hoặc null. */
+  expiresOn: string | null;
 }
 
 export interface ImportSummary {
@@ -232,6 +234,47 @@ export interface StockMovement {
   createdAt: string;
   /** Mã chứng từ liên quan: HD-…, PN-…, KK-…, TH-…, TN-… hoặc null. */
   refCode: string | null;
+}
+
+export type LotState = 'ok' | 'expiring' | 'expired' | 'empty';
+
+/** Một lô hàng trong danh sách Lô hàng / Tổng quan. */
+export interface LotRow {
+  id: number;
+  productId: number;
+  productName: string;
+  unit: string;
+  image: string | null;
+  /** Phiếu nhập tạo lô; null = lô tồn đầu. */
+  importId: number | null;
+  importCode: string | null;
+  qtyIn: number;
+  remaining: number;
+  costPrice: number;
+  expiresOn: string | null;
+  /** Số ngày tới hạn theo ngày địa phương hôm nay; âm = đã quá hạn; null = không hạn. */
+  daysLeft: number | null;
+  state: LotState;
+  createdAt: string;
+}
+
+export interface LotList {
+  lots: LotRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  /** Đếm trên mọi lô còn hàng khớp q/productId, không theo lọc trạng thái. */
+  summary: { expiringCount: number; expiredCount: number; stockValue: number };
+}
+
+/** Lô còn hàng của một sản phẩm, theo FEFO: ô chọn lô khi trả NCC. */
+export interface ProductLot {
+  id: number;
+  importCode: string | null;
+  remaining: number;
+  costPrice: number;
+  expiresOn: string | null;
+  daysLeft: number | null;
 }
 
 export type DebtTxKind = 'opening' | 'order' | 'order_cancel' | 'payment' | 'manual' | 'return' | 'return_cancel';
@@ -431,6 +474,8 @@ export interface Overview {
   recentOrders: OrderSummary[];
   /** count = số hàng đang bán có stock < minStock; outCount = stock ≤ 0; items cắt theo giới hạn, thiếu nặng nhất trước. */
   lowStock: { count: number; outCount: number; items: LowStockRow[] };
+  /** Lô còn hàng sắp/đã hết hạn theo settings.expiryWarnDays; items quá hạn trước, cắt theo giới hạn. */
+  expiring: { count: number; expiredCount: number; items: LotRow[] };
   customers: { total: number; count: number; overdueCount: number; overdueTotal: number; top: OverdueCustomerRow[] };
   suppliers: { total: number; count: number; top: DebtPartyRow[] };
   /** Phiếu kiểm kê đang mở, không kèm items; null nếu không có. */
@@ -509,6 +554,9 @@ export interface SupplierReturnItem {
   /** Giá trả 1 đơn vị đã chọn. */
   unitPrice: number;
   amount: number;
+  /** Lô người dùng chọn; null = trừ tự động. */
+  lotId: number | null;
+  lotExpiresOn: string | null;
 }
 
 export interface SupplierReturnSummary {

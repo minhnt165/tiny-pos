@@ -1,4 +1,4 @@
-import { CircleCheck, ClipboardList, DatabaseBackup, PackageMinus, PackageX, TriangleAlert, Users, type LucideIcon } from 'lucide-react';
+import { CalendarClock, CircleCheck, ClipboardList, DatabaseBackup, PackageMinus, PackageX, TriangleAlert, Users, type LucideIcon } from 'lucide-react';
 import { Link } from 'react-router';
 import { BACKUP_STALE_DAYS, currentTzOffset, DEBT_OVERDUE_DAYS, formatDateVn, formatMoney, localDate, shiftDate, type Overview } from '@tiny-pos/shared';
 import { TableSkeleton } from '@/components/TableSkeleton';
@@ -30,6 +30,8 @@ export function buildAlerts(o: Overview, today: string): Alert[] {
     list.push({ key: 'stocktake', icon: ClipboardList, text: `Kiểm kê ${o.stocktake.code} đang dở, đã đếm ${o.stocktake.itemCount} món`, tone: 'warning', to: '/stocktake', action: 'Tiếp tục' });
   if (o.lowStock.outCount > 0) list.push({ key: 'out', icon: PackageX, text: `${o.lowStock.outCount} mặt hàng đã hết`, tone: 'destructive', to: '/products?stock=out', action: 'Xem' });
   if (o.lowStock.count > 0) list.push({ key: 'low', icon: PackageMinus, text: `${o.lowStock.count} mặt hàng sắp hết`, tone: 'warning', to: '/products?stock=low', action: 'Xem' });
+  if (o.expiring.expiredCount > 0) list.push({ key: 'expired', icon: CalendarClock, text: `${o.expiring.expiredCount} lô đã hết hạn còn trong kho`, tone: 'destructive', to: '/lots?state=expired', action: 'Xem' });
+  if (o.expiring.count > 0) list.push({ key: 'expiring', icon: CalendarClock, text: `${o.expiring.count} lô sắp hết hạn`, tone: 'warning', to: '/lots?state=expiring', action: 'Xem' });
   if (o.customers.overdueCount > 0)
     list.push({
       key: 'overdue',

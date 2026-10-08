@@ -1,4 +1,4 @@
-import { and, eq, gte, lt, sql } from 'drizzle-orm';
+import { and, eq, gt, gte, lt, sql } from 'drizzle-orm';
 import {
   daysBetween,
   localDate,
@@ -17,7 +17,7 @@ import {
   type SlowProductRow,
 } from '@tiny-pos/shared';
 import type { Db } from '../db/connection.js';
-import { customers, debtTransactions, orderItems, orders, products, returnItems, returns, suppliers } from '../db/schema.js';
+import { customers, debtTransactions, lots, orderItems, orders, products, returnItems, returns, suppliers } from '../db/schema.js';
 import { resolveClock, type Clock } from './daily-code.js';
 import { daySummary } from './orders.js';
 
@@ -180,15 +180,27 @@ export function productReport(db: Db, q: ProductReportQuery, clock?: Clock, limi
     { count: 0, qty: 0, revenue: 0, profit: 0 },
   );
 
+  // Giá trị vốn theo lô (chỉ lô dương): giá vốn thật của từng lần nhập, không phải giá nhập gần nhất × tồn
+  const lotValue = new Map(
+    db
+      .select({ productId: lots.productId, value: sql<number>`sum(${lots.remaining} * ${lots.costPrice})` })
+      .from(lots)
+      .where(gt(lots.remaining, 0))
+      .groupBy(lots.productId)
+      .all()
+      .map((r) => [r.productId, Math.round(Number(r.value))] as const),
+  );
+  const costOf = (p: { id: number }) => lotValue.get(p.id) ?? 0;
+
   const soldIds = new Set(sold.map((s) => s.productId));
   const slowAll: SlowProductRow[] = active
     .filter((p) => p.stock > 0 && !soldIds.has(p.id))
-    .map((p) => ({ productId: p.id, name: p.name, unit: p.unit, stock: p.stock, value: Math.round(p.stock * p.costPrice) }))
+    .map((p) => ({ productId: p.id, name: p.name, unit: p.unit, stock: p.stock, value: costOf(p) }))
     .sort((a, b) => b.value - a.value || byName(a, b));
 
   const inStock = active.filter((p) => p.stock > 0);
   const stock = {
-    costValue: inStock.reduce((s, p) => s + Math.round(p.stock * p.costPrice), 0),
+    costValue: inStock.reduce((s, p) => s + costOf(p), 0),
     sellValue: inStock.reduce((s, p) => s + Math.round(p.stock * p.sellPrice), 0),
     // Cùng định nghĩa với filterProducts (stock=low / stock=out) để bấm sang trang Sản phẩm thấy đúng số dòng
     lowCount: active.filter((p) => p.stock < p.minStock).length,

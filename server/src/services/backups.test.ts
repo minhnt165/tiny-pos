@@ -5,14 +5,18 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { categoryInputSchema, productInputSchema } from '@tiny-pos/shared';
 import { eq } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { createTestDb } from '../db/test-db.js';
+import { partialMigrations } from '../db/test-migrations.js';
 import type { Db } from '../db/connection.js';
 import { BadRequestError, NotFoundError } from '../errors.js';
-import { categories, productUnits, settings } from '../db/schema.js';
+import { categories, lots, productUnits, settings } from '../db/schema.js';
 import { createCategory } from './categories.js';
 import { createProduct, listProducts } from './products.js';
 import { createBackupService, type BackupService } from './backups.js';
 import { createDevicesService } from './devices.js';
+import { assertLotInvariant } from './stock.js';
 
 const CLOCK = { now: new Date('2026-10-01T02:31:05.000Z'), tzOffsetMin: 420 }; // 09:31:05 giờ VN
 let db: Db;
@@ -264,6 +268,22 @@ describe('backups: khôi phục', () => {
     expect(listProducts(db, { includeInactive: true }).map((p) => p.name)).toEqual(['Coca']);
     // sqlite_sequence của devices giữ nguyên → thiết bị mới không nhận lại id của máy đã gỡ
     expect(pairOne('Windows Edg/129.0').id).toBeGreaterThan(b.id);
+  });
+
+  it('bản sao trước 0.17.0 (chưa có bảng lots) → sau khôi phục mỗi sản phẩm có tồn nhận một lô Tồn đầu', async () => {
+    const snap = await svc.create('manual'); // chỉ để có tên file hợp lệ trong thư mục sao lưu
+    const file = path.join(dir(), snap.name);
+    fs.rmSync(file);
+    const old = new Database(file);
+    old.pragma('foreign_keys = ON');
+    migrate(drizzle(old), { migrationsFolder: partialMigrations(8) });
+    old.exec(`INSERT INTO products (id, name, stock, cost_price) VALUES (1, 'Bia cũ', 4, 9000), (2, 'Mì cũ', 0, 3000);`);
+    old.close();
+    await svc.restore(snap.name);
+    expect(db.select({ productId: lots.productId, remaining: lots.remaining, costPrice: lots.costPrice, note: lots.note }).from(lots).all()).toEqual([
+      { productId: 1, remaining: 4, costPrice: 9000, note: 'Tồn đầu' },
+    ]);
+    assertLotInvariant(db, 1);
   });
 });
 

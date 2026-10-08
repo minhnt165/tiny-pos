@@ -22,7 +22,7 @@ export const useImport = (id: number | null) =>
 function useInvalidateImports() {
   const qc = useQueryClient();
   return () => {
-    for (const key of ['imports', 'products', 'suppliers']) void qc.invalidateQueries({ queryKey: [key] });
+    for (const key of ['imports', 'products', 'suppliers', 'lots']) void qc.invalidateQueries({ queryKey: [key] });
     void qc.invalidateQueries({ queryKey: ['reports'] });
   };
 }

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { eq } from 'drizzle-orm';
 import {
   importInputSchema,
   productInputSchema,
@@ -9,7 +10,7 @@ import {
   supplierReturnListQuerySchema,
 } from '@tiny-pos/shared';
 import type { Db } from '../db/connection.js';
-import { stockMovements } from '../db/schema.js';
+import { lots, stockMovements } from '../db/schema.js';
 import { createTestDb } from '../db/test-db.js';
 import { readWorkbook } from '../xlsx/workbook.js';
 import { exportSupplierReturnsXlsx } from './exports.js';
@@ -18,6 +19,7 @@ import { listMovements } from './movements.js';
 import { createUnit } from './product-units.js';
 import { createProduct, getProduct, setProductActive } from './products.js';
 import { getSettings, saveSettings } from './settings.js';
+import { assertLotInvariant } from './stock.js';
 import { cancelSupplierReturn, createSupplierReturn, getSupplierReturn, listSupplierReturns } from './supplier-returns.js';
 import { createSupplier, deleteSupplier, getSupplier, listSupplierTransactions } from './suppliers.js';
 
@@ -138,6 +140,25 @@ describe('cancelSupplierReturn', () => {
     expect(() => cancelSupplierReturn(db, debtReturn.id)).toThrow('Nhà cung cấp đã xóa, không hủy được phiếu đã trừ nợ');
     expect(cancelSupplierReturn(db, cashReturn.id).status).toBe('cancelled');
     expect(getSupplier(db, s.id).debt).toBe(0);
+  });
+
+  it('chọn lô: trừ thẳng lô đó (được âm), lưu lotId và hạn; không chọn thì FEFO; hủy cộng lại đúng lô', () => {
+    const p = product({ name: 'Sữa', costPrice: 8000, sellPrice: 10000, stock: 5 });
+    const s = supplier();
+    createImport(db, importInputSchema.parse({ supplierId: s.id, paid: 0, items: [{ productId: p.id, qty: 3, unitCost: 9000, expiresOn: '2026-10-20' }] }), D29);
+    const [opening, dated] = db.select({ id: lots.id }).from(lots).where(eq(lots.productId, p.id)).orderBy(lots.id).all();
+    const r = ret({ supplierId: s.id, items: [{ productId: p.id, qty: 4, unitPrice: 9000, lotId: dated!.id }] });
+    expect(r.items[0]).toMatchObject({ lotId: dated!.id, lotExpiresOn: '2026-10-20' });
+    const rem = () => db.select({ remaining: lots.remaining }).from(lots).where(eq(lots.productId, p.id)).orderBy(lots.id).all().map((l) => l.remaining);
+    expect(rem()).toEqual([5, -1]);
+    expect(() => ret({ supplierId: s.id, items: [{ productId: p.id, qty: 1, unitPrice: 9000, lotId: 9999 }] })).toThrow('Lô không thuộc sản phẩm này');
+    cancelSupplierReturn(db, r.id, D30);
+    expect(rem()).toEqual([5, 3]);
+    // không chọn lô: FEFO trừ lô có hạn trước
+    expect(ret({ supplierId: s.id, items: [{ productId: p.id, qty: 1, unitPrice: 9000 }] }).items[0]).toMatchObject({ lotId: null, lotExpiresOn: null });
+    expect(rem()).toEqual([5, 2]);
+    assertLotInvariant(db, p.id);
+    void opening;
   });
 });
 

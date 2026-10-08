@@ -17,6 +17,7 @@ function useInvalidateStocktakes() {
     void qc.invalidateQueries({ queryKey: ['stocktakes'] });
     void qc.invalidateQueries({ queryKey: ['products'] });
     void qc.invalidateQueries({ queryKey: ['reports'] });
+    void qc.invalidateQueries({ queryKey: ['lots'] });
   };
 }
 

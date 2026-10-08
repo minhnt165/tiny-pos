@@ -9,6 +9,7 @@ import { labelsRouter } from './labels.js';
 import { settingsRouter } from './settings.js';
 import { importsRouter } from './imports.js';
 import { stocktakesRouter } from './stocktakes.js';
+import { lotsRouter } from './lots.js';
 import { suppliersRouter } from './suppliers.js';
 import { customersRouter } from './customers.js';
 import { reportsRouter } from './reports.js';
@@ -35,6 +36,7 @@ export function apiRouter(db: Db, deps: { backups?: BackupService; labels?: Labe
   r.use('/supplier-returns', supplierReturnsRouter(db));
   r.use('/labels', labelsRouter(db, deps.labels ?? NO_LABEL_WINDOW));
   r.use('/stocktakes', stocktakesRouter(db));
+  r.use('/lots', lotsRouter(db));
   r.use('/reports', reportsRouter(db));
   r.use('/overview', overviewRouter(db, deps.backups));
   r.use('/remote', remoteRouter(deps.remote));

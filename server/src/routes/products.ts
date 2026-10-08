@@ -16,6 +16,7 @@ import { importProductsFile } from '../services/product-csv.js';
 import { deleteProductImage, saveProductImage, type ImageDeps } from '../services/product-images.js';
 import { createUnit, deleteUnit, updateUnit } from '../services/product-units.js';
 import { listMovements } from '../services/movements.js';
+import { productLots } from '../services/lots.js';
 import {
   createProduct,
   findProductByBarcode,
@@ -47,6 +48,7 @@ export function productsRouter(db: Db, images: ImageDeps): Router {
   r.get('/:id/movements', validateQuery(movementListQuerySchema), (req, res) =>
     res.json(listMovements(db, intParam(req, 'id'), (res.locals['query'] as MovementListQuery).limit)),
   );
+  r.get('/:id/lots', (req, res) => res.json(productLots(db, intParam(req, 'id'))));
   r.post('/', validateBody(productInputSchema), (req, res) => res.status(201).json(createProduct(db, req.body)));
   r.put('/:id', validateBody(productInputSchema), (req, res) =>
     res.json(updateProduct(db, intParam(req, 'id'), req.body)),

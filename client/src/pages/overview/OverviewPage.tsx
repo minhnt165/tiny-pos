@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { today as todayOf } from '@/lib/today';
 import { AlertsCard } from './AlertsCard';
 import { DebtPanel } from './DebtPanel';
+import { ExpiringList } from './ExpiringList';
 import { LowStockList } from './LowStockList';
 import { RecentOrders } from './RecentOrders';
 import { TodayStats } from './TodayStats';
@@ -58,6 +59,7 @@ export function OverviewPage() {
         <WeekTable week={data?.week} today={today} loading={loading} />
         <RecentOrders orders={data?.recentOrders} count={data?.week.rows[0]?.orders} loading={loading} />
         <LowStockList low={data?.lowStock} loading={loading} />
+        <ExpiringList expiring={data?.expiring} loading={loading} />
         <DebtPanel
           title="Khách nợ"
           icon={Users}

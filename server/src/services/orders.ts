@@ -2,6 +2,7 @@ import { and, asc, count, desc, eq, gte, inArray, lt, sql } from 'drizzle-orm';
 import {
   cartTotals,
   lineAmount,
+  lineCostPrice,
   localDate,
   localDayRange,
   MAX_EXPORT_ROWS,
@@ -21,7 +22,7 @@ import {
 import type { Db, DbOrTx } from '../db/connection.js';
 import { customers, debtTransactions, orderItems, orders, productUnits, products, returns } from '../db/schema.js';
 import { BadRequestError, ConflictError, NotFoundError } from '../errors.js';
-import { recordMovement } from './stock.js';
+import { movementAt, recordMovement, refMovements } from './stock.js';
 import { debtBalanceAt, recordCustomerDebtTx } from './customer-ledger.js';
 import { nextDailyCode, resolveClock, type Clock } from './daily-code.js';
 import { refundedSql, returnedQtySql, returnRows, returnSummary } from './return-rows.js';
@@ -177,11 +178,15 @@ export function createOrder(db: Db, input: OrderInput, clock?: Clock): OrderDeta
       .get();
     for (const l of lines) {
       const { isWeighed: _w, ...snapshot } = l;
+      // Không kiểm tra tồn: cho bán âm, số kho sửa khi kiểm kê. Ghi movement trước để lấy giá vốn thật của các lô đã trừ.
+      let costPrice = 0;
+      if (l.productId !== null) {
+        const { alloc } = recordMovement(tx, { productId: l.productId, qty: -l.qty * l.factor, type: 'sale', refId: id });
+        costPrice = lineCostPrice(alloc, l.qty * l.factor, l.factor);
+      }
       tx.insert(orderItems)
-        .values({ ...snapshot, orderId: id, amount: lineAmount(l) })
+        .values({ ...snapshot, costPrice, orderId: id, amount: lineAmount(l) })
         .run();
-      // Không kiểm tra tồn: cho bán âm, số kho sửa khi kiểm kê
-      if (l.productId !== null) recordMovement(tx, { productId: l.productId, qty: -l.qty * l.factor, type: 'sale', refId: id });
     }
     if (customerId !== null)
       recordCustomerDebtTx(tx, { customerId, amount: payable - paid, kind: 'order', orderId: id, note: `Bán ${code}`, createdAt: now.toISOString() });
@@ -322,16 +327,25 @@ export function listOrdersForExport(
   };
 }
 
-/** Hủy đơn: cộng trả kho đúng qty×factor lúc bán rồi đánh dấu cancelled. */
+/** Hủy đơn: cộng trả kho đúng qty×factor lúc bán vào đúng các lô đã trừ rồi đánh dấu cancelled. */
 export function cancelOrder(db: Db, id: number, clock?: Clock): OrderDetail {
   const { now } = resolveClock(clock);
   return db.transaction((tx) => {
     const o = getOrder(tx, id);
     if (o.status === 'cancelled') throw new ConflictError('Hóa đơn đã hủy');
     if (o.returns.some((r) => r.status === 'done')) throw new ConflictError('Hóa đơn đã có phiếu trả, hãy hủy phiếu trả trước');
+    const moves = refMovements(tx, 'sale', id);
+    let i = 0;
     for (const it of o.items) {
       if (it.productId === null) continue;
-      recordMovement(tx, { productId: it.productId, qty: it.qty * it.factor, type: 'return', refId: id, note: 'Hủy hóa đơn' });
+      recordMovement(tx, {
+        productId: it.productId,
+        qty: it.qty * it.factor,
+        type: 'return',
+        refId: id,
+        note: 'Hủy hóa đơn',
+        reverseOf: movementAt(moves, i++, it.productId),
+      });
     }
     if (o.paymentMethod === 'debt' && o.customerId !== null && o.payable > o.paid)
       recordCustomerDebtTx(tx, {

@@ -3,9 +3,10 @@ import { eq } from 'drizzle-orm';
 import { productInputSchema } from '@tiny-pos/shared';
 import { createTestDb } from '../db/test-db.js';
 import type { Db } from '../db/connection.js';
-import { products, stockMovements } from '../db/schema.js';
+import { lots, products, stockMovements } from '../db/schema.js';
 import { createCategory } from './categories.js';
 import { createProduct, getProduct, listProducts, setProductActive, updateProduct } from './products.js';
+import { assertLotInvariant } from './stock.js';
 
 const input = (o: Record<string, unknown>) => productInputSchema.parse(o);
 let db: Db;
@@ -42,6 +43,27 @@ describe('products', () => {
       [5, 'Tồn đầu'],
       [-2, 'Sửa thủ công'],
     ]);
+  });
+
+  it('sửa tồn tay xuống rồi lên → movement "Sửa thủ công", Σ lô luôn = tồn', () => {
+    const p = createProduct(db, input({ name: 'A', stock: 5 }));
+    updateProduct(db, p.id, input({ name: 'A', stock: 2 }));
+    assertLotInvariant(db, p.id);
+    updateProduct(db, p.id, input({ name: 'A', stock: 9 }));
+    expect(getProduct(db, p.id).stock).toBe(9);
+    expect(
+      db
+        .select()
+        .from(stockMovements)
+        .all()
+        .map((m) => [m.qty, m.note]),
+    ).toEqual([
+      [5, 'Tồn đầu'],
+      [-3, 'Sửa thủ công'],
+      [7, 'Sửa thủ công'],
+    ]);
+    expect(db.select().from(lots).where(eq(lots.productId, p.id)).all().reduce((s, l) => s + l.remaining, 0)).toBe(9);
+    assertLotInvariant(db, p.id);
   });
 
   it('trùng barcode → lỗi 409', () => {

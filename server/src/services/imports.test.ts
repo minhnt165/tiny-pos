@@ -9,12 +9,13 @@ import {
   supplierInputSchema,
 } from '@tiny-pos/shared';
 import type { Db } from '../db/connection.js';
-import { productUnits, stockMovements } from '../db/schema.js';
+import { lots, productUnits, stockMovements } from '../db/schema.js';
 import { createTestDb } from '../db/test-db.js';
 import { cancelImport, createImport, getImport, listImports, listImportsForExport } from './imports.js';
 import { createOrder } from './orders.js';
 import { createUnit, deleteUnit } from './product-units.js';
 import { createProduct, getProduct, setProductActive } from './products.js';
+import { assertLotInvariant } from './stock.js';
 import { createSupplier, deleteSupplier, getSupplier, listSupplierTransactions, paySupplier } from './suppliers.js';
 
 const VN = 420;
@@ -43,7 +44,7 @@ describe('createImport', () => {
       items: [{ productId: p.id, unitId: crate.id, qty: 2, unitCost: 240000, sellPrice: 290000 }],
     });
     expect(r).toMatchObject({ code: 'PN-20260929-0001', supplierName: 'Đại lý Hùng', total: 480000, paid: 400000, status: 'done', itemCount: 1 });
-    expect(r.items).toMatchObject([{ productName: 'Bia', unitName: 'Thùng', factor: 24, qty: 2, unitCost: 240000, costPrice: 10000, amount: 480000 }]);
+    expect(r.items).toMatchObject([{ productName: 'Bia', unitName: 'Thùng', factor: 24, qty: 2, unitCost: 240000, costPrice: 10000, amount: 480000, expiresOn: null }]);
     expect(getProduct(db, p.id)).toMatchObject({ stock: 48, costPrice: 10000, sellPrice: 12000 });
     expect(db.select().from(productUnits).where(eq(productUnits.id, crate.id)).get()?.sellPrice).toBe(290000);
     expect(db.select().from(stockMovements).all().map((m) => [m.type, m.qty, m.refId, m.note])).toEqual([
@@ -128,6 +129,30 @@ describe('cancelImport', () => {
     paySupplier(db, s.id, { amount: 50000, note: null });
     cancelImport(db, r.id);
     expect(getSupplier(db, s.id).debt).toBe(-50000);
+  });
+
+  it('mỗi dòng một lô với hạn dùng; hủy phiếu trừ đúng lô, đã bán bớt thì lô âm', () => {
+    const p = product({ name: 'Sữa', unit: 'hộp', costPrice: 8000, sellPrice: 10000, stock: 2 });
+    const r = imp({
+      paid: 170000,
+      items: [
+        { productId: p.id, qty: 10, unitCost: 9000, expiresOn: '2026-11-30' },
+        { productId: p.id, qty: 10, unitCost: 8000, expiresOn: null },
+      ],
+    });
+    expect(r.items.map((i) => i.expiresOn)).toEqual(['2026-11-30', null]);
+    const lotRows = db.select().from(lots).where(eq(lots.productId, p.id)).orderBy(lots.id).all();
+    expect(lotRows).toMatchObject([
+      { qtyIn: 0, remaining: 2, costPrice: 8000, note: 'Tồn đầu' },
+      { importItemId: r.items[0]!.id, qtyIn: 10, remaining: 10, costPrice: 9000, expiresOn: '2026-11-30' },
+      { importItemId: r.items[1]!.id, qtyIn: 10, remaining: 10, costPrice: 8000, expiresOn: null },
+    ]);
+    // bán 12: lô hạn 30/11 trừ 10, rồi lô Tồn đầu (không hạn, id nhỏ hơn) trừ 2
+    createOrder(db, orderInputSchema.parse({ items: [{ productId: p.id, qty: 12, price: 10000 }], paymentMethod: 'cash', paid: 200000 }), MORNING);
+    cancelImport(db, r.id, MORNING);
+    expect(db.select().from(lots).where(eq(lots.productId, p.id)).orderBy(lots.id).all().map((l) => l.remaining)).toEqual([0, -10, 0]);
+    expect(getProduct(db, p.id).stock).toBe(-10);
+    assertLotInvariant(db, p.id);
   });
 });
 

@@ -9,8 +9,12 @@ describe('importInputSchema', () => {
       supplierId: null,
       note: null,
       paid: 0,
-      items: [{ productId: 1, unitId: null, qty: 2, unitCost: 1000, sellPrice: null }],
+      items: [{ productId: 1, unitId: null, qty: 2, unitCost: 1000, sellPrice: null, expiresOn: null }],
     });
+  });
+  it('hạn dùng: nhận YYYY-MM-DD kể cả quá khứ, từ chối ngày không có thật', () => {
+    expect(importInputSchema.parse({ paid: 0, items: [{ productId: 1, qty: 1, unitCost: 1, expiresOn: '2025-01-31' }] }).items[0]!.expiresOn).toBe('2025-01-31');
+    expect(importInputSchema.safeParse({ paid: 0, items: [{ productId: 1, qty: 1, unitCost: 1, expiresOn: '2026-02-30' }] }).success).toBe(false);
   });
   it('từ chối phiếu rỗng, qty 0, giá lẻ, giá quá 1 tỷ, thiếu productId', () => {
     const bad = (o: Record<string, unknown>) => importInputSchema.safeParse({ paid: 0, ...o }).success;

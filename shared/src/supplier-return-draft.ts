@@ -26,6 +26,8 @@ const lineSchema = z.object({
   unitId: z.number().int().nullable(),
   qty: z.number().positive(),
   unitPrice: z.number().int().min(0),
+  /** Lô được chọn để trừ; null = tự động theo hạn dùng. */
+  lotId: z.number().int().nullable().default(null),
 });
 const draftSchema = z.object({ supplierId: z.number().int().nullable(), note: z.string(), lines: z.array(lineSchema) });
 
@@ -38,6 +40,7 @@ export type SupplierReturnAction =
   | { type: 'add'; product: ProductWithUnits; unitId: number | null }
   | { type: 'update'; key: string; patch: Partial<Pick<SupplierReturnLine, 'qty' | 'unitPrice'>> }
   | { type: 'setUnit'; key: string; unitId: number | null }
+  | { type: 'setLot'; key: string; lotId: number | null }
   | { type: 'remove'; key: string }
   | { type: 'setSupplier'; supplierId: number | null }
   | { type: 'setNote'; note: string }
@@ -72,9 +75,10 @@ export function supplierReturnDraftReducer(d: SupplierReturnDraft, a: SupplierRe
         unitId: null,
         qty: 1,
         unitPrice: p.costPrice,
+        lotId: null,
       };
       const line = withUnit(base, a.unitId);
-      const same = d.lines.find((l) => l.productId === p.id && l.unitId === line.unitId);
+      const same = d.lines.find((l) => l.productId === p.id && l.unitId === line.unitId && l.lotId === null);
       if (same) return { ...d, lines: d.lines.map((l) => (l === same ? { ...l, qty: l.qty + 1 } : l)) };
       return { ...d, lines: [...d.lines, line] };
     }
@@ -86,6 +90,8 @@ export function supplierReturnDraftReducer(d: SupplierReturnDraft, a: SupplierRe
     }
     case 'setUnit':
       return { ...d, lines: d.lines.map((l) => (l.key === a.key && l.unitId !== a.unitId ? withUnit(l, a.unitId) : l)) };
+    case 'setLot':
+      return { ...d, lines: d.lines.map((l) => (l.key === a.key ? { ...l, lotId: a.lotId } : l)) };
     case 'remove':
       return { ...d, lines: d.lines.filter((l) => l.key !== a.key) };
     case 'setSupplier':
@@ -116,7 +122,7 @@ export function toSupplierReturnInput(d: SupplierReturnDraft, supplierId: number
   return {
     supplierId,
     note: d.note.trim() || null,
-    items: d.lines.map((l) => ({ productId: l.productId, unitId: l.unitId, qty: l.qty, unitPrice: l.unitPrice })),
+    items: d.lines.map((l) => ({ productId: l.productId, unitId: l.unitId, qty: l.qty, unitPrice: l.unitPrice, lotId: l.lotId })),
   };
 }
 

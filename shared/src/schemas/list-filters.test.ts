@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import {
   importListQuerySchema,
+  lotListQuerySchema,
   orderListQuerySchema,
   partyListQuerySchema,
   partyViewFields,
@@ -98,5 +99,12 @@ describe('khoảng ngày', () => {
     expect(resolveRange({ date: '2026-09-29' }, '2026-09-30')).toEqual({ from: '2026-09-29', to: '2026-09-29' });
     expect(resolveRange({ from: '2026-09-01' }, '2026-09-30')).toEqual({ from: '2026-09-01', to: '2026-09-01' });
     expect(resolveRange({ from: '2026-09-01', to: '2026-09-15', date: '2026-01-01' }, '2026-09-30')).toEqual({ from: '2026-09-01', to: '2026-09-15' });
+  });
+});
+
+describe('lotListQuerySchema', () => {
+  it('state csv, productId số, mặc định page 1', () => {
+    expect(lotListQuerySchema.parse({ state: 'expired,expiring', productId: '3' })).toEqual({ q: undefined, productId: 3, state: ['expired', 'expiring'], page: 1 });
+    expect(lotListQuerySchema.safeParse({ state: 'gone' }).success).toBe(false);
   });
 });

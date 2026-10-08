@@ -22,6 +22,8 @@ const draftLineSchema = z.object({
   qty: z.number().positive(),
   unitCost: z.number().int().min(0),
   sellPrice: z.number().int().min(0),
+  /** Hạn dùng của lô, "YYYY-MM-DD"; nháp cũ không có thì null. */
+  expiresOn: z.string().nullable().default(null),
 });
 const draftSchema = z.object({
   supplierId: z.number().int().nullable(),
@@ -39,7 +41,7 @@ export const EMPTY_IMPORT_DRAFT: ImportDraft = { supplierId: null, note: '', pai
 
 export type DraftAction =
   | { type: 'add'; product: ProductWithUnits; unitId: number | null }
-  | { type: 'update'; key: string; patch: Partial<Pick<DraftLine, 'qty' | 'unitCost' | 'sellPrice'>> }
+  | { type: 'update'; key: string; patch: Partial<Pick<DraftLine, 'qty' | 'unitCost' | 'sellPrice' | 'expiresOn'>> }
   | { type: 'setUnit'; key: string; unitId: number | null }
   | { type: 'remove'; key: string }
   | { type: 'setSupplier'; supplierId: number | null }
@@ -82,6 +84,7 @@ export function importDraftReducer(d: ImportDraft, a: DraftAction): ImportDraft 
         qty: 1,
         unitCost: p.costPrice,
         sellPrice: p.sellPrice,
+        expiresOn: null,
       };
       const line = withUnit(base, a.unitId);
       const same = d.lines.find((l) => l.productId === p.id && l.unitId === line.unitId);
@@ -128,6 +131,7 @@ export function toImportInput(d: ImportDraft): ImportInputBody {
       qty: l.qty,
       unitCost: l.unitCost,
       sellPrice: l.sellPrice !== currentOption(l).sellPrice ? l.sellPrice : null,
+      expiresOn: l.expiresOn,
     })),
   };
 }

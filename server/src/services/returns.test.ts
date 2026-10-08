@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { eq } from 'drizzle-orm';
 import {
   customerCreateSchema,
   customerPaymentSchema,
+  importInputSchema,
   orderInputSchema,
   productInputSchema,
   productUnitInputSchema,
@@ -9,13 +11,15 @@ import {
   returnListQuerySchema,
 } from '@tiny-pos/shared';
 import type { Db } from '../db/connection.js';
-import { stockMovements } from '../db/schema.js';
+import { lots, stockMovements } from '../db/schema.js';
 import { createTestDb } from '../db/test-db.js';
 import { collectDebt, createCustomer, deleteCustomer, getCustomer, listCustomerTransactions } from './customers.js';
+import { createImport } from './imports.js';
 import { cancelOrder, createOrder, getOrder } from './orders.js';
 import { createUnit } from './product-units.js';
 import { createProduct, getProduct } from './products.js';
 import { cancelReturn, createReturn, listReturns } from './returns.js';
+import { assertLotInvariant } from './stock.js';
 
 const VN = 420;
 const at = (iso: string) => ({ now: new Date(iso), tzOffsetMin: VN });
@@ -196,6 +200,47 @@ describe('cancelReturn', () => {
     cancelReturn(db, r.id, D30);
     cancelOrder(db, o.id, D30);
     expect(getProduct(db, bia.id).stock).toBe(100);
+  });
+
+  it('trả một phần nhập lại kho: cộng đúng tỷ lệ vào các lô dòng đã trừ; hủy phiếu trả trừ lại đúng lô', () => {
+    const p = product({ name: 'Sữa', costPrice: 8000, sellPrice: 10000, stock: 2 });
+    createImport(db, importInputSchema.parse({ paid: 18000, items: [{ productId: p.id, qty: 2, unitCost: 9000, expiresOn: '2026-10-20' }] }), D29);
+    const o = order({ items: [{ productId: p.id, qty: 4, price: 10000 }] }); // lô hạn -2, Tồn đầu -2
+    const r = ret({ orderId: o.id, items: [{ orderItemId: o.items[0]!.id, qty: 2, restock: true }] });
+    const rem = () => db.select({ remaining: lots.remaining }).from(lots).where(eq(lots.productId, p.id)).orderBy(lots.id).all().map((l) => l.remaining);
+    expect(rem()).toEqual([1, 1]);
+    cancelReturn(db, r.id, D30);
+    expect(rem()).toEqual([0, 0]);
+    assertLotInvariant(db, p.id);
+  });
+
+  it('trả 1 hộp × 5 lần: các lô cộng dồn về đúng số đã trừ lúc bán', () => {
+    const p = product({ name: 'Sữa', costPrice: 8000, sellPrice: 10000, stock: 3 }); // Tồn đầu 3 @8000
+    createImport(db, importInputSchema.parse({ paid: 18000, items: [{ productId: p.id, qty: 2, unitCost: 9000, expiresOn: '2026-10-20' }] }), D29);
+    const o = order({ items: [{ productId: p.id, qty: 5, price: 10000 }] }); // lô hạn -2, Tồn đầu -3
+    const rem = () => db.select({ remaining: lots.remaining }).from(lots).where(eq(lots.productId, p.id)).orderBy(lots.id).all().map((l) => l.remaining);
+    expect(rem()).toEqual([0, 0]);
+    for (let k = 0; k < 5; k++) ret({ orderId: o.id, items: [{ orderItemId: o.items[0]!.id, qty: 1, restock: true }] });
+    expect(rem()).toEqual([3, 2]);
+    assertLotInvariant(db, p.id);
+    expect(getOrder(db, o.id).items[0]!.returnedQty).toBe(5);
+  });
+
+  it('hủy phiếu trả không lẫn movement hủy hóa đơn trùng số id (cùng loại return)', () => {
+    // Hóa đơn #1 hủy → movement return refId 1; phiếu trả #1 của hóa đơn #2 cũng ghi movement return refId 1
+    const other = product({ name: 'Mì', costPrice: 3000, sellPrice: 4000, stock: 5 });
+    cancelOrder(db, order({ items: [{ productId: other.id, qty: 1, price: 4000 }] }).id, D29);
+    const p = product({ name: 'Sữa', costPrice: 8000, sellPrice: 10000, stock: 2 });
+    const o = order({ items: [{ productId: p.id, qty: 2, price: 10000 }] }); // bán hết lô Tồn đầu
+    createImport(db, importInputSchema.parse({ paid: 18000, items: [{ productId: p.id, qty: 2, unitCost: 9000, expiresOn: '2026-10-20' }] }), D29);
+    const r = ret({ orderId: o.id, items: [{ orderItemId: o.items[0]!.id, qty: 2, restock: true }] });
+    expect(r.id).toBe(1);
+    const rem = () => db.select({ remaining: lots.remaining }).from(lots).where(eq(lots.productId, p.id)).orderBy(lots.id).all().map((l) => l.remaining);
+    expect(rem()).toEqual([2, 2]);
+    // Hủy phải trừ lại lô Tồn đầu; nếu lẫn movement của hóa đơn #1 thì rơi về FEFO và trừ nhầm lô có hạn
+    cancelReturn(db, r.id, D30);
+    expect(rem()).toEqual([0, 2]);
+    assertLotInvariant(db, p.id);
   });
 });
 

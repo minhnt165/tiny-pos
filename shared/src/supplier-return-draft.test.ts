@@ -73,7 +73,17 @@ describe('supplierReturnDraftReducer', () => {
     d = reduce(d, { type: 'update', key: d.lines[0]!.key, patch: { qty: 3 } });
     d = reduce(d, { type: 'setNote', note: '  Hết hạn ' });
     expect(supplierReturnTotals(d, 20000)).toEqual({ total: 30000, debtReduced: 20000, cashReceived: 10000 });
-    expect(toSupplierReturnInput(d, 5)).toEqual({ supplierId: 5, note: 'Hết hạn', items: [{ productId: 1, unitId: null, qty: 3, unitPrice: 10000 }] });
+    expect(toSupplierReturnInput(d, 5)).toEqual({ supplierId: 5, note: 'Hết hạn', items: [{ productId: 1, unitId: null, qty: 3, unitPrice: 10000, lotId: null }] });
+  });
+
+  it('setLot: đổi lô của dòng, gửi lotId; thêm cùng sản phẩm khi dòng đã chọn lô → dòng mới', () => {
+    let d = reduce(EMPTY_SUPPLIER_RETURN_DRAFT, { type: 'add', product: beer, unitId: null });
+    const key = d.lines[0]!.key;
+    d = reduce(d, { type: 'setLot', key, lotId: 7 });
+    expect(toSupplierReturnInput(d, 5).items[0]).toMatchObject({ lotId: 7 });
+    d = reduce(d, { type: 'add', product: beer, unitId: null });
+    expect(d.lines).toHaveLength(2);
+    expect(d.lines[1]!.lotId).toBeNull();
   });
 
   it('đọc nháp hỏng ra phiếu trống; clear về trống', () => {

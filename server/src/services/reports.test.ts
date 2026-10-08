@@ -204,6 +204,15 @@ describe('productReport', () => {
     expect(r.stock.lowCount).toBe(filterProducts(shown, productViewQuerySchema.parse({ stock: 'low' })).length);
     expect(r.stock.outCount).toBe(filterProducts(shown, productViewQuerySchema.parse({ stock: 'out' })).length);
   });
+
+  it('giá trị vốn tồn theo lô: Σ còn lại × giá vốn từng lô, không phải giá nhập gần nhất × tồn', () => {
+    const p = product({ name: 'Sữa', costPrice: 8000, sellPrice: 10000, stock: 2 }); // lô Tồn đầu 2 @8.000
+    createImport(db, importInputSchema.parse({ paid: 27000, items: [{ productId: p.id, qty: 3, unitCost: 9000 }] }), D29); // lô 3 @9.000
+    // 2 × 8.000 + 3 × 9.000 = 43.000 (giá nhập gần nhất × tồn sẽ là 45.000)
+    const r = productReport(db, pq({ from: '2026-09-01', to: '2026-09-28' }), VIEW);
+    expect(r.stock.costValue).toBe(43000);
+    expect(r.slow).toMatchObject([{ name: 'Sữa', stock: 5, value: 43000 }]);
+  });
 });
 
 describe('debtReport', () => {

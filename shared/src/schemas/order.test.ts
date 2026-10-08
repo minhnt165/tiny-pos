@@ -45,6 +45,7 @@ describe('settingsInputSchema', () => {
       autoPrint: true,
       labelSize: '40x30',
       labelShowPrice: true,
+      expiryWarnDays: 30,
     });
   });
   it('chuẩn hóa tên chủ tài khoản, kiểm tra BIN/số tài khoản', () => {
@@ -52,5 +53,9 @@ describe('settingsInputSchema', () => {
     expect(settingsInputSchema.safeParse({ bankBin: '9704' }).success).toBe(false);
     expect(settingsInputSchema.safeParse({ bankAccount: '12a' }).success).toBe(false);
     expect(settingsInputSchema.safeParse({ storeName: '' }).success).toBe(false);
+  });
+  it('ngưỡng báo hết hạn: coerce từ chuỗi, từ chối 0', () => {
+    expect(settingsInputSchema.parse({ expiryWarnDays: '45' }).expiryWarnDays).toBe(45);
+    expect(settingsInputSchema.safeParse({ expiryWarnDays: 0 }).success).toBe(false);
   });
 });

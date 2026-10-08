@@ -16,11 +16,11 @@ import {
   type SupplierReturnSummary,
 } from '@tiny-pos/shared';
 import type { Db, DbOrTx } from '../db/connection.js';
-import { productUnits, products, supplierReturnItems, supplierReturns, suppliers } from '../db/schema.js';
+import { lots, productUnits, products, supplierReturnItems, supplierReturns, suppliers } from '../db/schema.js';
 import { BadRequestError, ConflictError, NotFoundError } from '../errors.js';
 import { nextDailyCode, resolveClock, type Clock } from './daily-code.js';
 import { likeTerm } from './orders.js';
-import { recordMovement } from './stock.js';
+import { movementAt, recordMovement, refMovements } from './stock.js';
 import { recordSupplierTx } from './supplier-ledger.js';
 
 type Row = typeof supplierReturns.$inferSelect;
@@ -54,6 +54,8 @@ const itemColumns = {
   qty: supplierReturnItems.qty,
   unitPrice: supplierReturnItems.unitPrice,
   amount: supplierReturnItems.amount,
+  lotId: supplierReturnItems.lotId,
+  lotExpiresOn: lots.expiresOn,
 };
 
 /** Dòng của nhiều phiếu, theo lô: SQLite giới hạn số tham số trong một câu lệnh. */
@@ -63,6 +65,7 @@ function itemsOf(db: DbOrTx, ids: number[]): Map<number, SupplierReturnItem[]> {
     const batch = db
       .select({ returnId: supplierReturnItems.returnId, ...itemColumns })
       .from(supplierReturnItems)
+      .leftJoin(lots, eq(supplierReturnItems.lotId, lots.id))
       .where(inArray(supplierReturnItems.returnId, ids.slice(i, i + 500)))
       .orderBy(asc(supplierReturnItems.id))
       .all();
@@ -98,11 +101,20 @@ function resolveLine(tx: DbOrTx, it: SupplierReturnInput['items'][number]) {
     factor = u.factor;
     unitName = u.name;
   }
-  return { productId: p.id, productName: p.name, unitName, factor, qty: it.qty, unitPrice: it.unitPrice, amount: importLineAmount(it.qty, it.unitPrice) };
+  return {
+    productId: p.id,
+    productName: p.name,
+    unitName,
+    factor,
+    qty: it.qty,
+    unitPrice: it.unitPrice,
+    amount: importLineAmount(it.qty, it.unitPrice),
+    lotId: it.lotId,
+  };
 }
 
 /**
- * Lập phiếu trả NCC, tính vào ngày lập: trừ tồn theo đơn vị gốc (movement supplier_return, được âm),
+ * Lập phiếu trả NCC, tính vào ngày lập: trừ tồn theo đơn vị gốc (movement supplier_return, được âm) vào lô đã chọn hoặc FEFO,
  * trừ nợ NCC hiện tại trước, phần dư NCC trả tiền mặt. Giá vốn giữ nguyên.
  */
 export function createSupplierReturn(db: Db, input: SupplierReturnInput, clock?: Clock): SupplierReturnDetail {
@@ -123,15 +135,23 @@ export function createSupplierReturn(db: Db, input: SupplierReturnInput, clock?:
       .returning({ id: supplierReturns.id })
       .get();
     for (const l of lines) {
+      // Ghi movement trước: lô không thuộc sản phẩm báo lỗi dễ hiểu thay vì lỗi khóa ngoại khi chèn dòng
+      recordMovement(tx, {
+        productId: l.productId,
+        qty: -l.qty * l.factor,
+        type: 'supplier_return',
+        refId: id,
+        note: `Trả NCC ${code}`,
+        lotId: l.lotId ?? undefined,
+      });
       tx.insert(supplierReturnItems).values({ returnId: id, ...l }).run();
-      recordMovement(tx, { productId: l.productId, qty: -l.qty * l.factor, type: 'supplier_return', refId: id, note: `Trả NCC ${code}` });
     }
     if (debtReduced > 0) recordSupplierTx(tx, { supplierId: s.id, amount: -debtReduced, note: `Trả NCC ${code}`, createdAt });
     return getSupplierReturn(tx, id);
   });
 }
 
-/** Hủy: cộng lại tồn (movement adjust), cộng lại nợ đã trừ; phiếu giữ lại với trạng thái cancelled. */
+/** Hủy: cộng lại tồn đúng lô đã trừ (movement adjust), cộng lại nợ đã trừ; phiếu giữ lại với trạng thái cancelled. */
 export function cancelSupplierReturn(db: Db, id: number, clock?: Clock): SupplierReturnDetail {
   const { now } = resolveClock(clock);
   return db.transaction((tx) => {
@@ -140,9 +160,17 @@ export function cancelSupplierReturn(db: Db, id: number, clock?: Clock): Supplie
     // NCC đã xóa không hiện trong danh sách và không trả nợ được: cộng lại nợ cho họ sẽ thành khoản treo
     const active = tx.select({ v: suppliers.isActive }).from(suppliers).where(eq(suppliers.id, r.supplierId)).get()?.v;
     if (r.debtReduced > 0 && !active) throw new ConflictError('Nhà cung cấp đã xóa, không hủy được phiếu đã trừ nợ');
-    for (const it of r.items) {
-      recordMovement(tx, { productId: it.productId, qty: it.qty * it.factor, type: 'adjust', refId: id, note: `Hủy phiếu trả NCC ${r.code}` });
-    }
+    const moves = refMovements(tx, 'supplier_return', id);
+    r.items.forEach((it, i) =>
+      recordMovement(tx, {
+        productId: it.productId,
+        qty: it.qty * it.factor,
+        type: 'adjust',
+        refId: id,
+        note: `Hủy phiếu trả NCC ${r.code}`,
+        reverseOf: movementAt(moves, i, it.productId),
+      }),
+    );
     if (r.debtReduced > 0)
       recordSupplierTx(tx, { supplierId: r.supplierId, amount: r.debtReduced, note: `Hủy phiếu trả NCC ${r.code}`, createdAt: now.toISOString() });
     tx.update(supplierReturns).set({ status: 'cancelled', cancelledAt: now.toISOString() }).where(eq(supplierReturns.id, id)).run();

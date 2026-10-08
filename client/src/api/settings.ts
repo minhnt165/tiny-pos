@@ -9,6 +9,11 @@ export function useSaveSettings() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (s: Settings) => api<Settings>('/settings', { method: 'PUT', json: s }),
-    onSuccess: (s) => qc.setQueryData(['settings'], s),
+    onSuccess: (s) => {
+      qc.setQueryData(['settings'], s);
+      // Ngưỡng báo hết hạn đổi trạng thái lô và thẻ Sắp hết hạn (Tổng quan nằm dưới ['reports'])
+      void qc.invalidateQueries({ queryKey: ['lots'] });
+      void qc.invalidateQueries({ queryKey: ['reports'] });
+    },
   });
 }

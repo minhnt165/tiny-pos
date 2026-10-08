@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { nullableText } from './common.js';
+import { isoDate } from './list-filters.js';
 import { MAX_MONEY, optionalId } from './order.js';
 
 const money = z.number().int().min(0).max(MAX_MONEY);
@@ -12,6 +13,8 @@ export const importItemInputSchema = z.object({
   unitCost: money,
   /** Giá bán mới của đúng đơn vị này; null = không đổi. */
   sellPrice: money.nullish().transform((v) => v ?? null),
+  /** Hạn dùng của lô, "YYYY-MM-DD"; null = không hạn. Không chặn ngày quá khứ. */
+  expiresOn: isoDate.nullish().transform((v) => v ?? null),
 });
 
 export const importInputSchema = z.object({

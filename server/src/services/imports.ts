@@ -18,7 +18,7 @@ import type { Db, DbOrTx } from '../db/connection.js';
 import { importItems, imports, productUnits, products, suppliers } from '../db/schema.js';
 import { BadRequestError, ConflictError, NotFoundError } from '../errors.js';
 import { nextDailyCode, resolveClock, type Clock } from './daily-code.js';
-import { recordMovement } from './stock.js';
+import { movementAt, recordMovement, refMovements } from './stock.js';
 import { recordSupplierTx } from './supplier-ledger.js';
 import { likeTerm } from './orders.js';
 
@@ -33,6 +33,7 @@ interface ResolvedLine {
   costPrice: number;
   amount: number;
   sellPrice: number | null;
+  expiresOn: string | null;
 }
 
 /** Sản phẩm ngừng bán vẫn nhập được (nhập lại hàng cũ). */
@@ -62,6 +63,7 @@ function resolveLine(tx: DbOrTx, it: ImportInput['items'][number]): ResolvedLine
     costPrice: baseCost(it.unitCost, factor),
     amount: importLineAmount(it.qty, it.unitCost),
     sellPrice: it.sellPrice,
+    expiresOn: it.expiresOn,
   };
 }
 
@@ -115,6 +117,7 @@ const importItemColumns = {
   unitCost: importItems.unitCost,
   costPrice: importItems.costPrice,
   amount: importItems.amount,
+  expiresOn: importItems.expiresOn,
 };
 
 export function getImport(db: DbOrTx, id: number): ImportDetail {
@@ -150,7 +153,8 @@ export function createImport(db: Db, input: ImportInput, clock?: Clock): ImportD
       .returning({ id: imports.id })
       .get();
     for (const l of lines) {
-      tx.insert(importItems)
+      const item = tx
+        .insert(importItems)
         .values({
           importId: id,
           productId: l.productId,
@@ -161,9 +165,18 @@ export function createImport(db: Db, input: ImportInput, clock?: Clock): ImportD
           unitCost: l.unitCost,
           costPrice: l.costPrice,
           amount: l.amount,
+          expiresOn: l.expiresOn,
         })
-        .run();
-      recordMovement(tx, { productId: l.productId, qty: l.qty * l.factor, type: 'import', refId: id, note: `Nhập ${code}` });
+        .returning({ id: importItems.id })
+        .get();
+      recordMovement(tx, {
+        productId: l.productId,
+        qty: l.qty * l.factor,
+        type: 'import',
+        refId: id,
+        note: `Nhập ${code}`,
+        newLot: { importItemId: item.id, costPrice: l.costPrice, expiresOn: l.expiresOn },
+      });
     }
     applyPrices(tx, lines, createdAt);
     const debt = total - input.paid;
@@ -267,15 +280,23 @@ export function listImportsForExport(
   };
 }
 
-/** Hủy: trừ lại kho (movement adjust, được âm) và phần nợ đã ghi; giá vốn/giá bán giữ nguyên. */
+/** Hủy: trừ lại đúng lô của phiếu (đã bán bớt thì lô âm) và phần nợ đã ghi; giá vốn/giá bán giữ nguyên. */
 export function cancelImport(db: Db, id: number, clock?: Clock): ImportDetail {
   const { now } = resolveClock(clock);
   return db.transaction((tx) => {
     const r = getImport(tx, id);
     if (r.status === 'cancelled') throw new ConflictError('Phiếu nhập đã hủy');
-    for (const it of r.items) {
-      recordMovement(tx, { productId: it.productId, qty: -it.qty * it.factor, type: 'adjust', refId: id, note: `Hủy ${r.code}` });
-    }
+    const moves = refMovements(tx, 'import', id);
+    r.items.forEach((it, i) =>
+      recordMovement(tx, {
+        productId: it.productId,
+        qty: -it.qty * it.factor,
+        type: 'adjust',
+        refId: id,
+        note: `Hủy ${r.code}`,
+        reverseOf: movementAt(moves, i, it.productId),
+      }),
+    );
     const debt = r.total - r.paid;
     if (r.supplierId !== null && debt > 0) {
       recordSupplierTx(tx, { supplierId: r.supplierId, amount: -debt, importId: id, note: `Hủy ${r.code}` });

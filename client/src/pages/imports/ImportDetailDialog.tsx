@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router';
 import { Ban, Tag } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatLabelItems, formatMoney, formatQty, importLabelRefs } from '@tiny-pos/shared';
+import { formatDateVn, formatLabelItems, formatMoney, formatQty, importLabelRefs } from '@tiny-pos/shared';
 import { useCancelImport, useImport } from '@/api/imports';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +18,7 @@ export function ImportDetailDialog({ id, onClose }: { id: number | null; onClose
     if (!r) return;
     const ok = await confirm({
       title: `Hủy ${r.code} và trừ lại kho?`,
-      description: 'Tồn kho và nợ nhà cung cấp được trừ lại; giá vốn, giá bán giữ nguyên.',
+      description: 'Tồn kho được trừ lại đúng lô của phiếu (đã bán bớt thì lô âm, tự bù khi nhập tiếp); nợ nhà cung cấp trừ lại; giá vốn, giá bán giữ nguyên.',
       confirmText: 'Hủy phiếu',
       cancelText: 'Không',
       destructive: true,
@@ -48,6 +48,7 @@ export function ImportDetailDialog({ id, onClose }: { id: number | null; onClose
                     <div className="font-medium">{it.productName}</div>
                     <div className="text-sm text-muted-foreground tabular-nums">
                       {formatQty(it.qty)} {it.unitName} × {formatMoney(it.unitCost)}
+                      {it.expiresOn && ` · HSD ${formatDateVn(it.expiresOn)}`}
                     </div>
                   </div>
                   <div className="font-semibold tabular-nums">{formatMoney(it.amount)}</div>

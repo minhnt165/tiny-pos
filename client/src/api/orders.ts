@@ -30,6 +30,7 @@ function useInvalidateSales() {
     void qc.invalidateQueries({ queryKey: ['products'] });
     void qc.invalidateQueries({ queryKey: ['customers'] }); // đơn ghi nợ / hủy đơn đổi nợ khách
     void qc.invalidateQueries({ queryKey: ['reports'] });
+    void qc.invalidateQueries({ queryKey: ['lots'] });
   };
 }
 

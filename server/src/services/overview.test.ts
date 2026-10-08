@@ -104,6 +104,16 @@ describe('overview – hàng sắp hết', () => {
     expect(o.lowStock.items.map((i) => i.name)).toEqual(['Âm', 'Thấp']);
     expect(o.lowStock.items[0].stock).toBe(-2);
   });
+  it('expiring: lô quá hạn và trong ngưỡng, không tính lô hết hàng', () => {
+    const p = product({ name: 'Sữa', costPrice: 8000, sellPrice: 10000 });
+    createImport(db, importInputSchema.parse({ paid: 27000, items: [
+      { productId: p.id, qty: 1, unitCost: 9000, expiresOn: '2026-09-01' },
+      { productId: p.id, qty: 1, unitCost: 9000, expiresOn: '2026-10-10' },
+      { productId: p.id, qty: 1, unitCost: 9000, expiresOn: '2027-01-01' },
+    ] }), NOON);
+    order({ items: [{ productId: p.id, qty: 1, price: 10000 }] }); // trừ lô quá hạn 1/9 → hết
+    expect(overview(db, NOON).expiring).toMatchObject({ count: 1, expiredCount: 0, items: [{ expiresOn: '2026-10-10', state: 'expiring' }] });
+  });
 });
 
 describe('overview – công nợ và kiểm kê', () => {
@@ -186,6 +196,7 @@ describe('overview – tiệm mới', () => {
       today: '2026-09-29',
       recentOrders: [],
       lowStock: { count: 0, outCount: 0, items: [] },
+      expiring: { count: 0, expiredCount: 0, items: [] },
       customers: { total: 0, count: 0, overdueCount: 0, overdueTotal: 0, top: [] },
       suppliers: { total: 0, count: 0, top: [] },
       stocktake: null,

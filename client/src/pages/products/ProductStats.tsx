@@ -15,7 +15,11 @@ export function ProductStats({ products, categoryCount }: { products: Product[];
         hint={low.length ? low.slice(0, 2).map((p) => p.name).join(', ') : 'Tồn đều trên mức tối thiểu'}
         tone={low.length ? 'danger' : 'default'}
       />
-      <Stat label="Giá trị tồn kho" value={formatMoney(inventoryValue)} hint="Tính theo giá nhập" />
+      <Stat
+        label="Giá trị tồn kho"
+        value={formatMoney(inventoryValue)}
+        hint="Theo giá nhập gần nhất; báo cáo và Lô hàng tính theo giá vốn từng lô"
+      />
       <Stat label="Danh mục" value={String(categoryCount)} hint="Nhóm hàng để lọc nhanh" />
     </StatStrip>
   );

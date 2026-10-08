@@ -22,9 +22,14 @@ import { recordCustomerDebtTx } from './customer-ledger.js';
 import { nextDailyCode, resolveClock, type Clock } from './daily-code.js';
 import { getOrder, likeTerm } from './orders.js';
 import { returnItemsOf, returnRows, returnSummary } from './return-rows.js';
-import { recordMovement } from './stock.js';
+import { movementAt, recordMovement, refMovements } from './stock.js';
 
 const INVALID_LINE = 'Dòng trả hàng không hợp lệ';
+/**
+ * Ghi chú movement/bút toán của phiếu trả. Hủy phiếu trả dùng đúng chuỗi này để lọc movement (`return` dùng chung với hủy
+ * hóa đơn trùng số id): đổi chuỗi thì phiếu cũ không ghép được, hủy rơi về luật tự động.
+ */
+const returnNote = (code: string) => `Trả hàng ${code}`;
 
 export function getReturn(db: DbOrTx, id: number): ReturnDetail {
   const [row] = returnRows(db, eq(returns.id, id));
@@ -34,7 +39,7 @@ export function getReturn(db: DbOrTx, id: number): ReturnDetail {
 
 /**
  * Lập phiếu trả cho hóa đơn `done`, tính vào ngày lập phiếu: tiền hoàn theo giá trị sau giảm giá của dòng (return-math),
- * đơn ghi nợ trừ nợ hiện tại của khách trước rồi mới trả tiền mặt, dòng nhập lại kho ghi movement `return`.
+ * đơn ghi nợ trừ nợ hiện tại của khách trước rồi mới trả tiền mặt, dòng nhập lại kho ghi movement `return` vào đúng lô đã bán.
  */
 export function createReturn(db: Db, input: ReturnInput, clock?: Clock): ReturnDetail {
   const { now, tz } = resolveClock(clock);
@@ -62,11 +67,23 @@ export function createReturn(db: Db, input: ReturnInput, clock?: Clock): ReturnD
       .values({ code, orderId: o.id, refund, debtReduced, cashRefund, note: input.note, createdAt: now.toISOString() })
       .returning({ id: returns.id })
       .get();
+    const saleMoves = refMovements(tx, 'sale', o.id);
+    const stockLines = o.items.filter((i) => i.productId !== null);
     for (const l of lines) {
       tx.insert(returnItems)
         .values({ returnId: id, orderItemId: l.it.id, qty: l.qty, restock: l.restock, amount: amounts.get(l.it.id)!, cost: Math.round(l.qty * l.it.costPrice) })
         .run();
-      if (l.restock) recordMovement(tx, { productId: l.it.productId!, qty: l.qty * l.it.factor, type: 'return', refId: id, note: `Trả hàng ${code}` });
+      if (l.restock)
+        recordMovement(tx, {
+          productId: l.it.productId!,
+          qty: l.qty * l.it.factor,
+          type: 'return',
+          refId: id,
+          note: returnNote(code),
+          reverseOf: movementAt(saleMoves, stockLines.indexOf(l.it), l.it.productId!),
+          // returnedQty đọc đầu transaction (trước phiếu này): phần dòng bán đã được các phiếu trả trước đảo
+          alreadyReversed: roundQty(l.it.returnedQty * l.it.factor),
+        });
     }
     if (debtReduced > 0)
       recordCustomerDebtTx(tx, {
@@ -74,14 +91,14 @@ export function createReturn(db: Db, input: ReturnInput, clock?: Clock): ReturnD
         amount: -debtReduced,
         kind: 'return',
         orderId: o.id,
-        note: `Trả hàng ${code}`,
+        note: returnNote(code),
         createdAt: now.toISOString(),
       });
     return getReturn(tx, id);
   });
 }
 
-/** Hủy phiếu trả: trừ lại tồn đã nhập kho (movement adjust), cộng lại nợ đã trừ; phiếu giữ lại với trạng thái cancelled. */
+/** Hủy phiếu trả: trừ lại tồn đã nhập kho đúng lô (movement adjust), cộng lại nợ đã trừ; phiếu giữ lại với trạng thái cancelled. */
 export function cancelReturn(db: Db, id: number, clock?: Clock): ReturnDetail {
   const { now } = resolveClock(clock);
   return db.transaction((tx) => {
@@ -91,9 +108,18 @@ export function cancelReturn(db: Db, id: number, clock?: Clock): ReturnDetail {
     const active = r.customerId === null || tx.select({ v: customers.isActive }).from(customers).where(eq(customers.id, r.customerId)).get()?.v;
     if (r.debtReduced > 0 && !active)
       throw new ConflictError('Khách đã ngừng theo dõi, không hủy được phiếu trả đã trừ nợ');
+    const moves = refMovements(tx, 'return', id, returnNote(r.code));
+    let i = 0;
     for (const it of r.items) {
       if (!it.restock || it.productId === null) continue;
-      recordMovement(tx, { productId: it.productId, qty: -it.qty * it.factor, type: 'adjust', refId: id, note: `Hủy phiếu trả ${r.code}` });
+      recordMovement(tx, {
+        productId: it.productId,
+        qty: -it.qty * it.factor,
+        type: 'adjust',
+        refId: id,
+        note: `Hủy phiếu trả ${r.code}`,
+        reverseOf: movementAt(moves, i++, it.productId),
+      });
     }
     if (r.debtReduced > 0 && r.customerId !== null)
       recordCustomerDebtTx(tx, {

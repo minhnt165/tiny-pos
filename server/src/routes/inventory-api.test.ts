@@ -74,4 +74,20 @@ describe('API nhập hàng, NCC, kiểm kê, lịch sử tồn', () => {
     expect((await call('POST', '/api/suppliers', { name: '' })).json.error).toContain('Tên');
     expect((await call('PUT', '/api/stocktakes/1/items/1', { counted: -1 })).json.error).toContain('Số đếm');
   });
+  it('lô hàng: danh sách, lô của sản phẩm, bỏ hàng, lỗi', async () => {
+    const p = await call('POST', '/api/products', { name: 'Sữa API', costPrice: 8000, sellPrice: 10000 });
+    const im = await call('POST', '/api/imports', { paid: 9000, items: [{ productId: p.json.id, qty: 1, unitCost: 9000, expiresOn: '2026-01-01' }] });
+    expect(im.status).toBe(201);
+    expect(im.json.items[0].expiresOn).toBe('2026-01-01');
+    const list = await call('GET', `/api/lots?productId=${p.json.id}`);
+    expect(list.status).toBe(200);
+    expect(list.json.lots).toMatchObject([{ productId: p.json.id, remaining: 1, expiresOn: '2026-01-01', state: 'expired' }]);
+    const mine = await call('GET', `/api/products/${p.json.id}/lots`);
+    expect(mine.json).toMatchObject([{ remaining: 1 }]);
+    const lotId = list.json.lots[0].id;
+    expect((await call('POST', `/api/lots/${lotId}/dispose`, {})).json).toMatchObject({ remaining: 0, state: 'empty' });
+    expect((await call('POST', `/api/lots/${lotId}/dispose`, {})).status).toBe(409);
+    expect((await call('GET', '/api/lots?state=gone')).status).toBe(400);
+    expect((await call('POST', '/api/lots/9999/dispose', {})).status).toBe(404);
+  });
 });

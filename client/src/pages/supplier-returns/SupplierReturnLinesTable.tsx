@@ -1,9 +1,11 @@
 import type { Dispatch } from 'react';
 import { PackageMinus, Trash2 } from 'lucide-react';
-import { formatMoney, formatQty, importLineAmount, overStock, type SupplierReturnAction, type SupplierReturnLine } from '@tiny-pos/shared';
+import { formatMoney, formatQty, importLineAmount, lineOption, overStock, type SupplierReturnAction, type SupplierReturnLine } from '@tiny-pos/shared';
+import { useProductLots } from '@/api/lots';
 import { CommitInput } from '@/components/CommitInput';
 import { EmptyState } from '@/components/EmptyState';
 import { UnitSelect } from '@/components/UnitSelect';
+import { LotSelect } from './LotSelect';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -16,6 +18,9 @@ interface Props {
 
 function LineRow({ line, dispatch, onDone }: { line: SupplierReturnLine; dispatch: Dispatch<SupplierReturnAction>; onDone: () => void }) {
   const update = (patch: Partial<Pick<SupplierReturnLine, 'qty' | 'unitPrice'>>) => dispatch({ type: 'update', key: line.key, patch });
+  const { data: productLotsData = [] } = useProductLots(line.productId);
+  const chosen = productLotsData.find((l) => l.id === line.lotId);
+  const overLot = chosen !== undefined && line.qty * lineOption(line).factor > chosen.remaining + 1e-9;
   return (
     <TableRow>
       <TableCell className="px-4 py-2 whitespace-normal">
@@ -29,6 +34,10 @@ function LineRow({ line, dispatch, onDone }: { line: SupplierReturnLine; dispatc
       </TableCell>
       <TableCell className="px-2 py-2">
         <UnitSelect options={line.options} value={line.unitId} onChange={(unitId) => dispatch({ type: 'setUnit', key: line.key, unitId })} />
+      </TableCell>
+      <TableCell className="px-2 py-2">
+        <LotSelect productId={line.productId} value={line.lotId} onChange={(lotId) => dispatch({ type: 'setLot', key: line.key, lotId })} />
+        {overLot && <div className="mt-0.5 text-xs text-warning">vượt số còn của lô</div>}
       </TableCell>
       <TableCell className="px-2 py-2">
         <CommitInput aria-label="Số lượng" value={line.qty} onCommit={(qty) => update({ qty })} onEnter={onDone} className="w-20 text-center" />
@@ -55,6 +64,7 @@ export function SupplierReturnLinesTable({ lines, dispatch, onDone }: Props) {
         <TableRow className="bg-muted/40 hover:bg-muted/40">
           <TableHead className="px-4">Sản phẩm</TableHead>
           <TableHead className="w-40 px-2">Đơn vị</TableHead>
+          <TableHead className="w-64 px-2">Lô</TableHead>
           <TableHead className="w-24 px-2">Số lượng</TableHead>
           <TableHead className="w-36 px-2 text-right">Giá trả</TableHead>
           <TableHead className="w-32 px-2 text-right">Thành tiền</TableHead>

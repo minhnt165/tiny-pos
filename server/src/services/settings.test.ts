@@ -16,4 +16,13 @@ describe('settings', () => {
     saveSettings(db, { ...input, autoPrint: true });
     expect(getSettings(db).autoPrint).toBe(true);
   });
+  it('expiryWarnDays: lưu số, DB giữ chuỗi, đọc lại ra số; chỉ có khóa này trong DB thì các khóa khác vẫn mặc định', () => {
+    const db = createTestDb();
+    saveSettings(db, settingsInputSchema.parse({ expiryWarnDays: 45 }));
+    expect(db.select().from(settings).all()).toContainEqual({ key: 'expiryWarnDays', value: '45' });
+    expect(getSettings(db).expiryWarnDays).toBe(45);
+    const db2 = createTestDb();
+    db2.insert(settings).values({ key: 'expiryWarnDays', value: '7' }).run();
+    expect(getSettings(db2)).toEqual({ ...SETTINGS_DEFAULTS, expiryWarnDays: 7 });
+  });
 });

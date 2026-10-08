@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { BACKUP_NAME_RE, type BackupItem, type BackupKind, type BackupStatus, type RestoreResult } from '@tiny-pos/shared';
 import { registerFunctions, type Db } from '../db/connection.js';
+import { seedOpeningLots } from '../db/opening-lots.js';
 import { settings } from '../db/schema.js';
 import { BadRequestError, NotFoundError } from '../errors.js';
 import { resolveClock, type Clock } from './daily-code.js';
@@ -227,6 +228,8 @@ export function createBackupService(db: Db, opts: BackupOpts): BackupService {
               sqlite.prepare(`insert into main.sqlite_sequence (name, seq) select name, seq from src.sqlite_sequence where name in (${list})`).run();
             }
           }
+          // Bản sao từ phiên bản chưa có lô: tạo lô Tồn đầu như migration 0008 (migration không chạy lại trên dữ liệu chép vào)
+          seedOpeningLots(sqlite);
           if ((sqlite.pragma('main.foreign_key_check') as unknown[]).length > 0)
             throw new BadRequestError('Bản sao có dữ liệu không nhất quán, không khôi phục');
         })();

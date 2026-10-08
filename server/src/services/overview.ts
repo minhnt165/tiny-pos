@@ -18,6 +18,7 @@ import type { Db } from '../db/connection.js';
 import type { BackupService } from './backups.js';
 import { customers, products, suppliers } from '../db/schema.js';
 import { resolveClock, type Clock } from './daily-code.js';
+import { expiringOverview } from './lots.js';
 import { recentOrders } from './orders.js';
 import { profitReport } from './reports.js';
 import { getCurrentStocktake } from './stocktakes.js';
@@ -25,9 +26,15 @@ import { getCurrentStocktake } from './stocktakes.js';
 export interface OverviewLimits {
   orders: number;
   lowStock: number;
+  expiring: number;
   parties: number;
 }
-const DEFAULT_LIMITS: OverviewLimits = { orders: OVERVIEW_RECENT_ORDERS, lowStock: OVERVIEW_LOW_STOCK_ROWS, parties: OVERVIEW_TOP_PARTIES };
+const DEFAULT_LIMITS: OverviewLimits = {
+  orders: OVERVIEW_RECENT_ORDERS,
+  lowStock: OVERVIEW_LOW_STOCK_ROWS,
+  expiring: OVERVIEW_LOW_STOCK_ROWS,
+  parties: OVERVIEW_TOP_PARTIES,
+};
 
 /** Phần server tính; route ghép thêm `backup` từ BackupService. */
 export type OverviewData = Omit<Overview, 'backup'>;
@@ -110,6 +117,7 @@ export function overview(db: Db, clock?: Clock, limits: Partial<OverviewLimits> 
     week: profitReport(db, datePresetRange('last7', today), clock),
     recentOrders: recentOrders(db, start, end, lim.orders),
     lowStock: lowStock(db, lim.lowStock),
+    expiring: expiringOverview(db, lim.expiring, clock),
     customers: customerDebt(db, today, tz, lim.parties),
     suppliers: supplierDebt(db, lim.parties),
     stocktake: openStocktakeSummary(db),

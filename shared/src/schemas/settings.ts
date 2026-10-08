@@ -24,6 +24,8 @@ export const settingsInputSchema = z.object({
   autoPrint: z.boolean().default(true),
   labelSize: z.enum(LABEL_SIZES).default('40x30'),
   labelShowPrice: z.boolean().default(true),
+  /** Báo lô sắp hết hạn trước bao nhiêu ngày; DB lưu chuỗi nên coerce. */
+  expiryWarnDays: z.coerce.number().int().min(1).max(365).default(30),
 });
 export type Settings = z.output<typeof settingsInputSchema>;
 

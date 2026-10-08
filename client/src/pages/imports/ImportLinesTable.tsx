@@ -25,6 +25,7 @@ export function ImportLinesTable({ lines, dispatch, onDone }: Props) {
           <TableHead className="w-36 px-2 text-right">Giá nhập</TableHead>
           <TableHead className="w-32 px-2 text-right">Thành tiền</TableHead>
           <TableHead className="w-36 px-2 text-right">Giá bán</TableHead>
+          <TableHead className="w-48 px-2">Hạn dùng</TableHead>
           <TableHead className="w-12" />
         </TableRow>
       </TableHeader>

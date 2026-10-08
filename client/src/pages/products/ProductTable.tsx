@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Ban, History, MoreHorizontal, Pencil, RotateCcw, Tag } from 'lucide-react';
+import { Ban, History, Layers, MoreHorizontal, Pencil, RotateCcw, Tag } from 'lucide-react';
 import { formatMoney, type Product } from '@tiny-pos/shared';
 import { ProductAvatar } from '@/components/ProductAvatar';
 import { Badge } from '@/components/ui/badge';
@@ -67,6 +67,10 @@ export function ProductMenu({ p, onEdit, onToggle }: { p: Product; onEdit: () =>
         <DropdownMenuItem onSelect={() => setHistory(true)}>
           <History />
           Lịch sử tồn
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => navigate(`/lots?productId=${p.id}`)}>
+          <Layers />
+          Lô hàng
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => navigate(`/labels?add=${p.id}.0x1`)}>
           <Tag />

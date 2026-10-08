@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { LOT_STATES } from './lot.js';
 
 /** Giới hạn chung của danh sách chứng từ. */
 export const MAX_RANGE_DAYS = 366;
@@ -142,3 +143,8 @@ export const PARTY_SORTS = ['name', 'debt-desc', 'recent'] as const;
 export const partyViewFields = { q: search, debtOnly: flag, includeInactive: flag, sort: z.enum(PARTY_SORTS).default('name') };
 export type PartyView = z.output<z.ZodObject<typeof partyViewFields>>;
 export const partyViewQuerySchema = z.object(partyViewFields);
+
+/** Danh sách lô: mặc định (không `state`) là mọi lô còn hàng; `empty` chỉ hiện khi chọn. */
+export const lotListFields = { q: search, productId: positiveId, state: csvEnum(LOT_STATES), page };
+export const lotListQuerySchema = z.object(lotListFields);
+export type LotListQuery = z.output<typeof lotListQuerySchema>;
