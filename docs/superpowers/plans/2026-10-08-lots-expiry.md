@@ -1151,7 +1151,9 @@ beforeEach(() => {
   db = createTestDb();
 });
 const product = (o: Record<string, unknown>) => createProduct(db, productInputSchema.parse(o));
-const imp = (items: Record<string, unknown>[]) => createImport(db, importInputSchema.parse({ paid: 0, items }), TODAY);
+// Không ghi NCC thì phải trả đủ: paid = Σ qty × unitCost
+const imp = (items: { productId: number; qty: number; unitCost: number; expiresOn?: string | null }[]) =>
+  createImport(db, importInputSchema.parse({ paid: items.reduce((s, i) => s + i.qty * i.unitCost, 0), items }), TODAY);
 const list = (q: Record<string, unknown> = {}) => listLots(db, lotListQuerySchema.parse(q), TODAY);
 
 /** Sữa: Tồn đầu 2 (không hạn), lô quá hạn 1/10, lô 20/10 (sắp), lô 1/1/2027 (ổn); Mì: tồn 0 không lô. */
@@ -1414,7 +1416,7 @@ export function lotsRouter(db: Db): Router {
 ```ts
   it('expiring: lô quá hạn và trong ngưỡng, không tính lô hết hàng', () => {
     const p = product({ name: 'Sữa', costPrice: 8000, sellPrice: 10000 });
-    createImport(db, importInputSchema.parse({ paid: 0, items: [
+    createImport(db, importInputSchema.parse({ paid: 27000, items: [
       { productId: p.id, qty: 1, unitCost: 9000, expiresOn: '2026-09-01' },
       { productId: p.id, qty: 1, unitCost: 9000, expiresOn: '2026-10-10' },
       { productId: p.id, qty: 1, unitCost: 9000, expiresOn: '2027-01-01' },
