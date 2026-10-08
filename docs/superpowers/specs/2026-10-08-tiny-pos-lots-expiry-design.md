@@ -219,8 +219,9 @@ cần: SQLite khóa cả DB trong transaction), (3) tính phân bổ, (4) ghi `l
   `|qty|` bằng tổng gốc, trả hàng một phần truyền `qty` nhỏ hơn thì chia theo tỷ lệ, làm tròn 3 chữ số, dồn
   sai số vào dòng cuối); không có dòng → rơi về luật tự động theo dấu `qty`.
 
-Thêm `disposeLot(db, lotId, note, clock)`: lô `remaining ≤ 0` → `ConflictError('Lô đã hết hàng')`;
-ngược lại `recordMovement({ type: 'adjust', qty: -remaining, lotId, note: 'Bỏ hàng <mã phiếu nhập hoặc tồn đầu>: <note>' })`.
+`disposeLot(db, lotId, input, clock)` đặt ở `services/lots.ts` (cần trả về `LotRow`): lô `remaining ≤ 0` →
+`ConflictError('Lô đã hết hàng')`; ngược lại `recordMovement({ type: 'adjust', qty: -remaining, lotId, note: 'Bỏ hàng <mã
+phiếu nhập hoặc tồn đầu>: <note>' })`.
 
 `adjustStockTo` giữ nguyên chữ ký, bên trong gọi `recordMovement` nên tự đúng.
 
@@ -281,9 +282,10 @@ Route chịu `deviceGate` như mọi `/api`.
   `Layers`: `PageTitle`; `StatStrip` (sắp hết hạn, đã hết hạn, giá trị tồn); `FilterBar` + `useUrlFilters`
   (`q`, `state` chip nhiều chọn, `productId` ẩn khi tới từ chi tiết sản phẩm); `ListPanel` cột: sản phẩm
   (`ProductAvatar` + tên), phiếu nhập (link mở chi tiết phiếu), hạn (`Badge` màu `warning` khi `expiring`,
-  `destructive` khi `expired`, kèm "còn n ngày"/"quá n ngày"), còn, giá vốn, nút *Bỏ hàng* (`AlertDialog`
-  xác nhận, ô ghi chú tùy chọn). Điện thoại: thẻ dọc như `ListPanel` các trang khác.
-- **Chi tiết sản phẩm**: thẻ *Lô hàng* liệt kê `ProductLot[]`, link "Xem tất cả" sang `/lots?productId=`.
+  `destructive` khi `expired`, kèm "còn n ngày"/"quá n ngày"), còn, giá vốn, nút *Bỏ hàng* (hộp xác nhận
+  `useConfirm` sẵn có, không có ô ghi chú; API vẫn nhận `note`). Điện thoại: cùng bảng, ẩn cột phiếu và giá vốn.
+- **Sản phẩm**: không có trang chi tiết sản phẩm, nên menu ⋯ của dòng sản phẩm thêm mục *Lô hàng* mở
+  `/lots?productId=…` (chip lọc hiện tên sản phẩm). `ProductLot[]` chỉ dùng cho ô chọn lô khi trả NCC.
 - **Trả NCC** (`pages/supplier-returns`): dòng có `Select` lô, mặc định lô FEFO đầu; mỗi option
   "PN-… · HSD dd/mm/yyyy · còn n"; `qty > remaining` hiện chữ nhỏ `warning` "vượt số còn của lô".
 - **Tổng quan**: thẻ *Sắp hết hạn* kiểu như *Tồn thấp*: số lô quá hạn (đỏ) và sắp hết hạn, vài dòng đầu,
@@ -306,9 +308,10 @@ Route chịu `deviceGate` như mọi `/api`.
 - Bỏ hàng lô âm/0: 409 "Lô đã hết hàng".
 - Khôi phục bản sao cũ (trước 0.17.0): sau khi chép bảng, `seedOpeningLots` tạo lô tồn đầu cho sản phẩm
   chưa có lô; phiếu cũ không có phân bổ, hủy theo luật tự động.
-- Sản phẩm bị xóa: `lots.product_id` tham chiếu `products`; `deleteProduct` hiện đã chặn khi có chứng
-  từ, thêm điều kiện có lô (`qty_in ≠ 0` hoặc có `lot_movements`) cũng chặn; lô tồn đầu rỗng của sản
-  phẩm chưa phát sinh gì thì xóa cùng sản phẩm.
+- Sản phẩm không bao giờ bị xóa khỏi DB (chỉ ngừng bán qua `setProductActive`), nên `lots.product_id`
+  không cần xử lý xóa; sản phẩm ngừng bán vẫn nhập, trả NCC, bỏ hàng và hiện trên trang Lô hàng.
+- Tạo sản phẩm có tồn (`createProduct`) hay sửa tồn tay (`updateProduct`) đi qua `adjustStockTo` →
+  `recordMovement`, nên tự tạo lô tồn đầu / bù lô như mọi movement khác, không cần code riêng.
 - Xem từ xa: `Overview.expiring` đi kèm lên Firestore (tài liệu vẫn nhỏ, dưới 1 MB); trang remote chưa vẽ.
 
 ## 8. Kiểm thử
@@ -343,8 +346,8 @@ Route chịu `deviceGate` như mọi `/api`.
 
 - Phiếu nhập: cột Hạn dùng, chọn/xóa ngày, body gửi `expiresOn`.
 - `/lots`: lọc trạng thái, màu badge, hộp xác nhận Bỏ hàng (không gửi).
-- Chi tiết sản phẩm có thẻ Lô hàng; Trả NCC có ô chọn lô và cảnh báo vượt; Tổng quan có thẻ Sắp hết hạn;
-  Cài đặt có ô ngưỡng. Kiểm ở cỡ điện thoại và máy tính.
+- Menu sản phẩm có mục Lô hàng dẫn tới `/lots?productId=`; Trả NCC có ô chọn lô và cảnh báo vượt; Tổng quan có
+  thẻ Sắp hết hạn; Cài đặt có ô ngưỡng. Kiểm ở cỡ điện thoại và máy tính.
 
 ## 9. Phiên bản và tài liệu
 
