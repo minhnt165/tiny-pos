@@ -38,7 +38,8 @@ foreach ($dir in @($startup, $desktop)) {
   $s.Arguments = "`"$Repo\scripts\open.vbs`""
   $s.WorkingDirectory = $Repo
   $s.Description = 'Mo Tiny POS'
-  if ($browser) { $s.IconLocation = "$browser,0" }
+  if (Test-Path "$Repo\client\public\favicon.ico") { $s.IconLocation = "$Repo\client\public\favicon.ico,0" }
+  elseif ($browser) { $s.IconLocation = "$browser,0" }
   $s.Save()
   Write-Host "    $dir\Tiny POS.lnk"
 }
