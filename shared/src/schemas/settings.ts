@@ -21,7 +21,7 @@ export const settingsInputSchema = z.object({
     .regex(/^\d{0,19}$/, 'chỉ gồm chữ số')
     .default(''),
   bankAccountName: z.string().max(50).transform(toBankName).default(''),
-  autoPrint: z.boolean().default(true),
+  autoPrint: z.boolean().default(false),
   labelSize: z.enum(LABEL_SIZES).default('40x30'),
   labelShowPrice: z.boolean().default(true),
   /** Báo lô sắp hết hạn trước bao nhiêu ngày; DB lưu chuỗi nên coerce. */

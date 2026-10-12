@@ -44,7 +44,7 @@ export function CollectDebtDialog({ customer, open, onClose }: { customer: Custo
         onSuccess: (r) => {
           toast.success(`Đã thu ${formatMoney(n)} của ${customer.name}`);
           setResult(r);
-          if (settings?.autoPrint ?? true) printReceipt(r);
+          if (settings?.autoPrint ?? false) printReceipt(r);
         },
         onError: (err) => toast.error(err.message),
       },

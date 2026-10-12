@@ -60,6 +60,26 @@ describe('cartReducer', () => {
     c = cartReducer(c, { type: 'update', key, patch: { qty: 0 } });
     expect(c.lines).toEqual([]);
   });
+  it('setUnit đổi tên/hệ số/giá theo đơn vị mới, giữ số lượng và khóa dòng', () => {
+    let c = add(EMPTY_CART, lineFromProduct(product(), null, 2));
+    const key = c.lines[0]!.key;
+    c = cartReducer(c, { type: 'setUnit', key, product: product({ stock: 48 }), unit: crate });
+    expect(c.lines).toHaveLength(1);
+    expect(c.lines[0]).toMatchObject({ key, unitId: 7, unitName: 'Thùng', factor: 24, price: 280000, qty: 2, stock: 48 });
+    c = cartReducer(c, { type: 'setUnit', key, product: product(), unit: null });
+    expect(c.lines[0]).toMatchObject({ key, unitId: null, unitName: 'lon', factor: 1, price: 12000, qty: 2 });
+  });
+  it('setUnit sang đơn vị đã có dòng → gộp vào dòng đó; cùng đơn vị → giữ nguyên giá đã sửa', () => {
+    let c = add(EMPTY_CART, lineFromProduct(product(), crate));
+    c = add(c, lineFromProduct(product(), null, 3));
+    const lon = c.lines[1]!.key;
+    c = cartReducer(c, { type: 'setUnit', key: lon, product: product(), unit: crate });
+    expect(c.lines.map((l) => [l.unitName, l.qty])).toEqual([['Thùng', 4]]);
+    const crateKey = c.lines[0]!.key;
+    c = cartReducer(c, { type: 'update', key: crateKey, patch: { price: 270000 } });
+    const same = cartReducer(c, { type: 'setUnit', key: crateKey, product: product(), unit: crate });
+    expect(same).toBe(c);
+  });
   it('clear và replace', () => {
     const c = add(EMPTY_CART);
     expect(cartReducer(c, { type: 'clear' })).toEqual(EMPTY_CART);

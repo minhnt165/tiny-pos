@@ -12,9 +12,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { moneyChange } from '@/lib/money-input';
 import { cn } from '@/lib/utils';
-import { ProductUnitsEditor } from './ProductUnitsEditor';
+import { ProductUnitsEditor, UNIT_NAME_ID } from './ProductUnitsEditor';
 import { toInput, useProductForm, validateForm, type FormState } from './useProductForm';
 import { useProductImage } from './useProductImage';
+import { useProductUnits } from './useProductUnits';
 
 interface Props {
   open: boolean;
@@ -32,16 +33,17 @@ export function ProductFormDialog({ open, product, initialBarcode, onClose, onSa
   const { data: categories = [] } = useCategories();
   const save = useSaveProduct();
   const image = useProductImage(open, product);
+  const units = useProductUnits(open, product);
   const fileRef = useRef<HTMLInputElement>(null);
   const unit = form.unit || 'cái';
   // Có mã sẵn (quét ở Nhập nhanh) hoặc đang sửa → vào thẳng ô Tên; tạo mới tay → ô Mã vạch để máy quét gõ vào
   const firstFocusId = product || initialBarcode ? fieldId('name') : fieldId('barcode');
 
-  const saving = save.isPending || image.busy;
+  const saving = save.isPending || image.busy || units.busy;
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (saving) return; // Enter trong lúc đang gửi ảnh tạm: không tạo thêm sản phẩm
+    if (saving) return; // Enter trong lúc đang gửi ảnh/đơn vị tạm: không tạo thêm sản phẩm
     const errs = validateForm(form);
     const firstBad = (Object.keys(errs) as (keyof FormState)[]).find((k) => errs[k]);
     if (firstBad) {
@@ -50,12 +52,18 @@ export function ProductFormDialog({ open, product, initialBarcode, onClose, onSa
       toast.error('Vui lòng kiểm tra lại các ô được đánh dấu đỏ');
       return;
     }
+    // Dòng thùng/lốc đang điền dở mà chưa bấm Thêm: gửi (đang sửa) hoặc giữ tạm (đang thêm) trước, không để mất
+    if (!(await units.commitIfFilled())) {
+      document.getElementById(UNIT_NAME_ID)?.focus();
+      toast.error('Vui lòng kiểm tra lại dòng đơn vị quy đổi');
+      return;
+    }
     save.mutate(
       { ...toInput(form), id: product?.id },
       {
         onSuccess: async (p) => {
-          // Thêm mới: sản phẩm có id rồi mới gửi được ảnh đang giữ tạm
-          const final = product ? p : await image.flush(p);
+          // Thêm mới: sản phẩm có id rồi mới gửi được ảnh và đơn vị đang giữ tạm
+          const final = product ? p : await units.flush(await image.flush(p));
           toast.success(product ? 'Đã lưu' : `Đã thêm "${final.name}"`);
           onSaved(final);
         },
@@ -98,7 +106,7 @@ export function ProductFormDialog({ open, product, initialBarcode, onClose, onSa
           <DialogTitle className="text-xl">{product ? 'Sửa sản phẩm' : 'Thêm sản phẩm'}</DialogTitle>
           <DialogDescription>{product ? product.name : 'Quét mã vạch hoặc nhập tay'}</DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} noValidate className="px-6 py-5">
+        <form onSubmit={(e) => void submit(e)} noValidate className="px-6 py-5">
           <section className="mb-6">
             <SectionTitle>Thông tin</SectionTitle>
             <div className="mb-4 flex items-center gap-4">
@@ -191,13 +199,13 @@ export function ProductFormDialog({ open, product, initialBarcode, onClose, onSa
             <label className="mt-4 flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-colors hover:bg-muted/50 has-data-checked:border-primary/40 has-data-checked:bg-accent">
               <Checkbox className="size-5" checked={form.isWeighed} onCheckedChange={(v) => set('isWeighed', v === true)} />
               <span>
-                <span className="block font-medium">Hàng cân</span>
-                <span className="block text-sm text-muted-foreground">Bán theo kg: khi bán nhập số cân hoặc số tiền</span>
+                <span className="block font-medium">Hàng cân, hàng đo</span>
+                <span className="block text-sm text-muted-foreground">Bán theo kg, mét… (thịt, gạo, dây điện): khi bán nhập số lượng hoặc số tiền</span>
               </span>
             </label>
           </section>
 
-          {product && <ProductUnitsEditor product={product} />}
+          <ProductUnitsEditor baseUnit={unit} units={units} />
 
           <div className="-mx-6 -mb-5 mt-6 flex justify-end gap-2 rounded-b-xl border-t bg-muted/50 px-6 py-4">
             <Button type="button" variant="outline" className="h-11 px-4 text-base" onClick={onClose}>

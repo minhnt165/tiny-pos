@@ -29,6 +29,8 @@ export const CUSTOM_ITEM_NAME = 'Hàng khác';
 export type CartAction =
   | { type: 'add'; line: NewCartLine }
   | { type: 'update'; key: string; patch: Partial<Pick<CartLine, 'qty' | 'price'>> }
+  /** Đổi dòng sang đơn vị khác của cùng sản phẩm (gốc hoặc thùng/lốc): giá, hệ số theo đơn vị mới, giữ số lượng. */
+  | { type: 'setUnit'; key: string; product: Product; unit: ProductUnit | null }
   | { type: 'remove'; key: string }
   | { type: 'setDiscount'; discount: number }
   | { type: 'replace'; cart: Cart }
@@ -56,6 +58,16 @@ export function cartReducer(cart: Cart, a: CartAction): Cart {
     case 'update':
       if (a.patch.qty !== undefined && a.patch.qty <= 0) return cartReducer(cart, { type: 'remove', key: a.key });
       return { ...cart, lines: cart.lines.map((x) => (x.key === a.key ? { ...x, ...a.patch } : x)) };
+    case 'setUnit': {
+      const cur = cart.lines.find((x) => x.key === a.key);
+      const unitId = a.unit?.id ?? null;
+      if (!cur || cur.unitId === unitId) return cart;
+      const line = { ...lineFromProduct(a.product, a.unit, cur.qty), key: cur.key };
+      // Giỏ đã có dòng cùng sản phẩm + đơn vị mới (không phải hàng cân) → gộp số lượng vào dòng đó
+      const same = line.isWeighed ? undefined : cart.lines.find((x) => x !== cur && x.productId === line.productId && x.unitId === unitId);
+      if (same) return { ...cart, lines: cart.lines.filter((x) => x !== cur).map((x) => (x === same ? { ...x, qty: x.qty + cur.qty } : x)) };
+      return { ...cart, lines: cart.lines.map((x) => (x === cur ? line : x)) };
+    }
     case 'remove':
       return { ...cart, lines: cart.lines.filter((x) => x.key !== a.key) };
     case 'setDiscount':

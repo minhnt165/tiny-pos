@@ -113,7 +113,7 @@ export function SellPage({ standalone = false }: { standalone?: boolean }) {
     dispatch({ type: 'clear' });
     setLastOrder(order);
     toast.success(`${order.debt ? 'Đã ghi nợ' : 'Đã thanh toán'} ${order.code}`);
-    if (settings?.autoPrint ?? true) void print(receiptFromOrder(order));
+    if (settings?.autoPrint ?? false) void print(receiptFromOrder(order));
   };
 
   useEffect(() => {

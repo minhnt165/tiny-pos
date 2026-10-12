@@ -18,7 +18,7 @@ interface Props {
   onConfirm: (qty: number) => void;
 }
 
-/** Hàng cân: gõ số kg hoặc số tiền khách muốn mua, ô còn lại tự tính. */
+/** Hàng cân/đo (kg, mét…): gõ số lượng hoặc số tiền khách muốn mua, ô còn lại tự tính. */
 export function WeighDialog({ target, onClose, onConfirm }: Props) {
   const [kg, setKg] = useState('');
   const [amount, setAmount] = useState('');
@@ -65,7 +65,7 @@ export function WeighDialog({ target, onClose, onConfirm }: Props) {
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <TextField id="wd-kg" label="Khối lượng" suffix={target?.line.unitName} inputMode="decimal" autoFocus value={kg} onChange={(e) => onKg(e.target.value)} />
+            <TextField id="wd-kg" label="Số lượng" suffix={target?.line.unitName} inputMode="decimal" autoFocus value={kg} onChange={(e) => onKg(e.target.value)} />
             <TextField id="wd-amount" label="Thành tiền" suffix="đ" inputMode="numeric" value={amount} onChange={moneyChange(onAmount)} />
           </div>
           <Button type="submit" className="h-11 w-full text-base" disabled={!valid}>

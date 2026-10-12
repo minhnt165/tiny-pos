@@ -37,6 +37,7 @@ export function CartTable({ cart, shortages, dispatch, onEditWeight, onDone }: P
             shortStock={l.productId !== null ? shortages.get(l.productId) : undefined}
             onQty={(qty) => dispatch({ type: 'update', key: l.key, patch: { qty } })}
             onPrice={(price) => dispatch({ type: 'update', key: l.key, patch: { price } })}
+            onUnit={(product, unit) => dispatch({ type: 'setUnit', key: l.key, product, unit })}
             onRemove={() => dispatch({ type: 'remove', key: l.key })}
             onEditWeight={() => onEditWeight(l)}
             onDone={onDone}

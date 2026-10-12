@@ -62,7 +62,7 @@ describe('API đơn hàng và cài đặt', () => {
   it('cài đặt: GET mặc định, PUT rồi GET', async () => {
     expect((await call('GET', '/api/settings')).json.storeName).toBe('Tạp hóa');
     const put = await call('PUT', '/api/settings', { storeName: 'Tạp hóa Út', bankAccountName: 'út em' });
-    expect(put.json).toMatchObject({ storeName: 'Tạp hóa Út', bankAccountName: 'UT EM', autoPrint: true });
+    expect(put.json).toMatchObject({ storeName: 'Tạp hóa Út', bankAccountName: 'UT EM', autoPrint: false });
     expect((await call('GET', '/api/settings')).json.storeName).toBe('Tạp hóa Út');
     expect((await call('PUT', '/api/settings', { bankBin: '12' })).status).toBe(400);
   });

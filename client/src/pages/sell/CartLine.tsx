@@ -1,6 +1,8 @@
 import { useEffect, useState, type FocusEvent, type KeyboardEvent } from 'react';
 import { Minus, Plus, X } from 'lucide-react';
-import { formatMoney, formatQty, lineAmount, parseVnNumber, type CartLine as Line } from '@tiny-pos/shared';
+import { formatMoney, formatQty, lineAmount, parseVnNumber, unitOptions, type CartLine as Line, type ProductUnit, type ProductWithUnits } from '@tiny-pos/shared';
+import { useProduct } from '@/api/products';
+import { UnitSelect } from '@/components/UnitSelect';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +17,8 @@ interface Props {
   shortStock?: number;
   onQty: (qty: number) => void;
   onPrice: (price: number) => void;
+  /** Đổi sang đơn vị gốc hoặc thùng/lốc của sản phẩm (chỉ hiện khi sản phẩm có đơn vị quy đổi). */
+  onUnit: (product: ProductWithUnits, unit: ProductUnit | null) => void;
   onRemove: () => void;
   onEditWeight: () => void;
   /** Gọi sau Enter để đưa focus về ô quét. */
@@ -30,9 +34,17 @@ function useDraft(value: string) {
 
 const selectAll = (e: FocusEvent<HTMLInputElement>) => e.target.select();
 
-export function CartLine({ index, line, shortStock, onQty, onPrice, onRemove, onEditWeight, onDone }: Props) {
+export function CartLine({ index, line, shortStock, onQty, onPrice, onUnit, onRemove, onEditWeight, onDone }: Props) {
   const [qty, setQty] = useDraft(formatQty(line.qty));
   const [price, setPrice] = useDraft(groupThousands(String(line.price)));
+  // Lấy đơn vị quy đổi của sản phẩm (cache theo id, các dòng cùng sản phẩm dùng chung); món ngoài không tải
+  const { data: product } = useProduct(line.productId);
+  const hasUnits = !!product && product.units.length > 0;
+  const changeUnit = (id: number | null) => {
+    if (!product) return;
+    const u = id === null ? null : product.units.find((x) => x.id === id);
+    if (u !== undefined) onUnit(product, u); // Radix có thể bắn giá trị rỗng khi option chưa mount → bỏ qua
+  };
 
   // Blur chỉ ghi giá trị; Enter ghi rồi trả focus về ô quét (blur không kéo focus để còn bấm sang ô khác)
   // Ô trống (hoặc chỉ có khoảng trắng) = chưa nhập gì: trả lại giá trị cũ, không ghi 0 (qty 0 xóa dòng, giá 0 bán miễn phí)
@@ -61,8 +73,14 @@ export function CartLine({ index, line, shortStock, onQty, onPrice, onRemove, on
       <TableCell className="px-4 whitespace-normal sm:pl-2">
         <div className="font-medium">{line.name}</div>
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          {line.unitName}
-          {line.factor !== 1 && ` (= ${formatQty(line.factor)})`}
+          {hasUnits ? (
+            <UnitSelect options={unitOptions(product)} value={line.unitId} onChange={changeUnit} />
+          ) : (
+            <>
+              {line.unitName}
+              {line.factor !== 1 && ` (= ${formatQty(line.factor)})`}
+            </>
+          )}
           {shortStock !== undefined && (
             <Badge className="bg-warning/15 text-warning">
               Tồn còn {formatQty(shortStock)}
