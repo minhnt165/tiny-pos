@@ -42,7 +42,7 @@ describe('settingsInputSchema', () => {
       bankBin: '',
       bankAccount: '',
       bankAccountName: '',
-      autoPrint: true,
+      autoPrint: false,
       labelSize: '40x30',
       labelShowPrice: true,
       expiryWarnDays: 30,

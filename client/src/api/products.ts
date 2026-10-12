@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   BarcodeLookup,
   CsvImportResult,
@@ -34,6 +34,20 @@ export const useProduct = (id: number | null) =>
     queryKey: ['products', 'detail', id],
     queryFn: () => api<ProductWithUnits>(`/products/${id}`),
     enabled: id !== null,
+  });
+
+/**
+ * Sản phẩm đang trong giỏ (tồn mới + đơn vị quy đổi), một request cho cả giỏ; `ids` đã sắp xếp để khóa cache ổn định.
+ * Giỏ có thể nằm lâu (F5, đơn chờ) nên làm mới định kỳ; đổi giỏ thì giữ dữ liệu cũ để ô đơn vị không nháy.
+ */
+export const useCartProducts = (ids: number[]) =>
+  useQuery({
+    queryKey: ['products', 'cart', ids],
+    queryFn: () => api<ProductWithUnits[]>(`/products/by-ids?ids=${ids.join(',')}`),
+    select: (rows): ReadonlyMap<number, ProductWithUnits> => new Map(rows.map((p) => [p.id, p])),
+    enabled: ids.length > 0,
+    refetchInterval: 30_000,
+    placeholderData: keepPreviousData,
   });
 
 export const lookupBarcode = (code: string) => api<BarcodeLookup>(`/products/by-barcode/${encodeURIComponent(code)}`);

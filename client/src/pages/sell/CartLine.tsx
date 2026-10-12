@@ -1,7 +1,6 @@
 import { useEffect, useState, type FocusEvent, type KeyboardEvent } from 'react';
 import { Minus, Plus, X } from 'lucide-react';
 import { formatMoney, formatQty, lineAmount, parseVnNumber, unitOptions, type CartLine as Line, type ProductUnit, type ProductWithUnits } from '@tiny-pos/shared';
-import { useProduct } from '@/api/products';
 import { UnitSelect } from '@/components/UnitSelect';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,6 +12,8 @@ interface Props {
   /** Thứ tự dòng (từ 0) để hiện cột #. */
   index: number;
   line: Line;
+  /** Sản phẩm kèm đơn vị quy đổi (tải chung cả giỏ ở SellPage); món ngoài hoặc chưa tải thì không có. */
+  product?: ProductWithUnits;
   /** Tồn hiện có nếu giỏ đang vượt tồn. */
   shortStock?: number;
   onQty: (qty: number) => void;
@@ -34,11 +35,9 @@ function useDraft(value: string) {
 
 const selectAll = (e: FocusEvent<HTMLInputElement>) => e.target.select();
 
-export function CartLine({ index, line, shortStock, onQty, onPrice, onUnit, onRemove, onEditWeight, onDone }: Props) {
+export function CartLine({ index, line, product, shortStock, onQty, onPrice, onUnit, onRemove, onEditWeight, onDone }: Props) {
   const [qty, setQty] = useDraft(formatQty(line.qty));
   const [price, setPrice] = useDraft(groupThousands(String(line.price)));
-  // Lấy đơn vị quy đổi của sản phẩm (cache theo id, các dòng cùng sản phẩm dùng chung); món ngoài không tải
-  const { data: product } = useProduct(line.productId);
   const hasUnits = !!product && product.units.length > 0;
   const changeUnit = (id: number | null) => {
     if (!product) return;

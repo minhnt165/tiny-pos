@@ -100,12 +100,15 @@ export function customLine(name: string, price: number, qty: number): NewCartLin
   return { productId: null, unitId: null, name: n, unitName: 'cái', factor: 1, isWeighed: false, stock: 0, qty, price };
 }
 
-/** Sản phẩm mà tổng qty×factor trong giỏ vượt tồn: productId → tồn hiện có. */
-export function stockShortages(lines: CartLine[]): Map<number, number> {
+/**
+ * Sản phẩm mà tổng qty×factor trong giỏ vượt tồn: productId → tồn hiện có.
+ * `current` là tồn mới lấy từ server (giỏ nằm lâu trong localStorage/đơn chờ); thiếu thì dùng ảnh chụp lúc thêm vào giỏ.
+ */
+export function stockShortages(lines: CartLine[], current?: ReadonlyMap<number, { stock: number }>): Map<number, number> {
   const need = new Map<number, { need: number; stock: number }>();
   for (const l of lines) {
     if (l.productId === null) continue;
-    const e = need.get(l.productId) ?? { need: 0, stock: l.stock };
+    const e = need.get(l.productId) ?? { need: 0, stock: current?.get(l.productId)?.stock ?? l.stock };
     e.need += l.qty * l.factor;
     need.set(l.productId, e);
   }

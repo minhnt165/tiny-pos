@@ -36,7 +36,7 @@ const SHORTCUTS = [
 /** standalone: đang ở cửa sổ quầy /pos (không có nút mở cửa sổ quầy). */
 export function SellPage({ standalone = false }: { standalone?: boolean }) {
   const navigate = useNavigate();
-  const { cart, dispatch, totals, shortages } = useCart();
+  const { cart, dispatch, totals, shortages, products } = useCart();
   const heldCarts = useHeldCarts();
   const { data: settings } = useSettings();
   const print = usePrint();
@@ -143,7 +143,7 @@ export function SellPage({ standalone = false }: { standalone?: boolean }) {
         <HeldCarts held={heldCarts.held} currentCount={cart.lines.length} onOpen={openHeld} onDrop={(id) => void dropHeld(id)} />
         {lastOrder && <SaleResult order={lastOrder} onReprint={() => void print(receiptFromOrder(lastOrder))} />}
         <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border bg-card">
-          <CartTable cart={cart} shortages={shortages} dispatch={dispatch} onEditWeight={editWeight} onDone={scan.focus} />
+          <CartTable cart={cart} shortages={shortages} products={products} dispatch={dispatch} onEditWeight={editWeight} onDone={scan.focus} />
         </div>
         <div className="hidden flex-wrap gap-4 text-xs text-muted-foreground lg:flex">
           {SHORTCUTS.map(([k, label]) => (

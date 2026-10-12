@@ -5,7 +5,8 @@ import { createTestDb } from '../db/test-db.js';
 import type { Db } from '../db/connection.js';
 import { lots, products, stockMovements } from '../db/schema.js';
 import { createCategory } from './categories.js';
-import { createProduct, getProduct, listProducts, setProductActive, updateProduct } from './products.js';
+import { createProduct, getProduct, getProducts, listProducts, setProductActive, updateProduct } from './products.js';
+import { createUnit } from './product-units.js';
 import { assertLotInvariant } from './stock.js';
 
 const input = (o: Record<string, unknown>) => productInputSchema.parse(o);
@@ -84,6 +85,19 @@ describe('products', () => {
     expect(listProducts(db, { q: '22', includeInactive: false }).map((p) => p.name)).toEqual(['Pepsi']);
     expect(listProducts(db, { q: 'coc', includeInactive: false })[0]).toMatchObject({ name: 'Coca', categoryName: 'Đồ uống' });
     expect(listProducts(db, { categoryId: c.id, includeInactive: false })).toHaveLength(2);
+  });
+
+  it('getProducts: theo danh sách id, kèm đơn vị quy đổi, cả hàng ngừng bán, bỏ qua id lạ', () => {
+    const a = createProduct(db, input({ name: 'Coca', barcode: '111' }));
+    const b = createProduct(db, input({ name: 'Bánh', barcode: '333' }));
+    createUnit(db, a.id, { name: 'Thùng', barcode: null, factor: 24, sellPrice: 240000 });
+    setProductActive(db, b.id, false);
+    const rows = getProducts(db, [b.id, a.id, 999]);
+    expect(rows.map((p) => [p.name, p.isActive, p.units.length])).toEqual([
+      ['Bánh', false, 0],
+      ['Coca', true, 1],
+    ]);
+    expect(getProducts(db, [])).toEqual([]);
   });
 
   it('getProduct 404', () => {

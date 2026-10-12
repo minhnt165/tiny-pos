@@ -1,6 +1,6 @@
 import type { Dispatch } from 'react';
 import { ShoppingCart } from 'lucide-react';
-import type { Cart, CartAction, CartLine as Line } from '@tiny-pos/shared';
+import type { Cart, CartAction, CartLine as Line, ProductWithUnits } from '@tiny-pos/shared';
 import { EmptyState } from '@/components/EmptyState';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CartLine } from './CartLine';
@@ -8,12 +8,14 @@ import { CartLine } from './CartLine';
 interface Props {
   cart: Cart;
   shortages: Map<number, number>;
+  /** Sản phẩm trong giỏ lấy mới từ server (đơn vị quy đổi); chưa tải thì không có. */
+  products: ReadonlyMap<number, ProductWithUnits>;
   dispatch: Dispatch<CartAction>;
   onEditWeight: (line: Line) => void;
   onDone: () => void;
 }
 
-export function CartTable({ cart, shortages, dispatch, onEditWeight, onDone }: Props) {
+export function CartTable({ cart, shortages, products, dispatch, onEditWeight, onDone }: Props) {
   if (!cart.lines.length)
     return <EmptyState icon={ShoppingCart} title="Giỏ hàng trống" description="Quét mã vạch hoặc gõ tên sản phẩm để thêm." />;
   return (
@@ -34,6 +36,7 @@ export function CartTable({ cart, shortages, dispatch, onEditWeight, onDone }: P
             key={l.key}
             index={i}
             line={l}
+            product={l.productId !== null ? products.get(l.productId) : undefined}
             shortStock={l.productId !== null ? shortages.get(l.productId) : undefined}
             onQty={(qty) => dispatch({ type: 'update', key: l.key, patch: { qty } })}
             onPrice={(price) => dispatch({ type: 'update', key: l.key, patch: { price } })}

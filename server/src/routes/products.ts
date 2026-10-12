@@ -1,11 +1,13 @@
 import express, { Router } from 'express';
 import {
   movementListQuerySchema,
+  productIdsQuerySchema,
   productInputSchema,
   productListQuerySchema,
   productUnitInputSchema,
   productViewQuerySchema,
   type MovementListQuery,
+  type ProductIdsQuery,
   type ProductListQuery,
   type ProductView,
 } from '@tiny-pos/shared';
@@ -21,6 +23,7 @@ import {
   createProduct,
   findProductByBarcode,
   getProduct,
+  getProducts,
   listProducts,
   setProductActive,
   updateProduct,
@@ -40,6 +43,9 @@ export function productsRouter(db: Db, images: ImageDeps): Router {
     res.json(await importProductsFile(db, Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0)));
   });
   r.get('/by-barcode/:code', (req, res) => res.json(findProductByBarcode(db, String(req.params['code']))));
+  r.get('/by-ids', validateQuery(productIdsQuerySchema), (_req, res) =>
+    res.json(getProducts(db, (res.locals['query'] as ProductIdsQuery).ids)),
+  );
 
   r.get('/', validateQuery(productListQuerySchema), (_req, res) =>
     res.json(listProducts(db, res.locals['query'] as ProductListQuery)),

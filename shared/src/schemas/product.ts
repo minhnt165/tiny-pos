@@ -30,3 +30,12 @@ export const productListQuerySchema = z.object({
   includeInactive: flag,
 });
 export type ProductListQuery = z.infer<typeof productListQuerySchema>;
+
+/** `ids=1,2,3`: các sản phẩm trong giỏ (tối đa 200). */
+export const productIdsQuerySchema = z.object({
+  ids: z
+    .string()
+    .default('')
+    .transform((v) => [...new Set(v.split(',').map(Number).filter((n) => Number.isInteger(n) && n > 0))].slice(0, 200)),
+});
+export type ProductIdsQuery = z.infer<typeof productIdsQuerySchema>;

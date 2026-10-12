@@ -17,7 +17,8 @@ paths:
 - **Màu và tùy chỉnh giao diện**: dùng token (`primary`, `accent`, `muted-foreground`, `success`, `warning`, `destructive`), không viết `emerald-*`/`amber-*`/mã hex trong trang. Màu nhấn, cỡ chữ, mật độ, bo góc là `data-*` trên `<html>` (`lib/ui-prefs.ts`, CSS ở `index.css`); chế độ sáng/tối do next-themes.
 - **Radix Select**: `SelectItem` không được có `value=''`, nên giá trị "không chọn" là `NONE` trong `SelectField`. Radix có thể tự bắn `onValueChange('')` khi `value` đổi lúc option chưa mount; `SelectField` đã bỏ qua trường hợp này. Đừng gỡ chỗ bỏ qua đó.
 - **Quầy bán**:
-  - Ô quét luôn giữ focus sau mỗi thao tác (`useScanInput`, `scan.focus()` cả khi lỗi).
+  - Ô quét luôn giữ focus sau mỗi thao tác (`useScanInput`, `scan.focus()` cả khi lỗi). Máy quét bắn khi focus đang ở ô khác (số lượng, giá, nút vừa bấm): `useScanInput` nhận ra hai ký tự cách nhau < 40ms, rút ký tự đã lọt và kéo chuỗi về ô quét; đừng bắt từng phím ở nơi khác.
+  - Sản phẩm trong giỏ (tồn mới, đơn vị quy đổi) lấy một lượt qua `useCartProducts` (`GET /products/by-ids`), không `useProduct` từng dòng; `stockShortages` ưu tiên tồn mới, thiếu thì dùng ảnh chụp `line.stock`.
   - Phím tắt F4/F9 phải bỏ qua khi đang mở `[role=dialog]`/`[role=alertdialog]`, và phải chốt giá trị đang gõ (blur) trước khi lưu.
   - Chống bấm hai lần: khóa theo `isPending`.
 - **Điện thoại** (390px):

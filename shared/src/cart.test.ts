@@ -101,6 +101,13 @@ describe('stockShortages', () => {
     c = add(c, lineFromProduct(product({ stock: 30 }), null, 7));
     expect([...stockShortages(c.lines)]).toEqual([[1, 30]]);
   });
+  it('có tồn mới từ server thì dùng thay ảnh chụp lúc thêm vào giỏ', () => {
+    const c = add(EMPTY_CART, lineFromProduct(product({ stock: 30 }), null, 7));
+    expect(stockShortages(c.lines, new Map([[1, { stock: 5 }]]))).toEqual(new Map([[1, 5]]));
+    const low = add(EMPTY_CART, lineFromProduct(product({ stock: 2 }), null, 7));
+    expect(stockShortages(low.lines, new Map([[1, { stock: 50 }]])).size).toBe(0);
+    expect(stockShortages(low.lines, new Map()).size).toBe(1);
+  });
 });
 
 describe('toOrderItems', () => {

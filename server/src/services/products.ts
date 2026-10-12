@@ -1,4 +1,4 @@
-import { and, asc, eq, getTableColumns, sql } from 'drizzle-orm';
+import { and, asc, eq, getTableColumns, inArray, sql } from 'drizzle-orm';
 import { foldText, type BarcodeLookup, type Product, type ProductInput, type ProductListQuery, type ProductWithUnits } from '@tiny-pos/shared';
 import type { Db, DbOrTx } from '../db/connection.js';
 import { categories, productUnits, products } from '../db/schema.js';
@@ -41,6 +41,14 @@ export function getProduct(db: DbOrTx, id: number): ProductWithUnits {
   const product = getProductRow(db, id);
   const units = db.select().from(productUnits).where(eq(productUnits.productId, id)).orderBy(asc(productUnits.factor)).all();
   return { ...product, units };
+}
+
+/** Sản phẩm trong giỏ kèm đơn vị quy đổi, một lượt cho cả giỏ; cả hàng ngừng bán; id không có thì bỏ qua. */
+export function getProducts(db: Db, ids: number[]): ProductWithUnits[] {
+  if (!ids.length) return [];
+  const rows = selectProducts(db).where(inArray(products.id, ids)).orderBy(asc(products.name)).all();
+  const units = db.select().from(productUnits).where(inArray(productUnits.productId, ids)).orderBy(asc(productUnits.factor)).all();
+  return rows.map((p) => ({ ...p, units: units.filter((u) => u.productId === p.id) }));
 }
 
 /** Mã vạch phải duy nhất trên cả products lẫn product_units (by-barcode mới không mơ hồ). */
